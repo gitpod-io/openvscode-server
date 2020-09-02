@@ -169,6 +169,10 @@ import './contrib/remote/browser/remoteStartEntry.contribution.js';
 // Process Explorer
 import './contrib/processExplorer/browser/processExplorer.web.contribution.js';
 
+// Gitpod: Export Logs command
+// eslint-disable-next-line local/code-import-patterns
+import '../gitpod/browser/workbench/contrib/exportLogs.contribution.js';
+
 //#endregion
 
 

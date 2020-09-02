@@ -6,14 +6,14 @@
 import * as nls from '../../../../nls.js';
 import { ITunnelService, TunnelOptions, RemoteTunnel, TunnelCreationOptions, ITunnel, TunnelProtocol, TunnelPrivacyId } from '../../../../platform/tunnel/common/tunnel.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
-import { IWorkbenchContribution } from '../../../common/contributions.js';
-import { IBrowserWorkbenchEnvironmentService } from '../../../services/environment/browser/environmentService.js';
+import { IWorkbenchContribution } from '../../../../workbench/common/contributions.js';
+import { IBrowserWorkbenchEnvironmentService } from '../../../../workbench/services/environment/browser/environmentService.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { URI } from '../../../../base/common/uri.js';
-import { IRemoteExplorerService } from '../../../services/remote/common/remoteExplorerService.js';
+import { IRemoteExplorerService } from '../../../../workbench/services/remote/common/remoteExplorerService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
-import { forwardedPortsFeaturesEnabled } from '../../../services/remote/common/tunnelModel.js';
+// import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+// import { forwardedPortsFeaturesEnabled } from '../../../../workbench/services/remote/common/tunnelModel.js';
 
 export class TunnelFactoryContribution extends Disposable implements IWorkbenchContribution {
 
@@ -25,13 +25,13 @@ export class TunnelFactoryContribution extends Disposable implements IWorkbenchC
 		@IOpenerService private openerService: IOpenerService,
 		@IRemoteExplorerService remoteExplorerService: IRemoteExplorerService,
 		@ILogService logService: ILogService,
-		@IContextKeyService contextKeyService: IContextKeyService
+		// @IContextKeyService contextKeyService: IContextKeyService
 	) {
 		super();
 		const tunnelFactory = environmentService.options?.tunnelProvider?.tunnelFactory;
 		if (tunnelFactory) {
 			// At this point we clearly want the ports view/features since we have a tunnel factory
-			contextKeyService.createKey(forwardedPortsFeaturesEnabled.key, true);
+			// contextKeyService.createKey(forwardedPortsFeaturesEnabled.key, true);
 			let privacyOptions = environmentService.options?.tunnelProvider?.features?.privacyOptions ?? [];
 			if (environmentService.options?.tunnelProvider?.features?.public
 				&& (privacyOptions.length === 0)) {
