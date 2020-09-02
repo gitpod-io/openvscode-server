@@ -26,7 +26,7 @@ import { Position } from '../../core/position.js';
 import { LimitedQueue } from '../../../../base/common/async.js';
 import { TextLength } from '../../core/textLength.js';
 
-const EDITOR_TREESITTER_TELEMETRY = 'editor.experimental.treeSitterTelemetry';
+// const EDITOR_TREESITTER_TELEMETRY = 'editor.experimental.treeSitterTelemetry';
 const MODULE_LOCATION_SUBPATH = `@vscode/tree-sitter-wasm/wasm`;
 const FILENAME_TREESITTER_WASM = `tree-sitter.wasm`;
 
@@ -681,7 +681,7 @@ export class TreeSitterTextModelService extends Disposable implements ITreeSitte
 	private _getSetting(languageId: string): boolean {
 		const setting = this._configurationService.getValue<boolean>(`${EDITOR_EXPERIMENTAL_PREFER_TREESITTER}.${languageId}`);
 		if (!setting && TREESITTER_ALLOWED_SUPPORT.includes(languageId)) {
-			return this._configurationService.getValue<boolean>(EDITOR_TREESITTER_TELEMETRY);
+			return false;
 		}
 		return setting;
 	}
