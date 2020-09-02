@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
+    "@gitpod/gitpod-protocol": "main-gha",
+    "@gitpod/ide-metrics-api-grpcweb": "main-gha",
+    "@gitpod/supervisor-api-grpc": "main-gha",
+    "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@microsoft/1ds-core-js": "^3.2.13",
     "@microsoft/1ds-post-js": "^3.2.13",
     "@parcel/watcher": "2.1.0",
