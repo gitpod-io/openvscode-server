@@ -124,7 +124,7 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		return local.identifier;
 	}
 
-	async getManifest(vsix: URI): Promise<IExtensionManifest> {
+	async getManifest(vsix: URI, token?: CancellationToken): Promise<IExtensionManifest> {
 		const downloadLocation = await this.downloadVsix(vsix);
 		const zipPath = path.resolve(downloadLocation.fsPath);
 		return getManifest(zipPath);
@@ -164,12 +164,12 @@ export class ExtensionManagementService extends AbstractExtensionManagementServi
 		return this.extensionsScanner.cleanUp();
 	}
 
-	private async downloadVsix(vsix: URI): Promise<URI> {
+	private async downloadVsix(vsix: URI, token: CancellationToken = CancellationToken.None): Promise<URI> {
 		if (vsix.scheme === Schemas.file) {
 			return vsix;
 		}
 		const downloadedLocation = joinPath(this.environmentService.tmpDir, generateUuid());
-		await this.downloadService.download(vsix, downloadedLocation);
+		await this.downloadService.download(vsix, downloadedLocation, token);
 		return downloadedLocation;
 	}
 

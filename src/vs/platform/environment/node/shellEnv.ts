@@ -141,7 +141,8 @@ async function doResolveUnixShellEnv(logService: ILogService, token: Cancellatio
 
 		const child = spawn(systemShellUnix, [...shellArgs, command], {
 			detached: true,
-			stdio: ['ignore', 'pipe', 'pipe'],
+			// see https://github.com/gitpod-io/gitpod/issues/4460#issuecomment-863799213
+			stdio: ['ignore', 'pipe', 'ignore'],
 			env
 		});
 
@@ -157,19 +158,16 @@ async function doResolveUnixShellEnv(logService: ILogService, token: Cancellatio
 		});
 
 		const buffers: Buffer[] = [];
-		child.stdout.on('data', b => buffers.push(b));
-
-		const stderr: Buffer[] = [];
-		child.stderr.on('data', b => stderr.push(b));
+		child.stdout.on('data', b => {
+			logService.trace('getUnixShellEnvironment#stdoutData', b.toString('utf8'));
+			buffers.push(b);
+		});
 
 		child.on('close', (code, signal) => {
+			logService.trace('getUnixShellEnvironment#close', code, signal);
+
 			const raw = Buffer.concat(buffers).toString('utf8');
 			logService.trace('getUnixShellEnvironment#raw', raw);
-
-			const stderrStr = Buffer.concat(stderr).toString('utf8');
-			if (stderrStr.trim()) {
-				logService.trace('getUnixShellEnvironment#stderr', stderrStr);
-			}
 
 			if (code || signal) {
 				return reject(new Error(localize('resolveShellEnvExitError', "Unexpected exit code from spawned shell (code {0}, signal {1})", code, signal)));

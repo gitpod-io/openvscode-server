@@ -804,6 +804,21 @@
 				]
 			},
 			{
+				"target": "**/vs/gitpod/browser/**",
+				"restrictions": [
+					"vs/nls",
+					"vs/css!./**/*",
+					"**/vs/base/**/{common,browser}/**",
+					"**/vs/base/parts/**/{common,browser}/**",
+					"**/vs/platform/**/{common,browser}/**",
+					"**/vs/code/**/{common,browser}/**",
+					"**/vs/workbench/workbench.web.api",
+					"@gitpod/gitpod-protocol/lib/**",
+					"@improbable-eng/grpc-web",
+					"@gitpod/local-app-api-grpcweb"
+				]
+			},
+			{
 				"target": "**/vs/code/node/**",
 				"restrictions": [
 					"vs/nls",
@@ -908,6 +923,14 @@
 					"**/vs/workbench/workbench.common.main",
 					"**/vs/workbench/workbench.sandbox.main"
 				]
+			},
+			{
+				"target": "**/extensions/gitpod-web/**",
+				"restrictions": "!@gitpod/supervisor-api-grpc/**"
+			},
+			{
+				"target": "**/extensions/gitpod-remote-ssh/**",
+				"restrictions": "!@gitpod/supervisor-api-grpc/**"
 			},
 			{
 				"target": "**/extensions/**",

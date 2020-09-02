@@ -1211,8 +1211,8 @@ export function windowOpenNoOpener(url: string): void {
 export function windowOpenNoOpenerWithSuccess(url: string): boolean {
 	const newTab = window.open();
 	if (newTab) {
-		(newTab as any).opener = null;
-		newTab.location.href = url;
+		newTab.close();
+		window.open(url, '_blank', 'noopener');
 		return true;
 	}
 	return false;

@@ -17,7 +17,13 @@ tasks:
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
-      node out/server.js
+      yarn gitpod:watch
+    name: watch extension
+  - command: |
+      export NODE_ENV=development
+      export VSCODE_DEV=1
+      gp sync-await init
+      node out/gitpod.js
     name: run app
     openMode: split-right
 github:

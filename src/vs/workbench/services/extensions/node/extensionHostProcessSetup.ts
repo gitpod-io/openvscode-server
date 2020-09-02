@@ -14,7 +14,7 @@ import { PersistentProtocol, ProtocolConstants, BufferedEmitter } from 'vs/base/
 import { NodeSocket, WebSocketNodeSocket } from 'vs/base/parts/ipc/node/ipc.net';
 import product from 'vs/platform/product/common/product';
 import { IInitData } from 'vs/workbench/api/common/extHost.protocol';
-import { MessageType, createMessageOfType, isMessageOfType, IExtHostSocketMessage, IExtHostReadyMessage, IExtHostReduceGraceTimeMessage, ExtensionHostExitCode } from 'vs/workbench/services/extensions/common/extensionHostProtocol';
+import { MessageType, createMessageOfType, isMessageOfType, IExtHostSocketMessage, IExtHostReadyMessage, IExtHostReduceGraceTimeMessage } from 'vs/workbench/services/extensions/common/extensionHostProtocol';
 import { ExtensionHostMain, IExitFn } from 'vs/workbench/services/extensions/common/extensionHostMain';
 import { VSBuffer } from 'vs/base/common/buffer';
 import { IURITransformer, URITransformer, IRawURITransformer } from 'vs/base/common/uriIpc';
@@ -235,7 +235,8 @@ function connectToRenderer(protocol: IMessagePassingProtocol): Promise<IRenderer
 			if (rendererCommit && myCommit) {
 				// Running in the built version where commits are defined
 				if (rendererCommit !== myCommit) {
-					nativeExit(ExtensionHostExitCode.VersionMismatch);
+					// TODO align our server commit version with VS Code version?
+					// nativeExit(ExtensionHostExitCode.VersionMismatch);
 				}
 			}
 

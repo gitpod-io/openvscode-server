@@ -4,6 +4,21 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Gitpod Code Server",
+			"args": [
+				"${workspaceFolder}/out/gitpod.js"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/**/*.js"
+			],
+			"env": {
+				"NODE_ENV": "development",
+				"VSCODE_DEV": "1"
+			}
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "Code Server",
 			"args": [
 				"${workspaceFolder}/out/server.js"
@@ -486,7 +501,14 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceRoot}/extensions/debug-auto-launch"
+				"/workspace/vscode",
+				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod",
+				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod-remote-ssh",
+				"--log=debug"
+			],
+			"outFiles": [
+				"${workspaceRoot}/extensions/gitpod/out/**/*.js",
+				"${workspaceRoot}/extensions/gitpod-remote-ssh/out/**/*.js",
 			]
 		}
 	],

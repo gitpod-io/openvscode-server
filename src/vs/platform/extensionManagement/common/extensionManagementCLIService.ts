@@ -111,11 +111,14 @@ export class ExtensionManagementCLIService implements IExtensionManagementCLISer
 			}
 			return true;
 		};
-		const vsixs: URI[] = [];
+		const vsixs: {
+			uri: URI,
+			installOptions: InstallOptions;
+		}[] = [];
 		const installExtensionInfos: InstallExtensionInfo[] = [];
 		for (const extension of extensions) {
 			if (extension instanceof URI) {
-				vsixs.push(extension);
+				vsixs.push({ uri: extension, installOptions: { isBuiltin: false, isMachineScoped } });
 			} else {
 				const [id, version] = getIdAndVersion(extension);
 				if (checkIfNotInstalled(id, version)) {
@@ -133,7 +136,7 @@ export class ExtensionManagementCLIService implements IExtensionManagementCLISer
 		if (vsixs.length) {
 			await Promise.all(vsixs.map(async vsix => {
 				try {
-					const manifest = await this.installVSIX(vsix, { isBuiltin: false, isMachineScoped }, force, output);
+					const manifest = await this.installVSIX(vsix.uri, vsix.installOptions, force, output);
 					if (manifest) {
 						installedExtensionsManifests.push(manifest);
 					}

@@ -387,7 +387,7 @@ const terminalConfiguration: IConfigurationNode = {
 				localize('terminal.integrated.environmentChangesIndicator.on', "Enable the indicator."),
 				localize('terminal.integrated.environmentChangesIndicator.warnonly', "Only show the warning indicator when a terminal's environment is 'stale', not the information indicator that shows a terminal has had its environment modified by an extension."),
 			],
-			default: 'warnonly'
+			default: 'off'
 		},
 		[TerminalSettingId.EnvironmentChangesRelaunch]: {
 			markdownDescription: localize('terminal.integrated.environmentChangesRelaunch', "Whether to relaunch terminals automatically if extension want to contribute to their environment and have not been interacted with yet."),
@@ -444,7 +444,7 @@ const terminalConfiguration: IConfigurationNode = {
 			description: localize('terminal.integrated.localEchoLatencyThreshold', "Experimental: length of network delay, in milliseconds, where local edits will be echoed on the terminal without waiting for server acknowledgement. If '0', local echo will always be on, and if '-1' it will be disabled."),
 			type: 'integer',
 			minimum: -1,
-			default: 30,
+			default: -1,
 		},
 		[TerminalSettingId.LocalEchoExcludePrograms]: {
 			description: localize('terminal.integrated.localEchoExcludePrograms', "Experimental: local echo will be disabled when any of these program names are found in the terminal title."),
