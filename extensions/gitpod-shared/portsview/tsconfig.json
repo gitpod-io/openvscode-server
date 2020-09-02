@@ -1,0 +1,33 @@
+{
+	"extends": "@tsconfig/svelte/tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "./src",
+		"target": "es2020",
+		"lib": [
+			"es2018",
+			"ES2019.Array",
+			"ES2019.Object",
+			"ES2019.String",
+			"ES2019.Symbol",
+			"ES2020.BigInt",
+			"ES2020.Promise",
+			"ES2020.String",
+			"ES2020.Symbol.WellKnown",
+			"ES2020.Intl",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"strict": true,
+		"exactOptionalPropertyTypes": false,
+		"useUnknownInCatchVariables": false,
+		"alwaysStrict": true,
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noImplicitOverride": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"sourceMap": true,
+	}
+}

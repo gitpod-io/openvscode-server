@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "vscode-extensions",
   "version": "0.0.1",
   "license": "MIT",
@@ -7,11 +8,28 @@
     "typescript": "^4.9.2-rc"
   },
   "scripts": {
-    "postinstall": "node ./postinstall.mjs"
+    "postinstall": "node ./postinstall.mjs",
+    "compile": "yarn build:ts && yarn build:gitpod-web",
+    "watch": "npm-run-all -lp watch:ts watch:gitpod-web",
+    "build:ts": "../node_modules/.bin/tsc -b",
+    "watch:ts": "../node_modules/.bin/tsc -b -w",
+    "build:gitpod-web": "yarn --cwd gitpod-web build:webview",
+    "watch:gitpod-web": "yarn --cwd gitpod-web watch:webview"
   },
   "devDependencies": {
     "@parcel/watcher": "2.0.5",
     "esbuild": "^0.11.12",
+    "npm-run-all": "^4.1.5",
     "vscode-grammar-updater": "^1.1.0"
+  },
+  "workspaces": {
+    "packages": [
+      "gitpod-shared",
+      "gitpod-remote",
+      "gitpod-web"
+    ],
+    "nohoist": [
+      "**/!(gitpod-protocol|supervisor-api-grpc|grpc-js|proto-loader)"
+    ]
   }
 }

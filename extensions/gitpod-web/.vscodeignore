@@ -1,0 +1,11 @@
+.gitignore
+src/**
+out/**
+build/**
+portsview/**
+!public/**
+extension.webpack.config.js
+extension-browser.webpack.config.js
+tsconfig.json
+yarn.lock
+README.md
