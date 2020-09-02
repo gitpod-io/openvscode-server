@@ -186,6 +186,17 @@ export interface IProductConfiguration {
 	readonly profileTemplatesUrl?: string;
 
 	readonly commonlyUsedSettings?: string[];
+
+	readonly gitpodPreview?: IGitpodPreviewConfiguration;
+}
+
+export interface IGitpodPreviewConfiguration {
+	host: string;
+	log?: {
+		analytics?: boolean;
+		metrics?: boolean;
+		errorReports?: boolean;
+	};
 }
 
 export interface ITunnelApplicationConfig {

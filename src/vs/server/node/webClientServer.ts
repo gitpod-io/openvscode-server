@@ -297,7 +297,7 @@ export class WebClientServer {
 
 		const resolveWorkspaceURI = (defaultLocation?: string) => defaultLocation && URI.file(path.resolve(defaultLocation)).with({ scheme: Schemas.vscodeRemote, authority: remoteAuthority });
 
-		const filePath = FileAccess.asFileUri(this._environmentService.isBuilt ? 'vs/code/browser/workbench/workbench.html' : 'vs/code/browser/workbench/workbench-dev.html').fsPath;
+		const filePath = FileAccess.asFileUri(this._environmentService.isBuilt ? 'vs/gitpod/browser/workbench/workbench.html' : 'vs/gitpod/browser/workbench/workbench-dev.html').fsPath;
 		const authSessionInfo = !this._environmentService.isBuilt && this._environmentService.args['github-auth'] ? {
 			id: generateUuid(),
 			providerId: 'github',
@@ -338,6 +338,8 @@ export class WebClientServer {
 
 		const nlsBaseUrl = this._productService.extensionsGallery?.nlsBaseUrl;
 		const values: { [key: string]: string } = {
+			VERSION: this._productService.version,
+			GITPOD_HOST: this._productService.gitpodPreview?.host || '',
 			WORKBENCH_WEB_CONFIGURATION: asJSON(workbenchWebConfiguration),
 			WORKBENCH_AUTH_SESSION: authSessionInfo ? asJSON(authSessionInfo) : '',
 			WORKBENCH_WEB_BASE_URL: this._staticRoute,
@@ -368,7 +370,7 @@ export class WebClientServer {
 			'media-src \'self\';',
 			`script-src 'self' 'unsafe-eval' ${this._getScriptCspHashes(data).join(' ')} 'sha256-fh3TwPMflhsEIpR8g1OYTIMVWhXTLcjQ9kh2tIpmv54=' ${useTestResolver ? '' : `http://${remoteAuthority}`};`, // the sha is the same as in src/vs/workbench/services/extensions/worker/webWorkerExtensionHostIframe.html
 			'child-src \'self\';',
-			`frame-src 'self' https://*.vscode-cdn.net data:;`,
+			`frame-src 'self' https://*.vscode-cdn.net https://*.gitpod.io https://*.gitpod-dev.com https://*.gitpod-staging.com data:;`,
 			'worker-src \'self\' data: blob:;',
 			'style-src \'self\' \'unsafe-inline\';',
 			'connect-src \'self\' ws: wss: https:;',
@@ -376,9 +378,11 @@ export class WebClientServer {
 			'manifest-src \'self\';'
 		].join(' ');
 
+		const allowAllCSP = `default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';`;
+
 		const headers: http.OutgoingHttpHeaders = {
 			'Content-Type': 'text/html',
-			'Content-Security-Policy': cspDirectives
+			'Content-Security-Policy': this._environmentService.isBuilt ? cspDirectives : allowAllCSP
 		};
 		if (this._connectionToken.type !== ServerConnectionTokenType.None) {
 			// At this point we know the client has a valid cookie
