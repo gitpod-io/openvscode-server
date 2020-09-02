@@ -6,11 +6,14 @@
 import { CharCode } from '../../../../base/common/charCode.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { URI } from '../../../../base/common/uri.js';
+// eslint-disable-next-line local/code-import-patterns
+import { baseHost } from '../../../../gitpod/platform/product/common/product.js';
 
 export interface WebviewRemoteInfo {
 	readonly isRemote: boolean;
 	readonly authority: string | undefined;
 }
+
 
 /**
  * Root from which resources in webviews are loaded.
@@ -18,7 +21,7 @@ export interface WebviewRemoteInfo {
  * This is hardcoded because we never expect to actually hit it. Instead these requests
  * should always go to a service worker.
  */
-export const webviewResourceBaseHost = 'vscode-cdn.net';
+export const webviewResourceBaseHost = baseHost || 'vscode-cdn.net';
 
 export const webviewRootResourceAuthority = `vscode-resource.${webviewResourceBaseHost}`;
 
