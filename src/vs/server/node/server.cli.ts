@@ -33,7 +33,7 @@ interface ProductDescription {
 	executableName: string;
 }
 
-interface RemoteParsedArgs extends NativeParsedArgs { 'gitCredential'?: string; 'openExternal'?: boolean }
+interface RemoteParsedArgs extends NativeParsedArgs { 'gitCredential'?: string; 'openExternal'?: boolean; 'preview'?: string }
 
 
 const isSupportedForCmd = (optionId: keyof RemoteParsedArgs) => {
@@ -88,15 +88,16 @@ const cliCommand = process.env['VSCODE_CLIENT_COMMAND'] as string;
 const cliCommandCwd = process.env['VSCODE_CLIENT_COMMAND_CWD'] as string;
 const cliRemoteAuthority = process.env['VSCODE_CLI_AUTHORITY'] as string;
 const cliStdInFilePath = process.env['VSCODE_STDIN_FILE_PATH'] as string;
+const cliPort = !!process.env['VSCODE_DEV'] ? 9888 /* From code-web.js */ : (process.env['GITPOD_THEIA_PORT'] ? Number(process.env['GITPOD_THEIA_PORT']) : undefined);
 
 export async function main(desc: ProductDescription, args: string[]): Promise<void> {
-	if (!cliPipe && !cliCommand) {
-		console.log('Command is only available in WSL or inside a Visual Studio Code terminal.');
+	if (!cliPort && !cliCommand) {
+		console.log('Command is only available inside a Gitpod Code terminal.');
 		return;
 	}
 
 	// take the local options and remove the ones that don't apply
-	const options: OptionDescriptions<Required<RemoteParsedArgs>> = { ...OPTIONS, gitCredential: { type: 'string' }, openExternal: { type: 'boolean' } };
+	const options: OptionDescriptions<Required<RemoteParsedArgs>> = { ...OPTIONS, gitCredential: { type: 'string' }, openExternal: { type: 'boolean' }, preview: { type: 'string' } };
 	const isSupported = cliCommand ? isSupportedForCmd : isSupportedForPipe;
 	for (const optionId in OPTIONS) {
 		const optId = <keyof RemoteParsedArgs>optionId;
@@ -105,8 +106,9 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 		}
 	}
 
-	if (cliPipe) {
+	if (cliPort) {
 		options['openExternal'] = { type: 'boolean' };
+		options['preview'] = { type: 'string' };
 	}
 
 	const errorReporter: ErrorReporter = {
@@ -153,9 +155,13 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 		console.log(join(getAppRoot(), 'out', 'vs', 'workbench', 'contrib', 'terminal', 'common', 'scripts', file));
 		return;
 	}
-	if (cliPipe) {
+	if (cliPort) {
 		if (parsedArgs['openExternal']) {
 			await openInBrowser(parsedArgs['_'], verbose);
+			return;
+		}
+		if (parsedArgs['preview']) {
+			openInBuiltInSimpleBrowser(parsedArgs['preview'], verbose);
 			return;
 		}
 	}
@@ -296,7 +302,7 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 		}
 	} else {
 		if (parsedArgs.status) {
-			await sendToPipe({
+			await sendToPort({
 				type: 'status'
 			}, verbose).then((res: string) => {
 				console.log(res);
@@ -307,7 +313,7 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 		}
 
 		if (parsedArgs['install-extension'] !== undefined || parsedArgs['uninstall-extension'] !== undefined || parsedArgs['list-extensions'] || parsedArgs['update-extensions']) {
-			await sendToPipe({
+			await sendToPort({
 				type: 'extensionManagement',
 				list: parsedArgs['list-extensions'] ? { showVersions: parsedArgs['show-versions'], category: parsedArgs['category'] } : undefined,
 				install: asExtensionIdOrVSIX(parsedArgs['install-extension']),
@@ -330,7 +336,7 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 			waitMarkerFilePath = createWaitMarkerFileSync(verbose);
 		}
 
-		await sendToPipe({
+		await sendToPort({
 			type: 'open',
 			fileURIs,
 			folderURIs,
@@ -398,7 +404,7 @@ async function openInBrowser(args: string[], verbose: boolean) {
 		}
 	}
 	if (uris.length) {
-		await sendToPipe({
+		await sendToPort({
 			type: 'openExternal',
 			uris
 		}, verbose).catch(e => {
@@ -407,6 +413,71 @@ async function openInBrowser(args: string[], verbose: boolean) {
 	}
 }
 
+function openInBuiltInSimpleBrowser(url: string, verbose: boolean) {
+	sendToPort({
+		type: 'preview',
+		url
+	}, verbose);
+}
+
+function sendToPort(args: PipeCommand | { type: 'preview'; url: string }, verbose: boolean): Promise<any> {
+	if (verbose) {
+		console.log(JSON.stringify(args, null, '  '));
+	}
+	return new Promise<string>((resolve, reject) => {
+		const message = JSON.stringify(args);
+		if (!cliPort) {
+			console.log('Message ' + message);
+			resolve('');
+			return;
+		}
+
+		const opts: http.RequestOptions = {
+			hostname: '127.0.0.1',
+			port: cliPort,
+			protocol: 'http:',
+			path: '/cli',
+			method: 'POST',
+			headers: {
+				'content-type': 'application/json',
+				'accept': 'application/json'
+			}
+		};
+
+		const req = http.request(opts, res => {
+			if (res.headers['content-type'] !== 'application/json') {
+				reject('Error in response: Invalid content type: Expected \'application/json\', is: ' + res.headers['content-type']);
+				return;
+			}
+
+			const chunks: string[] = [];
+			res.setEncoding('utf8');
+			res.on('data', chunk => {
+				chunks.push(chunk);
+			});
+			res.on('error', (err) => fatal('Error in response.', err));
+			res.on('end', () => {
+				const content = chunks.join('');
+				try {
+					const obj = JSON.parse(content);
+					if (res.statusCode === 200) {
+						resolve(obj);
+					} else {
+						reject(obj);
+					}
+				} catch (e) {
+					reject('Error in response: Unable to parse response as JSON: ' + content);
+				}
+			});
+		});
+
+		req.on('error', (err) => fatal('Error in request.', err));
+		req.write(message);
+		req.end();
+	});
+}
+
+// @ts-ignore
 function sendToPipe(args: PipeCommand, verbose: boolean): Promise<string> {
 	if (verbose) {
 		console.log(JSON.stringify(args, null, '  '));
