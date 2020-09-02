@@ -2,6 +2,36 @@
 	"version": "0.1.0",
 	"configurations": [
 		{
+			"name": "Launch gitpod-web",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"${workspaceFolder}",
+				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod-web",
+				"--log=debug"
+			],
+			"outFiles": [
+				"${workspaceRoot}/extensions/gitpod-shared/out/**/*.js",
+				"${workspaceRoot}/extensions/gitpod-web/out/**/*.js",
+			]
+		},
+		{
+			"name": "Launch gitpod-remote",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"${workspaceFolder}",
+				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod-remote",
+				"--log=debug"
+			],
+			"outFiles": [
+				"${workspaceRoot}/extensions/gitpod-shared/out/**/*.js",
+				"${workspaceRoot}/extensions/gitpod-remote/out/**/*.js",
+			]
+		},
+		{
 			"type": "node",
 			"request": "launch",
 			"name": "Gulp Build",

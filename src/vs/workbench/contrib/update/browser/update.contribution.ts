@@ -70,7 +70,7 @@ export class ShowCurrentReleaseNotesAction extends Action2 {
 	}
 }
 
-registerAction2(ShowCurrentReleaseNotesAction);
+// registerAction2(ShowCurrentReleaseNotesAction);
 
 // Update
 
