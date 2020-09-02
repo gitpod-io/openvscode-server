@@ -57,3 +57,19 @@ vscode-textmate/webpack.config.js
 
 vsda/**
 !vsda/rust/web/**
+
+@improbable-eng/**
+!@improbable-eng/grpc-web/dist/grpc-web-client.umd.js
+
+@gitpod/**
+!@gitpod/local-app-api-grpcweb/lib/localapp.js
+!@gitpod/ide-metrics-api-grpcweb/lib/index.js
+
+browser-headers/**
+google-protobuf/**
+
+@zip.js/**
+!@zip.js/zip.js/dist/zip-no-worker-deflate.min.js
+
+@jeanp413/analytics-node-umd/**
+!@jeanp413/analytics-node-umd/dist/umd/index.js

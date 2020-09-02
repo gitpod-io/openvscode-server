@@ -1,0 +1,197 @@
+<!-- Copyright (c) Gitpod. All rights reserved.' -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			let gitpodWorkspaceId = null;
+			let gitpodIdeMetricsUrl = null;
+			(() => {
+				const baseWorkspaceIDRegex = '(([a-f][0-9a-f]{7}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|([0-9a-z]{2,16}-[0-9a-z]{2,16}-[0-9a-z]{8,11}))';
+				// this pattern matches URL prefixes of workspaces
+				const workspaceUrlPrefixRegex = RegExp(`^([0-9]{4,6}-)?${baseWorkspaceIDRegex}\\.`);
+				const url = new URL(window.location.href);
+				url.search = '';
+				url.hash = '';
+				url.pathname = '';
+				const result = url.host.match(workspaceUrlPrefixRegex);
+				if (result) {
+					gitpodWorkspaceId = result[4]
+					url.host = url.host.split('.').splice(2).join('.');
+				} else {
+					return;
+				}
+				const hostSegments = url.host.split('.');
+				if (hostSegments[0] !== 'ide') {
+					url.host = 'ide.' + url.host;
+				}
+				url.pathname = '/metrics-api';
+				gitpodIdeMetricsUrl = url.toString()
+			})();
+
+			async function gitpodMetricsAddCounter(metricsName, labels, value) {
+				try {
+					if (!gitpodIdeMetricsUrl) {
+						return false;
+					}
+					const url = `${gitpodIdeMetricsUrl}/metrics/counter/add/${metricsName}`;
+					const params = { value, labels };
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json();
+						console.error(`Cannot report metrics with addCounter: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error('Cannot report metrics with addCounter, error:', err);
+					return false;
+				}
+			}
+
+			async function gitpodMetricsReportError(error, properties) {
+				try {
+					if (!gitpodIdeMetricsUrl) {
+						return false;
+					}
+					const p = Object.assign({}, properties)
+					p.error_name = error.name
+					p.error_message = error.message
+					const url = `${gitpodIdeMetricsUrl}/reportError`;
+					const params = {
+						errorStack: error.stack ?? String(error),
+						component: "vscode-workbench",
+						version: "{{VERSION}}",
+						workspaceId: gitpodWorkspaceId,
+						properties: p,
+					};
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json();
+						console.error(`Cannot report error: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error("Cannot report error, error:", err);
+					return false;
+				}
+			}
+
+			// sum(rate(gitpod_vscode_web_load_total{status='failed'}[2m]))/sum(rate(gitpod_vscode_web_load_total{status='loading'}[2m]))
+			const gitpodVSCodeWebLoadTotal = 'gitpod_vscode_web_load_total';
+			gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'loading' });
+			let hasVscodeWebLoadFailed = false;
+			const onVsCodeWorkbenchError = (event) => {
+				if (!hasVscodeWebLoadFailed) {
+					gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'failed' });
+					hasVscodeWebLoadFailed = true;
+				}
+
+				if (typeof event?.target?.getAttribute !== 'function') {
+					gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total');
+					return;
+				}
+				const labels = {};
+
+				// We take a look at what is the resource that was attempted to load;
+				const resourceSource = event.target.getAttribute('src') || event.target.getAttribute('href');
+
+				// If the event has a `target`, it means that it wasn't a script error
+				if (resourceSource) {
+					labels['resource'] = 'vscode-web-workbench';
+					labels['error'] = 'LoadError';
+					gitpodMetricsReportError(new Error("LoadError"), { resource: labels['resource'], url: resourceSource })
+				} else {
+					labels['error'] = 'Unknown';
+				}
+				gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total', labels);
+
+				// TODO collect errors, we can capture resourceSource, error if possible with stack, message, name, and window URL
+			};
+		</script>
+		<script>
+			globalThis.env = {
+				GITPOD_CODE_HOST: window.location.host.split('.').splice(2).join('.')
+			};
+
+			globalThis._VSCODE_WEB_PACKAGE_TTP = window.trustedTypes?.createPolicy('amdLoader', {
+				createScriptURL(value) {
+					if (value.startsWith(window.location.origin) || value.startsWith('{{WORKBENCH_WEB_BASE_URL}}')) {
+						return value;
+					}
+					throw new Error(`Invalid script url: ${value}`);
+				}
+			})
+		</script>
+
+		<script>
+			performance.mark('code/didStartRenderer');
+		</script>
+		<meta charset="utf-8" />
+
+		<!-- Gitpod specific -->
+		<meta id="gitpod-ide-capabilities" data-settings="{&quot;service&quot;:true}">
+
+		<!-- Mobile tweaks -->
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-title" content="Code">
+		<link rel="apple-touch-icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/code-192.png" />
+
+		<!-- Disable pinch zooming -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+		<!-- Workbench Configuration -->
+		<meta id="vscode-workbench-web-configuration" data-settings="{{WORKBENCH_WEB_CONFIGURATION}}">
+
+		<!-- Workbench Auth Session -->
+		<meta id="vscode-workbench-auth-session" data-settings="{{WORKBENCH_AUTH_SESSION}}">
+
+		<!-- Workbench Icon/Manifest/CSS -->
+		<!-- <link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/favicon.ico" type="image/x-icon" />
+		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/manifest.json" crossorigin="use-credentials" /> -->
+		<link rel="stylesheet" href="{{WORKBENCH_WEB_BASE_URL}}/out/vs/gitpod/browser/workbench/workbench.css">
+
+		<!-- Gitpod Integration -->
+		<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/manifest.json" />
+
+		<style>
+			#gp-code-workbench {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+			}
+		</style>
+	</head>
+
+	<body aria-label="">
+		<div id="gp-code-workbench">
+		</div>
+	</body>
+
+	<!-- Startup (do not modify order of script tags!) -->
+	<script type="text/javascript" src="/_supervisor/frontend/main.js" onerror="onVsCodeWorkbenchError(event)" charset="utf-8" crossorigin="anonymous"></script>
+	<script>
+		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location.origin).toString();
+		globalThis._VSCODE_FILE_ROOT = baseUrl + '/out/';
+	</script>
+	<script>
+		performance.mark('code/willLoadWorkbenchMain');
+	</script>
+	<!-- always ensure built in english NLS messages -->
+	<script type="module" src="{{WORKBENCH_NLS_FALLBACK_URL}}" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<!-- attempt to load NLS messages in case non-english -->
+	<script type="module" src="{{WORKBENCH_NLS_URL}}" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script type="module" src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/gitpod/browser/workbench/workbench.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+</html>

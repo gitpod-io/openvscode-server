@@ -225,7 +225,9 @@ configurationRegistry.registerConfiguration({
 				name: 'TelemetryLevel',
 				minimumVersion: '1.99',
 				description: localize('telemetry.telemetryLevel.policyDescription', "Controls the level of telemetry."),
-			}
+			},
+			// Gitpod: Deprecated telemetry setting
+			'included': false
 		},
 		'telemetry.feedback.enabled': {
 			type: 'boolean',
@@ -234,9 +236,20 @@ configurationRegistry.registerConfiguration({
 			policy: {
 				name: 'EnableFeedback',
 				minimumVersion: '1.99',
-			}
+			},
+			// Gitpod: Deprecated telemetry setting
+			'included': false
 		},
-		// Deprecated telemetry setting
+	}
+});
+
+// Deprecated telemetry setting
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
+	'id': TELEMETRY_SECTION_ID,
+	'order': 110,
+	'type': 'object',
+	'title': localize('telemetryConfigurationTitle', "Telemetry"),
+	'properties': {
 		[TELEMETRY_OLD_SETTING_ID]: {
 			'type': 'boolean',
 			'markdownDescription':
@@ -247,7 +260,8 @@ configurationRegistry.registerConfiguration({
 			'restricted': true,
 			'markdownDeprecationMessage': localize('enableTelemetryDeprecated', "If this setting is false, no telemetry will be sent regardless of the new setting's value. Deprecated in favor of the {0} setting.", `\`#${TELEMETRY_SETTING_ID}#\``),
 			'scope': ConfigurationScope.APPLICATION,
-			'tags': ['usesOnlineServices', 'telemetry']
+			'tags': ['usesOnlineServices', 'telemetry'],
+			'included': false
 		}
 	},
 });

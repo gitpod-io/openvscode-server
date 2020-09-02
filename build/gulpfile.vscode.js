@@ -110,8 +110,10 @@ const vscodeResources = [
 
 	// Excludes
 	'!out-build/vs/code/browser/**',
+	'!out-build/vs/gitpod/browser/**',
 	'!out-build/vs/editor/standalone/**',
 	'!out-build/vs/code/**/*-dev.html',
+	'!out-build/vs/gitpod/**/*-dev.html',
 	'!out-build/vs/workbench/contrib/issue/**/*-dev.html',
 	'!**/test/**'
 ];

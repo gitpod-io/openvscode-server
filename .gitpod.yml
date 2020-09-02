@@ -1,0 +1,41 @@
+image:
+  file: .gitpod.Dockerfile
+ports:
+  - port: 8080
+    onOpen: open-browser
+tasks:
+  - init: |
+      npm ci
+      gp sync-done dependencies
+      npm run server:init
+    command: |
+      gp sync-done init
+      export NODE_ENV=development
+      export VSCODE_DEV=1
+      npm run watch
+    name: watch app
+  - command: |
+      export NODE_ENV=development
+      export VSCODE_DEV=1
+      gp sync-await init
+      ./scripts/code-server.sh --without-connection-token
+    name: run app
+    openMode: split-right
+  - name: Local Proxy
+    command: |
+      cd gitpod
+      gp ports await 9888
+      go run proxy.go
+  - name: Build Prepare
+    init: |
+      gp sync-await dependencies
+      npm run gulp compile-build-without-mangling
+      npm run gulp extensions-ci \
+        && npm run gulp minify-vscode-reh \
+        && npm run gulp vscode-web-min-ci \
+        && npm run gulp vscode-reh-linux-x64-min-ci
+
+vscode:
+  extensions:
+    - dbaeumer.vscode-eslint
+    - svelte.svelte-vscode

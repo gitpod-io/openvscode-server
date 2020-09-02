@@ -387,7 +387,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				return _asExtensionEvent(extHostTerminalService.onDidChangeShell);
 			},
 			get isTelemetryEnabled() {
-				return extHostTelemetry.getTelemetryConfiguration();
+				// return extHostTelemetry.getTelemetryConfiguration();
+				// return always false to prevent microsoft built-in extension and
+				// third-party like GHPR to send telemetry data
+				return false;
 			},
 			get onDidChangeTelemetryEnabled(): vscode.Event<boolean> {
 				return _asExtensionEvent(extHostTelemetry.onDidChangeTelemetryEnabled);

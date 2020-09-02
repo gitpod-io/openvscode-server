@@ -304,6 +304,12 @@ body {
 	text-decoration: underline; /* render underline on hover for accessibility requirements */
 }
 
+.codicon-gitpod {
+	width: 12px;
+	height: 12px;
+	background-image: url(./code-icon.svg) !important;
+}
+
 .monaco-workbench .monaco-action-bar:not(.vertical) .action-label:not(.disabled):hover,
 .monaco-workbench .monaco-action-bar:not(.vertical) .monaco-dropdown-with-primary:not(.disabled):hover {
 	background-color: var(--vscode-toolbar-hoverBackground);
