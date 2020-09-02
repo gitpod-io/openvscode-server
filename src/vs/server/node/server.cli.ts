@@ -32,7 +32,7 @@ interface ProductDescription {
 	executableName: string;
 }
 
-interface RemoteParsedArgs extends NativeParsedArgs { 'gitCredential'?: string; 'openExternal'?: boolean }
+interface RemoteParsedArgs extends NativeParsedArgs { 'gitCredential'?: string; 'openExternal'?: boolean; 'preview'?: string }
 
 
 const isSupportedForCmd = (optionId: keyof RemoteParsedArgs) => {
@@ -85,11 +85,12 @@ const cliCommand = process.env['VSCODE_CLIENT_COMMAND'] as string;
 const cliCommandCwd = process.env['VSCODE_CLIENT_COMMAND_CWD'] as string;
 const cliRemoteAuthority = process.env['VSCODE_CLI_AUTHORITY'] as string;
 const cliStdInFilePath = process.env['VSCODE_STDIN_FILE_PATH'] as string;
+const cliPort = !!process.env['VSCODE_DEV'] ? 9888 /* From code-web.js */ : (process.env['GITPOD_THEIA_PORT'] ? Number(process.env['GITPOD_THEIA_PORT']) : undefined);
 
 
 export function main(desc: ProductDescription, args: string[]): void {
-	if (!cliPipe && !cliCommand) {
-		console.log('Command is only available in WSL or inside a Visual Studio Code terminal.');
+	if (!cliPort && !cliCommand) {
+		console.log('Command is only available inside a Gitpod Code terminal.');
 		return;
 	}
 
@@ -103,8 +104,9 @@ export function main(desc: ProductDescription, args: string[]): void {
 		}
 	}
 
-	if (cliPipe) {
+	if (cliPort) {
 		options['openExternal'] = { type: 'boolean' };
+		options['preview'] = { type: 'string' };
 	}
 
 	const errorReporter: ErrorReporter = {
@@ -149,9 +151,13 @@ export function main(desc: ProductDescription, args: string[]): void {
 		console.log(resolve(__dirname, '../..', 'workbench', 'contrib', 'terminal', 'browser', 'media', file));
 		return;
 	}
-	if (cliPipe) {
+	if (cliPort) {
 		if (parsedArgs['openExternal']) {
 			openInBrowser(parsedArgs['_'], verbose);
+			return;
+		}
+		if (parsedArgs['preview']) {
+			openInBuiltInSimpleBrowser(parsedArgs['preview'], verbose);
 			return;
 		}
 	}
@@ -273,7 +279,7 @@ export function main(desc: ProductDescription, args: string[]): void {
 		}
 	} else {
 		if (parsedArgs.status) {
-			sendToPipe({
+			sendToPort({
 				type: 'status'
 			}, verbose).then((res: string) => {
 				console.log(res);
@@ -284,7 +290,7 @@ export function main(desc: ProductDescription, args: string[]): void {
 		}
 
 		if (parsedArgs['install-extension'] !== undefined || parsedArgs['uninstall-extension'] !== undefined || parsedArgs['list-extensions']) {
-			sendToPipe({
+			sendToPort({
 				type: 'extensionManagement',
 				list: parsedArgs['list-extensions'] ? { showVersions: parsedArgs['show-versions'], category: parsedArgs['category'] } : undefined,
 				install: asExtensionIdOrVSIX(parsedArgs['install-extension']),
@@ -307,7 +313,7 @@ export function main(desc: ProductDescription, args: string[]): void {
 			waitMarkerFilePath = createWaitMarkerFile(verbose);
 		}
 
-		sendToPipe({
+		sendToPort({
 			type: 'open',
 			fileURIs,
 			folderURIs,
@@ -349,7 +355,7 @@ function openInBrowser(args: string[], verbose: boolean) {
 		}
 	}
 	if (uris.length) {
-		sendToPipe({
+		sendToPort({
 			type: 'openExternal',
 			uris
 		}, verbose).catch(e => {
@@ -358,6 +364,52 @@ function openInBrowser(args: string[], verbose: boolean) {
 	}
 }
 
+function openInBuiltInSimpleBrowser(url: string, verbose: boolean) {
+	sendToPort({
+		type: 'preview',
+		url
+	}, verbose);
+}
+
+function sendToPort(args: PipeCommand | { type: 'preview'; url: string }, verbose: boolean): Promise<any> {
+	if (verbose) {
+		console.log(JSON.stringify(args, null, '  '));
+	}
+	return new Promise<string>(resolve => {
+		const message = JSON.stringify(args);
+		if (!cliPort) {
+			console.log('Message ' + message);
+			resolve('');
+			return;
+		}
+
+		const opts: _http.RequestOptions = {
+			hostname: 'localhost',
+			port: cliPort,
+			protocol: 'http:',
+			path: '/cli',
+			method: 'POST'
+		};
+
+		const req = _http.request(opts, res => {
+			const chunks: string[] = [];
+			res.setEncoding('utf8');
+			res.on('data', chunk => {
+				chunks.push(chunk);
+			});
+			res.on('error', (err) => fatal('Error in response.', err));
+			res.on('end', () => {
+				resolve(chunks.join(''));
+			});
+		});
+
+		req.on('error', (err) => fatal('Error in request.', err));
+		req.write(message);
+		req.end();
+	});
+}
+
+// @ts-ignore
 function sendToPipe(args: PipeCommand, verbose: boolean): Promise<any> {
 	if (verbose) {
 		console.log(JSON.stringify(args, null, '  '));
