@@ -32,6 +32,8 @@ import { cwd } from 'vs/base/common/process';
 import { IRemoteTelemetryService } from 'vs/server/remoteTelemetryService';
 import { Promises } from 'vs/base/node/pfs';
 import { IProductService } from 'vs/platform/product/common/productService';
+import { IRequestService } from 'vs/platform/request/common/request';
+import { getInitialExtensionsToInstall } from 'vs/gitpod/node/customServerIntegration';
 
 let _SystemExtensionsRoot: string | null = null;
 function getSystemExtensionsRoot(): string {
@@ -62,7 +64,8 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 		private readonly logService: ILogService,
 		private readonly telemetryService: IRemoteTelemetryService,
 		private readonly telemetryAppender: ITelemetryAppender | null,
-		private readonly productService: IProductService
+		private readonly productService: IProductService,
+		readonly requestService: IRequestService,
 	) {
 		this._logger = new class implements ILog {
 			public error(source: string, message: string): void {
@@ -94,6 +97,13 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 					logService.error(error);
 				});
 		}
+
+		this.whenExtensionsReady.then(() => getInitialExtensionsToInstall(logService, requestService).then(extToInstall => {
+			const idsOrVSIX = extToInstall.map(input => /\.vsix$/i.test(input) ? URI.file(input) : input);
+			return idsOrVSIX.length ? extensionManagementCLIService.installExtensions(idsOrVSIX, [], true, false) : undefined;
+		})).then(null, error => {
+			logService.error(error);
+		});
 	}
 
 	async call(_: any, command: string, arg?: any): Promise<any> {
@@ -468,6 +478,16 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 				.then(resolver => ExtensionScanner.scanExtensions(input, this._logger, resolver));
 
 			finalBuiltinExtensions = ExtensionScanner.mergeBuiltinExtensions(builtinExtensions, extraBuiltinExtensions);
+
+			finalBuiltinExtensions = finalBuiltinExtensions.then(extensions => {
+				const ignoreExtensions = [
+					'vscode.github-authentication',
+					'gitpod.gitpod-shared',
+					'gitpod.gitpod-remote-ssh',
+					'gitpod.gitpod-desktop'
+				];
+				return extensions.filter(ext => !ignoreExtensions.includes(ext.identifier.value.toLowerCase()));
+			});
 		}
 
 		return finalBuiltinExtensions;
