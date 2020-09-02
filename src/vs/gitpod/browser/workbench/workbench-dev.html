@@ -1,0 +1,179 @@
+<!-- Copyright (c) Gitpod. All rights reserved.' -->
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			function getMetricsUrl() {
+				const gitpodHost = "{{GITPOD_HOST}}";
+				if (!gitpodHost) {
+					return '';
+				}
+				return `https://ide.${gitpodHost}/metrics-api`;
+			}
+			const workspaceId = 'fake-workspace-id'
+			const ideMetricsUrl = getMetricsUrl()
+			async function gitpodMetricsAddCounter(metricsName, labels, value) {
+				try {
+					if (!ideMetricsUrl) {
+						return false;
+					}
+					const url = `${ideMetricsUrl}/metrics/counter/add/${metricsName}`;
+					const params = { value, labels };
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json(); // { code: number; message: string; }
+						console.error(`Cannot report metrics with addCounter: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error('Cannot report metrics with addCounter, error:', err);
+					return false;
+				}
+			}
+
+			async function gitpodMetricsReportError(error, properties) {
+				try {
+					if (!ideMetricsUrl) {
+						return false;
+					}
+					const p = Object.assign({}, properties)
+					p.error_name = error.name
+					p.error_message = error.message
+					const url = `${ideMetricsUrl}/reportError`;
+					const params = {
+						errorStack: error.stack ?? String(error),
+						component: "vscode-workbench",
+						version: "{{VERSION}}",
+						workspaceId: workspaceId,
+						properties: p,
+					};
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json();
+						console.error(`Cannot report error: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error("Cannot report error, error:", err);
+					return false;
+				}
+			}
+
+			// sum(rate(gitpod_vscode_web_load_total{status='failed'}[2m]))/sum(rate(gitpod_vscode_web_load_total{status='loading'}[2m]))
+			const gitpodVSCodeWebLoadTotal = 'gitpod_vscode_web_load_total';
+			gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'loading' });
+			let hasVscodeWebLoadFailed = false;
+			const onVsCodeWorkbenchError = (event) => {
+				if (!hasVscodeWebLoadFailed) {
+					gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'failed' });
+					hasVscodeWebLoadFailed = true;
+				}
+
+				if (typeof event?.target?.getAttribute !== 'function') {
+					gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total');
+					return;
+				}
+				const labels = {};
+
+				// We take a look at what is the resource that was attempted to load;
+				const resourceSource = event.target.getAttribute('src') || event.target.getAttribute('href');
+
+				// If the event has a `target`, it means that it wasn't a script error
+				if (resourceSource) {
+					labels['resource'] = 'vscode-web-workbench';
+					labels['error'] = 'LoadError';
+					gitpodMetricsReportError(new Error("LoadError"), { resource: labels['resource'], url: resourceSource })
+				} else {
+					labels['error'] = 'Unknown';
+				}
+				gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total', labels);
+			};
+		</script>
+		<script>
+			performance.mark('code/didStartRenderer')
+		</script>
+		<meta charset="utf-8" />
+
+		<!-- Mobile tweaks -->
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-title" content="Code">
+		<link rel="apple-touch-icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/code-192.png" />
+
+		<!-- Disable pinch zooming -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+
+		<!-- Workbench Configuration -->
+		<meta id="vscode-workbench-web-configuration" data-settings="{{WORKBENCH_WEB_CONFIGURATION}}">
+
+		<!-- Workbench Auth Session -->
+		<meta id="vscode-workbench-auth-session" data-settings="{{WORKBENCH_AUTH_SESSION}}">
+
+		<!-- Builtin Extensions (running out of sources) -->
+		<meta id="vscode-workbench-builtin-extensions" data-settings="{{WORKBENCH_BUILTIN_EXTENSIONS}}">
+
+		<!-- Workbench Icon/Manifest/CSS -->
+		<link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/favicon.ico" type="image/x-icon" />
+		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/manifest.json" />
+
+		<style>
+			#gp-code-workbench {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+			}
+		</style>
+	</head>
+
+	<body aria-label="">
+		<div id="gp-code-workbench">
+		</div>
+	</body>
+
+	<!-- Startup (do not modify order of script tags!) -->
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script>
+		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location.origin).toString();
+		Object.keys(self.webPackagePaths).map(function (key, index) {
+			self.webPackagePaths[key] = `${baseUrl}/remote/web/node_modules/${key}/${self.webPackagePaths[key]}`;
+		});
+		require.config({
+			baseUrl: `${baseUrl}/out`,
+			recordStats: true,
+			trustedTypesPolicy: window.trustedTypes?.createPolicy('amdLoader', {
+				createScriptURL(value) {
+					if(value.startsWith(window.location.origin)) {
+						return value;
+					}
+					throw new Error(`Invalid script url: ${value}`)
+				}
+			}),
+			paths: {
+				...self.webPackagePaths,
+				'@gitpod/local-app-api-grpcweb': `${baseUrl}/remote/web/node_modules/@gitpod/local-app-api-grpcweb/lib/localapp.js`,
+				'@improbable-eng/grpc-web': `${baseUrl}/remote/web/node_modules/@improbable-eng/grpc-web/dist/grpc-web-client.umd.js`,
+				'@zip.js/zipjs': `${baseUrl}/remote/web/node_modules/@zip.js/zip.js/dist/zip-no-worker-deflate.min.js`
+			}
+		});
+	</script>
+
+	<script>
+		performance.mark('code/willLoadWorkbenchMain');
+	</script>
+	<script>
+		require(['vs/gitpod/browser/workbench/workbench'], () => {});
+	</script>
+</html>
