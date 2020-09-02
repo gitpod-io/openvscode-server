@@ -1,0 +1,9 @@
+{
+	"files": [],
+	"references": [
+		{ "path": "./gitpod-shared" },
+		{ "path": "./gitpod-remote" },
+		{ "path": "./gitpod-web" },
+		{ "path": "./gitpod" }
+	]
+}
