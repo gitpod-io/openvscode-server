@@ -21,6 +21,9 @@ import * as File from 'vinyl';
 import * as task from './task';
 
 const watch = require('./watch');
+const packageJson = require('../../package.json');
+const productJson = require('../../product.json');
+const replace = require('gulp-replace');
 
 const reporter = createReporter();
 
@@ -59,8 +62,20 @@ function createCompile(src: string, build: boolean, emitError?: boolean) {
 		const tsFilter = util.filter(data => /\.ts$/.test(data.path));
 		const noDeclarationsFilter = util.filter(data => !(/\.d\.ts$/.test(data.path)));
 
+		const productJsFilter = util.filter(data => !build && data.path.endsWith('vs/platform/product/common/product.ts'));
+		const productConfiguration = JSON.stringify({
+			...productJson,
+			version: `${packageJson.version}-dev`,
+			nameShort: `${productJson.nameShort} Dev`,
+			nameLong: `${productJson.nameLong} Dev`,
+			dataFolderName: `${productJson.dataFolderName}-dev`
+		});
+
 		const input = es.through();
 		const output = input
+			.pipe(productJsFilter)
+			.pipe(replace(/{\s*\/\*BUILD->INSERT_PRODUCT_CONFIGURATION\*\/\s*}/, productConfiguration, { skipBinary: true }))
+			.pipe(productJsFilter.restore)
 			.pipe(utf8Filter)
 			.pipe(bom()) // this is required to preserve BOM in test files that loose it otherwise
 			.pipe(utf8Filter.restore)

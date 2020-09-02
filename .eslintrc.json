@@ -630,6 +630,18 @@
 					}
 				]
 			}
+		},
+		{
+			"files": [
+				"build/gulpfile.gitpod.js",
+				"src/vs/gitpod/*",
+				"extensions/gitpod*/**"
+			],
+			"rules": {
+				"header/header": [
+					"off"
+				]
+			}
 		}
 	]
 }

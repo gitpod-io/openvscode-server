@@ -67,6 +67,8 @@ import { ServerEnvironmentService, ServerParsedArgs } from 'vs/server/node/serve
 import { REMOTE_TERMINAL_CHANNEL_NAME } from 'vs/workbench/contrib/terminal/common/remoteTerminalChannel';
 import { RemoteExtensionLogFileName } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { REMOTE_FILE_SYSTEM_CHANNEL_NAME } from 'vs/workbench/services/remote/common/remoteFileSystemProviderClient';
+// eslint-disable-next-line code-import-patterns
+import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
 
 const eventPrefix = 'monacoworkbench';
 
@@ -126,10 +128,12 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	let appInsightsAppender: ITelemetryAppender = NullAppender;
 	const machineId = await getMachineId();
 	if (supportsTelemetry(productService, environmentService)) {
-		if (productService.aiConfig && productService.aiConfig.asimovKey) {
+		if (productService.aiConfig && productService.aiConfig.asimovKey !== 'foo') {
 			appInsightsAppender = new AppInsightsAppender(eventPrefix, null, productService.aiConfig.asimovKey);
 			disposables.add(toDisposable(() => appInsightsAppender!.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 		}
+
+		appInsightsAppender = new GitpodInsightsAppender(productService.nameShort, productService.version);
 
 		const config: ITelemetryServiceConfig = {
 			appenders: [appInsightsAppender],
@@ -181,7 +185,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	services.set(ICredentialsMainService, new SyncDescriptor(CredentialsMainService, [true]));
 
 	instantiationService.invokeFunction(accessor => {
-		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, extensionManagementCLIService, logService, productService);
+		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, extensionManagementCLIService, logService, productService, accessor.get(IRequestService));
 		socketServer.registerChannel('remoteextensionsenvironment', remoteExtensionEnvironmentChannel);
 
 		const telemetryChannel = new ServerTelemetryChannel(accessor.get(IServerTelemetryService), appInsightsAppender);

@@ -251,6 +251,35 @@ const apiMenus: IAPIMenu[] = [
 		supportsSubmenus: false,
 		proposed: 'inlineCompletions'
 	},
+
+	// Gitpod specific
+	// Hack:
+	// For now just use 'contribMenuBarHome' to avoid creating a file per extension point.
+	// Seems safe for now as the file will be empty either way
+	{
+		key: 'menuBar/help',
+		id: MenuId.MenubarHelpMenu,
+		description: localize('menus.help', "The top level help menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'menuBar/preferences',
+		id: MenuId.MenubarPreferencesMenu,
+		description: localize('menus.preferences', "The preferences menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'preferences/context',
+		id: MenuId.MenubarPreferencesMenu,
+		description: localize('menus.preferencesContext', "The preferences context menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'accounts/context',
+		id: MenuId.AccountsContext,
+		description: localize('menus.accountsContext', "The accounts context menu"),
+		proposed: 'contribMenuBarHome'
+	},
 ];
 
 namespace schema {

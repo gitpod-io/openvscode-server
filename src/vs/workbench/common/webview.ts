@@ -5,6 +5,7 @@
 
 import { CharCode } from 'vs/base/common/charCode';
 import { Schemas } from 'vs/base/common/network';
+import { isWeb } from 'vs/base/common/platform';
 import { URI } from 'vs/base/common/uri';
 
 export interface WebviewInitData {
@@ -14,13 +15,21 @@ export interface WebviewInitData {
 	};
 }
 
+let gitpodHost;
+if (!isWeb) {
+	gitpodHost = process.env['GITPOD_CODE_HOST'];
+	try {
+		gitpodHost = gitpodHost && new URL(gitpodHost).host;
+	} catch { }
+}
+
 /**
  * Root from which resources in webviews are loaded.
  *
  * This is hardcoded because we never expect to actually hit it. Instead these requests
  * should always go to a service worker.
  */
-export const webviewResourceBaseHost = 'vscode-webview.net';
+export const webviewResourceBaseHost = gitpodHost || 'vscode-webview.net';
 
 export const webviewRootResourceAuthority = `vscode-resource.${webviewResourceBaseHost}`;
 

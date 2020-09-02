@@ -394,7 +394,7 @@ export class AuthenticationService extends Disposable implements IAuthentication
 			? remoteConnection.remoteAuthority.startsWith('vsonline') || remoteConnection.remoteAuthority.startsWith('codespaces')
 			: isWeb;
 
-		if (isVSO && VSO_ALLOWED_EXTENSIONS.includes(extensionId)) {
+		if ((isVSO || true) && VSO_ALLOWED_EXTENSIONS.includes(extensionId)) {
 			return true;
 		}
 

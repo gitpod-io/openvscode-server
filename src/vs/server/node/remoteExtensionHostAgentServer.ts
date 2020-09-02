@@ -34,6 +34,8 @@ import { determineServerConnectionToken, requestHasValidConnectionToken as httpR
 import { IServerEnvironmentService, ServerParsedArgs } from 'vs/server/node/serverEnvironmentService';
 import { setupServerServices, SocketServer } from 'vs/server/node/serverServices';
 import { serveError, serveFile, WebClientServer } from 'vs/server/node/webClientServer';
+// eslint-disable-next-line code-import-patterns
+import { handleGitpodCLIRequest } from 'vs/gitpod/node/customServerIntegration';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
@@ -84,9 +86,9 @@ export class RemoteExtensionHostAgentServer extends Disposable {
 
 	public async handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
 		// Only serve GET requests
-		if (req.method !== 'GET') {
-			return serveError(req, res, 405, `Unsupported method ${req.method}`);
-		}
+		// if (req.method !== 'GET') {
+		// 	return serveError(req, res, 405, `Unsupported method ${req.method}`);
+		// }
 
 		if (!req.url) {
 			return serveError(req, res, 400, `Bad request.`);
@@ -97,6 +99,10 @@ export class RemoteExtensionHostAgentServer extends Disposable {
 
 		if (!pathname) {
 			return serveError(req, res, 400, `Bad request.`);
+		}
+
+		if (handleGitpodCLIRequest(pathname, req, res)) {
+			return;
 		}
 
 		// Version
@@ -684,7 +690,7 @@ export async function createServer(address: string | net.AddressInfo | null, arg
 		}
 	});
 
-	const hasWebClient = fs.existsSync(FileAccess.asFileUri('vs/code/browser/workbench/workbench.html', require).fsPath);
+	const hasWebClient = fs.existsSync(FileAccess.asFileUri('vs/gitpod/browser/workbench/workbench.html', require).fsPath);
 
 	if (hasWebClient && address && typeof address !== 'string') {
 		// ships the web ui!
