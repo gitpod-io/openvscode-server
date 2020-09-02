@@ -219,6 +219,19 @@ export interface IProductConfiguration {
 	readonly remoteDefaultExtensionsIfInstalledLocally?: string[];
 
 	readonly extensionConfigurationPolicy?: IStringDictionary<IPolicy>;
+
+	readonly segmentKey: string;
+	readonly gitpodPreview?: IGitpodPreviewConfiguration;
+}
+
+export interface IGitpodPreviewConfiguration {
+	host: string;
+	log?: {
+		analytics?: boolean;
+		metrics?: boolean;
+		errorReports?: boolean;
+	};
+	readonly chatParticipantRegistry?: string;
 }
 
 export interface ITunnelApplicationConfig {
