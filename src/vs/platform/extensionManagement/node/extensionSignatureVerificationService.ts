@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { importAMDNodeModule } from '../../../amdX.js';
 import { getErrorMessage } from '../../../base/common/errors.js';
 import { TargetPlatform } from '../../extensions/common/extensions.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
@@ -60,23 +59,30 @@ export class ExtensionSignatureVerificationService implements IExtensionSignatur
 
 	private vsceSign(): Promise<typeof vsceSign> {
 		if (!this.moduleLoadingPromise) {
-			this.moduleLoadingPromise = this.resolveVsceSign();
+			this.moduleLoadingPromise = new Promise(
+				(resolve, reject) => require(
+					['node-ovsx-sign'],
+					async (obj) => {
+						const instance = <typeof vsceSign>obj;
+
+						return resolve(instance);
+					}, reject));
 		}
 
 		return this.moduleLoadingPromise;
 	}
 
-	private async resolveVsceSign(): Promise<typeof vsceSign> {
-		// ESM-uncomment-begin
-		if (typeof importAMDNodeModule === 'function') { /* fixes unused import, remove me */ }
-		const mod = '@vscode/vsce-sign';
-		return import(mod);
-		// ESM-uncomment-end
+	// private async resolveVsceSign(): Promise<typeof vsceSign> {
+	// 	// ESM-uncomment-begin
+	// 	if (typeof importAMDNodeModule === 'function') { /* fixes unused import, remove me */ }
+	// 	const mod = '@vscode/vsce-sign';
+	// 	return import(mod);
+	// 	// ESM-uncomment-end
 
-		// ESM-comment-begin
-		// return importAMDNodeModule('@vscode/vsce-sign', 'src/main.js');
-		// ESM-comment-end
-	}
+	// 	// ESM-comment-begin
+	// 	return importAMDNodeModule('@vscode/vsce-sign', 'src/main.js');
+	// 	// ESM-comment-end
+	// }
 
 	public async verify(extensionId: string, version: string, vsixFilePath: string, signatureArchiveFilePath: string, clientTargetPlatform?: TargetPlatform): Promise<IExtensionSignatureVerificationResult | undefined> {
 		let module: typeof vsceSign;

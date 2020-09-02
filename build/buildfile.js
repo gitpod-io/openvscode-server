@@ -95,7 +95,7 @@ exports.workbenchWeb = function () {
 	] : [
 		...createEditorWorkerModuleDescription('vs/workbench/contrib/output/common/outputLinkComputer'),
 		...createEditorWorkerModuleDescription('vs/workbench/services/textMate/browser/backgroundTokenization/worker/textMateTokenizationWorker.worker'),
-		createModuleDescription('vs/code/browser/workbench/workbench', ['vs/workbench/workbench.web.main.internal'])
+		createModuleDescription('vs/gitpod/browser/workbench/workbench', ['vs/workbench/workbench.web.main.internal'])
 	];
 };
 
@@ -114,7 +114,8 @@ exports.code = [
 ];
 
 exports.codeWeb = [
-	createModuleDescription('vs/code/browser/workbench/workbench')
+	// createModuleDescription('vs/code/browser/workbench/workbench')
+	createModuleDescription('vs/gitpod/browser/workbench/workbench')
 ];
 
 exports.entrypoint = createModuleDescription;
