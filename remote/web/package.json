@@ -3,6 +3,9 @@
 	"version": "0.0.0",
 	"private": true,
 	"dependencies": {
+		"@gitpod/ide-metrics-api-grpcweb": "main-gha",
+		"@gitpod/local-app-api-grpcweb": "0.1.5-hw-fix-code-nightly-gha.29105",
+		"@jeanp413/analytics-node-umd": "^1.1.0",
 		"@microsoft/1ds-core-js": "^3.2.13",
 		"@microsoft/1ds-post-js": "^3.2.13",
 		"@vscode/iconv-lite-umd": "0.7.0",
@@ -18,6 +21,7 @@
 		"@xterm/addon-webgl": "^0.19.0-beta.112",
 		"@xterm/xterm": "^5.6.0-beta.112",
 		"jschardet": "3.1.4",
+		"@zip.js/zip.js": "^2.4.6",
 		"tas-client-umd": "0.2.0",
 		"vscode-oniguruma": "1.7.0",
 		"vscode-textmate": "9.2.0"
