@@ -73,6 +73,8 @@ import { ExtensionsProfileScannerService, IExtensionsProfileScannerService } fro
 import { IUserDataProfilesService, UserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { NullPolicyService } from 'vs/platform/policy/common/policy';
 import { OneDataSystemAppender } from 'vs/platform/telemetry/node/1dsAppender';
+// eslint-disable-next-line code-import-patterns
+import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
 
 const eventPrefix = 'monacoworkbench';
 
@@ -132,10 +134,12 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	let oneDsAppender: ITelemetryAppender = NullAppender;
 	const machineId = await getMachineId();
 	if (supportsTelemetry(productService, environmentService)) {
-		if (productService.aiConfig && productService.aiConfig.ariaKey) {
+		if (productService.aiConfig && productService.aiConfig.ariaKey !== 'foo') {
 			oneDsAppender = new OneDataSystemAppender(configurationService, eventPrefix, null, productService.aiConfig.ariaKey);
 			disposables.add(toDisposable(() => oneDsAppender?.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 		}
+
+		oneDsAppender = new GitpodInsightsAppender(productService.nameShort, productService.version);
 
 		const config: ITelemetryServiceConfig = {
 			appenders: [oneDsAppender],
