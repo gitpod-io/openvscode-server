@@ -9,7 +9,7 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { MenuId, registerAction2, Action2 } from 'vs/platform/actions/common/actions';
-import { ProductContribution, UpdateContribution, CONTEXT_UPDATE_STATE, SwitchProductQualityContribution, RELEASE_NOTES_URL, showReleaseNotesInEditor, DOWNLOAD_URL } from 'vs/workbench/contrib/update/browser/update';
+import { ProductContribution, UpdateContribution, CONTEXT_UPDATE_STATE, SwitchProductQualityContribution, RELEASE_NOTES_URL, showReleaseNotesInEditor/* , DOWNLOAD_URL */ } from 'vs/workbench/contrib/update/browser/update';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import product from 'vs/platform/product/common/product';
 import { IUpdateService, StateType } from 'vs/platform/update/common/update';
@@ -18,11 +18,11 @@ import { isWindows } from 'vs/base/common/platform';
 import { IFileDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { mnemonicButtonLabel } from 'vs/base/common/labels';
 import { ShowCurrentReleaseNotesActionId, ShowCurrentReleaseNotesFromCurrentFileActionId } from 'vs/workbench/contrib/update/common/update';
-import { IsWebContext } from 'vs/platform/contextkey/common/contextkeys';
+// import { IsWebContext } from 'vs/platform/contextkey/common/contextkeys';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IProductService } from 'vs/platform/product/common/productService';
 import { URI } from 'vs/base/common/uri';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
+import { /* ContextKeyExpr,  */RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 
 const workbench = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
 
@@ -96,8 +96,8 @@ export class ShowCurrentReleaseNotesFromCurrentFileAction extends Action2 {
 	}
 }
 
-registerAction2(ShowCurrentReleaseNotesAction);
-registerAction2(ShowCurrentReleaseNotesFromCurrentFileAction);
+// registerAction2(ShowCurrentReleaseNotesAction);
+// registerAction2(ShowCurrentReleaseNotesFromCurrentFileAction);
 
 // Update
 
@@ -167,6 +167,8 @@ class RestartToUpdateAction extends Action2 {
 	}
 }
 
+const CONTEXT_DONT_SHOW_DOWNLOAD_ACTION = new RawContextKey<false>('doNotShowDownloadAction', false);
+
 class DownloadAction extends Action2 {
 
 	static readonly ID = 'workbench.action.download';
@@ -175,11 +177,11 @@ class DownloadAction extends Action2 {
 		super({
 			id: DownloadAction.ID,
 			title: localize2('openDownloadPage', "Download {0}", product.nameLong),
-			precondition: ContextKeyExpr.and(IsWebContext, DOWNLOAD_URL), // Only show when running in a web browser and a download url is available
+			precondition: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION, // Only show when running in a web browser and a download url is available
 			f1: true,
 			menu: [{
 				id: MenuId.StatusBarWindowIndicatorMenu,
-				when: ContextKeyExpr.and(IsWebContext, DOWNLOAD_URL)
+				when: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION
 			}]
 		});
 	}

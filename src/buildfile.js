@@ -64,7 +64,7 @@ exports.workbenchDesktop = [
 exports.workbenchWeb = [
 	createEditorWorkerModuleDescription('vs/workbench/contrib/output/common/outputLinkComputer'),
 	createEditorWorkerModuleDescription('vs/workbench/services/textMate/browser/backgroundTokenization/worker/textMateTokenizationWorker.worker'),
-	createModuleDescription('vs/code/browser/workbench/workbench', ['vs/workbench/workbench.web.main'])
+	createModuleDescription('vs/gitpod/browser/workbench/workbench', ['vs/workbench/workbench.web.main'])
 ];
 
 exports.keyboardMaps = [
