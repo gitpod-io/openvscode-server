@@ -351,7 +351,12 @@ function packageTask(type, platform, arch, sourceFolderName, destinationFolderNa
 			out: `out-vscode-${type}`,
 			inlineAmdImages: true,
 			bundleInfo: undefined,
-			fileContentMapper: createVSCodeWebFileContentMapper('.build/extensions')
+			fileContentMapper: createVSCodeWebFileContentMapper('.build/extensions'),
+			header: [
+				'/*!-----------------------------------------',
+				' * Copyright (c) Gitpod. All rights reserved.',
+				' *-----------------------------------------*/'
+			].join('\n')
 		})
 	));
 
