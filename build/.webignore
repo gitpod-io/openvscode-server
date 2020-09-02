@@ -46,6 +46,14 @@ xterm-addon-webgl/out/**
 !@microsoft/applicationinsights-core-js/browser/applicationinsights-core-js.min.js
 !@microsoft/applicationinsights-shims/dist/umd/applicationinsights-shims.min.js
 
+@improbable-eng/**
+!@improbable-eng/grpc-web/dist/grpc-web-client.umd.js
 
+@gitpod/**
+!@gitpod/local-app-api-grpcweb/lib/localapp.js
 
+browser-headers/**
+google-protobuf/**
 
+@zip.js/**
+!@zip.js/zip.js/dist/zip-no-worker-deflate.min.js
