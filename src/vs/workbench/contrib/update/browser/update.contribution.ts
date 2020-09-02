@@ -6,23 +6,23 @@
 import '../../../../platform/update/common/update.config.contribution.js';
 import { localize, localize2 } from '../../../../nls.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
-import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../common/contributions.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../../workbench/common/contributions.js';
 import { Categories } from '../../../../platform/action/common/actionCommonCategories.js';
 import { MenuId, registerAction2, Action2 } from '../../../../platform/actions/common/actions.js';
-import { ProductContribution, UpdateContribution, CONTEXT_UPDATE_STATE, SwitchProductQualityContribution, RELEASE_NOTES_URL, showReleaseNotesInEditor, DOWNLOAD_URL } from './update.js';
-import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+import { ProductContribution, UpdateContribution, CONTEXT_UPDATE_STATE, SwitchProductQualityContribution, RELEASE_NOTES_URL, showReleaseNotesInEditor/* , DOWNLOAD_URL */ } from '../../../../workbench/contrib/update/browser/update.js';
+import { LifecyclePhase } from '../../../../workbench/services/lifecycle/common/lifecycle.js';
 import product from '../../../../platform/product/common/product.js';
 import { IUpdateService, StateType } from '../../../../platform/update/common/update.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
 import { isWindows } from '../../../../base/common/platform.js';
 import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.js';
 import { mnemonicButtonLabel } from '../../../../base/common/labels.js';
-import { ShowCurrentReleaseNotesActionId, ShowCurrentReleaseNotesFromCurrentFileActionId } from '../common/update.js';
-import { IsWebContext } from '../../../../platform/contextkey/common/contextkeys.js';
+import { ShowCurrentReleaseNotesActionId, ShowCurrentReleaseNotesFromCurrentFileActionId } from '../../../../workbench/contrib/update/common/update.js';
+// import { IsWebContext } from '../../../../platform/contextkey/common/contextkeys.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IProductService } from '../../../../platform/product/common/productService.js';
 import { URI } from '../../../../base/common/uri.js';
-import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
+import { /* ContextKeyExpr,  */RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 
 const workbench = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
 
@@ -96,8 +96,8 @@ export class ShowCurrentReleaseNotesFromCurrentFileAction extends Action2 {
 	}
 }
 
-registerAction2(ShowCurrentReleaseNotesAction);
-registerAction2(ShowCurrentReleaseNotesFromCurrentFileAction);
+// registerAction2(ShowCurrentReleaseNotesAction);
+// registerAction2(ShowCurrentReleaseNotesFromCurrentFileAction);
 
 // Update
 
@@ -167,6 +167,8 @@ class RestartToUpdateAction extends Action2 {
 	}
 }
 
+const CONTEXT_DONT_SHOW_DOWNLOAD_ACTION = new RawContextKey<false>('doNotShowDownloadAction', false);
+
 class DownloadAction extends Action2 {
 
 	static readonly ID = 'workbench.action.download';
@@ -175,11 +177,11 @@ class DownloadAction extends Action2 {
 		super({
 			id: DownloadAction.ID,
 			title: localize2('openDownloadPage', "Download {0}", product.nameLong),
-			precondition: ContextKeyExpr.and(IsWebContext, DOWNLOAD_URL), // Only show when running in a web browser and a download url is available
+			precondition: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION, // Only show when running in a web browser and a download url is available
 			f1: true,
 			menu: [{
 				id: MenuId.StatusBarWindowIndicatorMenu,
-				when: ContextKeyExpr.and(IsWebContext, DOWNLOAD_URL)
+				when: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION
 			}]
 		});
 	}
