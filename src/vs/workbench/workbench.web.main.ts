@@ -162,6 +162,10 @@ import 'vs/workbench/contrib/splash/browser/splash.contribution';
 // Remote Start Entry for the Web
 import 'vs/workbench/contrib/remote/browser/remoteStartEntry.contribution';
 
+// Gitpod: Export Logs command
+// eslint-disable-next-line local/code-import-patterns
+import 'vs/gitpod/browser/workbench/contrib/exportLogs.contribution';
+
 //#endregion
 
 

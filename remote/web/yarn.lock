@@ -2,6 +2,44 @@
 # yarn lockfile v1
 
 
+"@gitpod/ide-metrics-api-grpcweb@main-gha":
+  version "0.0.1-main-gha.13883"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-main-gha.13883.tgz#26083f81b893c68885e24355d49b2d8f5da92208"
+  integrity sha512-U0YpvD8ZcXM3u98HHZsyQ/B7OIH1FrqHIgqlZ8Rat6xfnvrbjr8PwTWKJUO+ud49CwTiQ6FnSh71DRIu+9aGWg==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+    google-protobuf "^3.19.1"
+
+"@gitpod/local-app-api-grpcweb@main-gha":
+  version "0.1.5-main-gha.13869"
+  resolved "https://registry.yarnpkg.com/@gitpod/local-app-api-grpcweb/-/local-app-api-grpcweb-0.1.5-main-gha.13869.tgz#6cc6e1d031fb8879ecde38b794376a3b4dd36c79"
+  integrity sha512-XKr7qcdQuzNt/T94/OYvvA7jBjwf9zvvdauaZ5B4zCLve8lAieNUo2eGaL2GZC8+DZCDRcZ5oYqtVg7sm1aRSQ==
+  dependencies:
+    "@gitpod/supervisor-api-grpcweb" "0.1.5-main-gha.13869"
+    "@improbable-eng/grpc-web" "0.14.0"
+    google-protobuf "^3.19.1"
+
+"@gitpod/supervisor-api-grpcweb@0.1.5-main-gha.13869":
+  version "0.1.5-main-gha.13869"
+  resolved "https://registry.yarnpkg.com/@gitpod/supervisor-api-grpcweb/-/supervisor-api-grpcweb-0.1.5-main-gha.13869.tgz#74948c471470320dc582e14f991ac94c568b24e7"
+  integrity sha512-lBmxxrYv8EJKzqxB6P+qllcOLzpaDt5S8wFxJ/Kym4C5jgkFRtiU+wRflisX2HuHW0tB2k0fM8PWllC48s+BXA==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+
+"@improbable-eng/grpc-web@0.14.0":
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.0.tgz#a71c5af471dcef6a2810798f71f93ed8d6ac3817"
+  integrity sha512-ag1PTMWpBZKGi6GrEcZ4lkU5Qag23Xjo10BmnK9qyx4TMmSVcWmQ3rECirfQzm2uogrM9n1M6xfOpFsJP62ivA==
+  dependencies:
+    browser-headers "^0.4.1"
+
+"@improbable-eng/grpc-web@^0.14.0":
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.1.tgz#f4662f64dc89c0f956a94bb8a3b576556c74589c"
+  integrity sha512-XaIYuunepPxoiGVLLHmlnVminUGzBTnXr8Wv7khzmLWbNw4TCwJKX09GSMJlKhu/TRk6gms0ySFxewaETSBqgw==
+  dependencies:
+    browser-headers "^0.4.1"
+
 "@microsoft/1ds-core-js@3.2.13", "@microsoft/1ds-core-js@^3.2.13":
   version "3.2.13"
   resolved "https://registry.yarnpkg.com/@microsoft/1ds-core-js/-/1ds-core-js-3.2.13.tgz#0c105ed75091bae3f1555c0334704fa9911c58fb"
@@ -84,6 +122,21 @@
   version "5.6.0-beta.51"
   resolved "https://registry.yarnpkg.com/@xterm/xterm/-/xterm-5.6.0-beta.51.tgz#3b9a5016d9588eb0a05226f6fc090b48a85b7698"
   integrity sha512-0i9gkiP2hhCMIRk5ACM8LJXHRd1umzC27ZDHD8n14vutrQRgdW4ENvCdmrWHiVJy4Ui1t7m70zdgg72shOgcEA==
+
+"@zip.js/zip.js@^2.4.6":
+  version "2.4.6"
+  resolved "https://registry.yarnpkg.com/@zip.js/zip.js/-/zip.js-2.4.6.tgz#eb284910f4dcbccb267c5ef76950fb84ee43bb74"
+  integrity sha512-gP13tvMy1bhaTWw5I/Sm3mJAOU7J8S18e4sAcscGzYY8NVUF8FRirfY17eYq+rZhRBk8SNg5bFzzWgFR47qSyw==
+
+browser-headers@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/browser-headers/-/browser-headers-0.4.1.tgz#4308a7ad3b240f4203dbb45acedb38dc2d65dd02"
+  integrity sha512-CA9hsySZVo9371qEHjHZtYxV2cFtVj5Wj/ZHi8ooEsrtm4vOnl9Y9HmyYWk9q+05d7K3rdoAE0j3MVEFVvtQtg==
+
+google-protobuf@^3.19.1:
+  version "3.21.0"
+  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.21.0.tgz#8dfa3fca16218618d373d414d3c1139e28034d6e"
+  integrity sha512-byR7MBTK4tZ5PZEb+u5ZTzpt4SfrTxv5682MjPlHN16XeqgZE2/8HOIWeiXe8JKnT9OVbtBGhbq8mtvkK8cd5g==
 
 js-base64@^3.7.5:
   version "3.7.7"
