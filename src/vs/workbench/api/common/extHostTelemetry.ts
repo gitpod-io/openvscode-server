@@ -293,10 +293,16 @@ export class ExtHostTelemetryLogger {
 			const obj: vscode.TelemetryLogger = {
 				logUsage: that.logUsage.bind(that),
 				get isUsageEnabled() {
-					return that._telemetryEnablements.isUsageEnabled;
+					// return that._telemetryEnablements.isUsageEnabled;
+					// return always false to prevent microsoft built-in extension and
+					// third-party like GHPR to send telemetry data
+					return false;
 				},
 				get isErrorsEnabled() {
-					return that._telemetryEnablements.isErrorsEnabled;
+					// return that._telemetryEnablements.isErrorsEnabled;
+					// return always false to prevent microsoft built-in extension and
+					// third-party like GHPR to send telemetry data
+					return false;
 				},
 				logError: that.logError.bind(that),
 				dispose: that.dispose.bind(that),

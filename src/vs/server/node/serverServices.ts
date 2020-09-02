@@ -66,7 +66,7 @@ import { ExtensionsScannerService } from './extensionsScannerService.js';
 import { IExtensionsProfileScannerService } from '../../platform/extensionManagement/common/extensionsProfileScannerService.js';
 import { IUserDataProfilesService } from '../../platform/userDataProfile/common/userDataProfile.js';
 import { NullPolicyService } from '../../platform/policy/common/policy.js';
-import { OneDataSystemAppender } from '../../platform/telemetry/node/1dsAppender.js';
+// import { OneDataSystemAppender } from '../../platform/telemetry/node/1dsAppender.js';
 import { LoggerService } from '../../platform/log/node/loggerService.js';
 import { ServerUserDataProfilesService } from '../../platform/userDataProfile/node/userDataProfile.js';
 import { ExtensionsProfileScannerService } from '../../platform/extensionManagement/node/extensionsProfileScannerService.js';
@@ -85,14 +85,19 @@ import { NativeMcpDiscoveryHelperChannel } from '../../platform/mcp/node/nativeM
 import { NativeMcpDiscoveryHelperService } from '../../platform/mcp/node/nativeMcpDiscoveryHelperService.js';
 import { IExtensionGalleryManifestService } from '../../platform/extensionManagement/common/extensionGalleryManifest.js';
 import { ExtensionGalleryManifestIPCService } from '../../platform/extensionManagement/common/extensionGalleryManifestServiceIpc.js';
+import { DownloadService } from '../../platform/download/common/downloadService.js';
+// eslint-disable-next-line local/code-import-patterns
+import { GitpodInsightsAppender } from '../../gitpod/node/gitpodInsightsAppender.js';
+// eslint-disable-next-line local/code-import-patterns
+import { addCustomGitpodProductProperties } from '../../gitpod/platform/product/common/product.js';
 
-const eventPrefix = 'monacoworkbench';
+// const eventPrefix = 'monacoworkbench';
 
 export async function setupServerServices(connectionToken: ServerConnectionToken, args: ServerParsedArgs, REMOTE_DATA_FOLDER: string, disposables: DisposableStore) {
 	const services = new ServiceCollection();
 	const socketServer = new SocketServer<RemoteAgentConnectionContext>();
 
-	const productService: IProductService = { _serviceBrand: undefined, ...product };
+	const productService: IProductService = { _serviceBrand: undefined, ...addCustomGitpodProductProperties(product) };
 	services.set(IProductService, productService);
 
 	const environmentService = new ServerEnvironmentService(args, productService);
@@ -162,7 +167,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	const isInternal = isInternalTelemetry(productService, configurationService);
 	if (supportsTelemetry(productService, environmentService)) {
 		if (!isLoggingOnly(productService, environmentService) && productService.aiConfig?.ariaKey) {
-			oneDsAppender = new OneDataSystemAppender(requestService, isInternal, eventPrefix, null, productService.aiConfig.ariaKey);
+			oneDsAppender = new GitpodInsightsAppender(productService.segmentKey, productService.nameShort, productService.version, productService.gitpodPreview, productService.extensionsGallery?.serviceUrl);/* new OneDataSystemAppender(requestService, isInternal, eventPrefix, null, productService.aiConfig.ariaKey); */
 			disposables.add(toDisposable(() => oneDsAppender?.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 		}
 
@@ -228,7 +233,8 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 
 		socketServer.registerChannel(REMOTE_TERMINAL_CHANNEL_NAME, new RemoteTerminalChannel(environmentService, logService, ptyHostService, productService, extensionManagementService, configurationService));
 
-		const remoteExtensionsScanner = new RemoteExtensionsScannerService(instantiationService.createInstance(ExtensionManagementCLI, logService), environmentService, userDataProfilesService, extensionsScannerService, logService, extensionGalleryService, languagePackService, extensionManagementService);
+		const nativeDownloadService = new DownloadService(accessor.get(IRequestService), accessor.get(IFileService));
+		const remoteExtensionsScanner = new RemoteExtensionsScannerService(instantiationService.createInstance(ExtensionManagementCLI, logService), environmentService, userDataProfilesService, extensionsScannerService, logService, extensionGalleryService, languagePackService, extensionManagementService, nativeDownloadService);
 		socketServer.registerChannel(RemoteExtensionsScannerChannelName, new RemoteExtensionsScannerChannel(remoteExtensionsScanner, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));
 
 		socketServer.registerChannel(NativeMcpDiscoveryHelperChannelName, instantiationService.createInstance(NativeMcpDiscoveryHelperChannel, (ctx: RemoteAgentConnectionContext) => getUriTransformer(ctx.remoteAuthority)));

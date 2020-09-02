@@ -165,6 +165,10 @@ import './contrib/splash/browser/splash.contribution.js';
 // Remote Start Entry for the Web
 import './contrib/remote/browser/remoteStartEntry.contribution.js';
 
+// Gitpod: Export Logs command
+// eslint-disable-next-line local/code-import-patterns
+import '../gitpod/browser/workbench/contrib/exportLogs.contribution.js';
+
 //#endregion
 
 
