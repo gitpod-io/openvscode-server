@@ -4,7 +4,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildExtensionMedia = exports.webpackExtensions = exports.translatePackageJSON = exports.scanBuiltinExtensions = exports.packageMarketplaceExtensionsStream = exports.packageLocalExtensionsStream = exports.fromGithub = exports.fromMarketplace = void 0;
+exports.buildExtensionMedia = exports.webpackExtensions = exports.translatePackageJSON = exports.scanBuiltinExtensions = exports.packageMarketplaceExtensionsStream = exports.packageLocalExtensionsStream = exports.fromGithub = exports.fromMarketplace = exports.fromLocal = exports.minifyExtensionResources = void 0;
 const es = require("event-stream");
 const fs = require("fs");
 const cp = require("child_process");
@@ -46,6 +46,7 @@ function minifyExtensionResources(input) {
     }))
         .pipe(jsonFilter.restore);
 }
+exports.minifyExtensionResources = minifyExtensionResources;
 function updateExtensionPackageJSON(input, update) {
     const packageJsonFilter = filter('extensions/*/package.json', { restore: true });
     return input
@@ -77,6 +78,7 @@ function fromLocal(extensionPath, forWeb) {
     }
     return input;
 }
+exports.fromLocal = fromLocal;
 function fromLocalWebpack(extensionPath, webpackConfigFileName) {
     const result = es.through();
     const packagedDependencies = [];
@@ -247,6 +249,10 @@ const excludedExtensions = [
     'ms-vscode.node-debug',
     'ms-vscode.node-debug2',
     'vscode-notebook-tests',
+    'github-authentication',
+    'gitpod-shared',
+    'gitpod-remote',
+    'gitpod',
 ];
 const marketplaceWebExtensionsExclude = new Set([
     'ms-vscode.node-debug',
