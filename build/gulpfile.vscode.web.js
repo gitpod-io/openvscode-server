@@ -33,7 +33,7 @@ const version = (quality && quality !== 'stable') ? `${packageJson.version}-${qu
 const vscodeWebResourceIncludes = [
 	// Workbench
 	'out-build/vs/{base,platform,editor,workbench}/**/*.{svg,png,jpg,mp3}',
-	'out-build/vs/code/browser/workbench/*.html',
+	'out-build/vs/gitpod/browser/workbench/*.html',
 	'out-build/vs/base/browser/ui/codicons/codicon/**/*.ttf',
 	'out-build/vs/**/markdown.css',
 
@@ -175,7 +175,7 @@ const optimizeVSCodeWebTask = task.define('optimize-vscode-web', task.series(
 const minifyVSCodeWebTask = task.define('minify-vscode-web', task.series(
 	optimizeVSCodeWebTask,
 	util.rimraf('out-vscode-web-min'),
-	optimize.minifyTask('out-vscode-web', `https://ticino.blob.core.windows.net/sourcemaps/${commit}/core`)
+	optimize.minifyTask('out-vscode-web')
 ));
 gulp.task(minifyVSCodeWebTask);
 
@@ -191,7 +191,7 @@ function packageTask(sourceFolderName, destinationFolderName) {
 		const extensions = gulp.src('.build/web/extensions/**', { base: '.build/web', dot: true });
 
 		const sources = es.merge(src, extensions)
-			.pipe(filter(['**', '!**/*.js.map'], { dot: true }));
+			.pipe(filter(['**'], { dot: true }));
 
 		const name = product.nameShort;
 		const packageJsonStream = gulp.src(['remote/web/package.json'], { base: 'remote/web' })

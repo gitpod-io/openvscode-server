@@ -157,6 +157,10 @@ import 'vs/workbench/contrib/issue/browser/issue.contribution';
 // Splash
 import 'vs/workbench/contrib/splash/browser/splash.contribution';
 
+// Gitpod: Export Logs command
+// eslint-disable-next-line local/code-import-patterns
+import 'vs/gitpod/browser/workbench/contrib/exportLogs.contribution';
+
 //#endregion
 
 
