@@ -36,3 +36,12 @@ xterm-addon-webgl/out/**
 @microsoft/applicationinsights*/**
 @microsoft/dynamicproto-js/**
 !@microsoft/applicationinsights-web/dist/applicationinsights-web.min.js
+
+@improbable-eng/**
+!@improbable-eng/grpc-web/dist/grpc-web-client.umd.js
+
+@gitpod/**
+!@gitpod/local-app-api-grpcweb/lib/localapp.js
+
+browser-headers/**
+google-protobuf/**

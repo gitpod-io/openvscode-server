@@ -145,4 +145,11 @@ xterm-addon-*/fixtures/**
 xterm-addon-*/out/**
 xterm-addon-*/out-test/**
 
+@improbable-eng/**
+!@improbable-eng/grpc-web/dist/grpc-web-client.umd.js
 
+@gitpod/**
+!@gitpod/local-app-api-grpcweb/lib/localapp.js
+
+browser-headers/**
+google-protobuf/**
