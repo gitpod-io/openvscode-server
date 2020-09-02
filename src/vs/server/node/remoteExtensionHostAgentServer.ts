@@ -41,6 +41,9 @@ import { setupServerServices, SocketServer } from './serverServices.js';
 import { CacheControl, serveError, serveFile, WebClientServer } from './webClientServer.js';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
+// ESM-uncomment-end
+// eslint-disable-next-line local/code-import-patterns
+import { handleGitpodCLIRequest } from '../../gitpod/node/customServerIntegration.js';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
@@ -99,9 +102,9 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 
 	public async handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
 		// Only serve GET requests
-		if (req.method !== 'GET') {
-			return serveError(req, res, 405, `Unsupported method ${req.method}`);
-		}
+		// if (req.method !== 'GET') {
+		// 	return serveError(req, res, 405, `Unsupported method ${req.method}`);
+		// }
 
 		if (!req.url) {
 			return serveError(req, res, 400, `Bad request.`);
@@ -112,6 +115,10 @@ class RemoteExtensionHostAgentServer extends Disposable implements IServerAPI {
 
 		if (!pathname) {
 			return serveError(req, res, 400, `Bad request.`);
+		}
+
+		if (handleGitpodCLIRequest(pathname, req, res)) {
+			return;
 		}
 
 		// for now accept all paths, with or without server root path
@@ -782,7 +789,8 @@ export async function createServer(address: string | net.AddressInfo | null, arg
 		serverBasePath = `/${serverBasePath}`;
 	}
 
-	const hasWebClient = fs.existsSync(FileAccess.asFileUri(`vs/code/browser/workbench/workbench.html`).fsPath);
+	// const hasWebClient = fs.existsSync(FileAccess.asFileUri(`vs/code/browser/workbench/workbench.html`).fsPath);
+	const hasWebClient = fs.existsSync(FileAccess.asFileUri(`vs/gitpod/browser/workbench/workbench.html`).fsPath);
 
 	if (hasWebClient && address && typeof address !== 'string') {
 		// ships the web ui!
