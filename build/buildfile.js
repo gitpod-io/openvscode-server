@@ -46,7 +46,8 @@ exports.code = [
 	createModuleDescription('vs/code/electron-browser/workbench/workbench'),
 ];
 
-exports.codeWeb = createModuleDescription('vs/code/browser/workbench/workbench');
+// exports.codeWeb = createModuleDescription('vs/code/browser/workbench/workbench');
+exports.codeWeb = createModuleDescription('vs/gitpod/browser/workbench/workbench');
 
 exports.codeServer = [
 	// 'vs/server/node/server.main' is not included here because it gets inlined via ./src/server-main.js

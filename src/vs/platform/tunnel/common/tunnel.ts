@@ -145,14 +145,20 @@ export function extractLocalHostUriMetaDataForPortMapping(uri: URI): { address: 
 	if (uri.scheme !== 'http' && uri.scheme !== 'https') {
 		return undefined;
 	}
-	const localhostMatch = /^(localhost|127\.0\.0\.1|0\.0\.0\.0):(\d+)$/.exec(uri.authority);
+	const localhostMatch = /^(localhost|127(?:\.[0-9]+){0,2}\.[0-9]+|0+(?:\.0+){0,2}\.0+|\[(?:0*\:)*?:?0*1?\])(?::(\d+))?$/.exec(uri.authority);
 	if (!localhostMatch) {
 		return undefined;
 	}
-	return {
-		address: localhostMatch[1],
-		port: +localhostMatch[2],
-	};
+
+	let address = localhostMatch[1];
+	if (address.startsWith('[') && address.endsWith(']')) {
+		address = address.substr(1, address.length - 2);
+	}
+	let port = +localhostMatch[2];
+	if (Number.isNaN(port)) {
+		port = uri.scheme === 'http' ? 80 : 443;
+	}
+	return { address, port };
 }
 
 export function extractQueryLocalHostUriMetaDataForPortMapping(uri: URI): { address: string; port: number } | undefined {

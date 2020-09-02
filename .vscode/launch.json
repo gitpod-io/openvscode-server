@@ -335,7 +335,15 @@
 			"presentation": {
 				"group": "0_vscode",
 				"order": 2
-			}
+			},
+			"env": {
+				"VSCODE_DEV": "1",
+				"NODE_ENV": "development"
+			},
+			"args": [
+				"--host=127.0.0.1",
+				"--without-connection-token"
+			]
 		},
 		{
 			"type": "node",

@@ -67,7 +67,7 @@ export class ExtensionSignatureVerificationService implements IExtensionSignatur
 	}
 
 	private async resolveVsceSign(): Promise<typeof vsceSign> {
-		const mod = '@vscode/vsce-sign';
+		const mod = 'node-ovsx-sign';
 		return import(mod);
 	}
 
