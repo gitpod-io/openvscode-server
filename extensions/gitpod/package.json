@@ -49,12 +49,16 @@
         "title": "%openDocumentation%"
       },
       {
-        "command": "gitpod.open.follow",
-        "title": "%openFollow%"
+        "command": "gitpod.open.twitter",
+        "title": "%openTwitter%"
       },
       {
-        "command": "gitpod.open.community",
-        "title": "%openCommunity%"
+        "command": "gitpod.open.discord",
+        "title": "%openDiscord%"
+      },
+      {
+        "command": "gitpod.open.discourse",
+        "title": "%openDiscourse%"
       },
       {
         "command": "gitpod.reportIssue",
@@ -231,11 +235,15 @@
           "group": "remote_00_gitpod_navigation@60"
         },
         {
-          "command": "gitpod.open.follow",
+          "command": "gitpod.open.twitter",
           "group": "remote_00_gitpod_navigation@70"
         },
         {
-          "command": "gitpod.open.community",
+          "command": "gitpod.open.discord",
+          "group": "remote_00_gitpod_navigation@80"
+        },
+        {
+          "command": "gitpod.open.discourse",
           "group": "remote_00_gitpod_navigation@80"
         },
         {

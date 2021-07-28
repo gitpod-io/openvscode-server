@@ -165,10 +165,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.documentation', () =>
 		vscode.env.openExternal(vscode.Uri.parse('https://www.gitpod.io/docs'))
 	));
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.community', () =>
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.discord', () =>
+		vscode.env.openExternal(vscode.Uri.parse('https://www.gitpod.io/chat'))
+	));
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.discourse', () =>
 		vscode.env.openExternal(vscode.Uri.parse('https://community.gitpod.io'))
 	));
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.follow', () =>
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.twitter', () =>
 		vscode.env.openExternal(vscode.Uri.parse('https://twitter.com/gitpod'))
 	));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.reportIssue', () =>
