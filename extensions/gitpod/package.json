@@ -196,11 +196,15 @@
       ],
       "menuBar/help": [
         {
-          "command": "gitpod.open.follow",
+          "command": "gitpod.open.openTwitter",
           "group": "z_about2@10"
         },
         {
-          "command": "gitpod.open.community",
+          "command": "gitpod.open.openDiscord",
+          "group": "z_about2@20"
+        },
+        {
+          "command": "gitpod.open.openDiscourse",
           "group": "z_about2@20"
         },
         {
