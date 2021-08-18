@@ -28,8 +28,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerCLI(gitpodContext);
 
 	// For port tunneling we rely on Remote SSH capabilities
-	// and gitpod.gitpod-ui to disable auto tunneling from the current local machine.
-	vscode.commands.executeCommand('gitpod-ui.api.autoTunnel', gitpodContext.info.getInstanceId(), false);
+	// and gitpod.gitpod-desktop to disable auto tunneling from the current local machine.
+	vscode.commands.executeCommand('gitpod-desktop.api.autoTunnel', gitpodContext.info.getGitpodHost(), gitpodContext.info.getInstanceId(), false);
 
 	// TODO
 	// - auth?

@@ -1,9 +1,9 @@
 {
-	"name": "gitpod-ui",
+	"name": "gitpod-desktop",
 	"displayName": "%displayName%",
 	"description": "%description%",
 	"publisher": "gitpod",
-	"version": "0.0.11",
+	"version": "0.0.14",
 	"license": "MIT",
 	"preview": true,
 	"repository": {
@@ -21,20 +21,27 @@
 	],
 	"activationEvents": [
 		"*",
-		"onCommand:gitpod-ui.api.autoTunnel"
+		"onCommand:gitpod-desktop.api.autoTunnel"
 	],
 	"main": "./out/extension.js",
 	"scripts": {
-		"compile": "gulp compile-extension:gitpod-ui",
-		"watch": "gulp watch-extension:gitpod-ui",
+		"compile": "gulp compile-extension:gitpod-desktop",
+		"watch": "gulp watch-extension:gitpod-desktop",
 		"vscode:prepublish": "npm run compile"
 	},
 	"devDependencies": {
-		"@types/node": "^10.12.21"
+		"@types/node": "^10.12.21",
+		"@types/node-fetch": "^2.5.12",
+		"@types/tmp": "^0.2.1"
 	},
 	"dependencies": {
-		"@gitpod/local-app-api-grpcweb": "ak-remote-ssh",
+		"@gitpod/local-app-api-grpcweb": "ak-vscode-desktop",
 		"@improbable-eng/grpc-web-node-http-transport": "^0.14.0",
+		"node-fetch": "^2.6.1",
+		"tmp": "^0.2.1",
 		"vscode-nls": "^5.0.0"
-	}
+	},
+	"extensionDependencies": [
+		"ms-vscode-remote.remote-ssh"
+	]
 }

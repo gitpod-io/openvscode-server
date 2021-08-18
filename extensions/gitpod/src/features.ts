@@ -357,6 +357,33 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		vscode.env.openExternal(vscode.Uri.parse('https://github.com/gitpod-io/gitpod/issues/new/choose'))
 	));
 
+	if (vscode.env.uiKind === vscode.UIKind.Web) {
+		vscode.commands.executeCommand('setContext', 'gitpod.UIKind', 'web');
+		function openDesktop(scheme: 'vscode' | 'vscode-insiders'): void {
+			const uri = vscode.workspace.workspaceFile || vscode.workspace.workspaceFolders?.[0]?.uri;
+			vscode.env.openExternal(vscode.Uri.from({
+				scheme,
+				authority: 'gitpod.gitpod-desktop',
+				path: uri?.path || context.info.getWorkspaceLocationFile() || context.info.getWorkspaceLocationFolder() || context.info.getCheckoutLocation(),
+				query: JSON.stringify({
+					instanceId: context.info.getInstanceId(),
+					workspaceId: context.info.getWorkspaceId(),
+					gitpodHost: context.info.getGitpodHost()
+				})
+			}));
+		}
+		context.subscriptions.push(vscode.commands.registerCommand('gitpod.openInStable', () => openDesktop('vscode')));
+		context.subscriptions.push(vscode.commands.registerCommand('gitpod.openInInsiders', () => openDesktop('vscode-insiders')));
+	}
+	// TODO(ak) fetch from supervisor info endpoint
+	const workspaceUrl = process.env.GITPOD_WORKSPACE_URL;
+	if (vscode.env.uiKind === vscode.UIKind.Desktop && workspaceUrl) {
+		vscode.commands.executeCommand('setContext', 'gitpod.UIKind', 'desktop');
+		context.subscriptions.push(vscode.commands.registerCommand('gitpod.openInBrowser', () =>
+			vscode.env.openExternal(vscode.Uri.parse(workspaceUrl))
+		));
+	}
+
 	const communityStatusBarItem = vscode.window.createStatusBarItem('gitpod.community', vscode.StatusBarAlignment.Right, -100);
 	communityStatusBarItem.name = 'Chat with us on Discourse';
 	context.subscriptions.push(communityStatusBarItem);

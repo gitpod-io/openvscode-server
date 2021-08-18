@@ -100,6 +100,14 @@
 			"command": "gitpod.stop.ws",
 			"group": "gitpod@50",
 			"when": "gitpod.workspaceOwned == true"
+		  },
+		  {
+			"command": "gitpod.openInStable",
+			"group": "gitpod@60"
+		  },
+		  {
+			"command": "gitpod.openInInsiders",
+			"group": "gitpod@70"
 		  }
 		],
 		"accounts/context": [

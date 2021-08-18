@@ -68,7 +68,7 @@ const compilations = [
 	'gitpod/tsconfig.json',
 	'gitpod-remote-ssh/tsconfig.json',
 	'gitpod-web/tsconfig.json',
-	'gitpod-ui/tsconfig.json',
+	'gitpod-desktop/tsconfig.json',
 ];
 
 const getBaseUrl = out => `https://ticino.blob.core.windows.net/sourcemaps/${commit}/${out}`;

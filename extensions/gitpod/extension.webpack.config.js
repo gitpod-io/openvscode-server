@@ -17,10 +17,5 @@ module.exports = withDefaults({
 	},
 	externals: {
 		'keytar': 'commonjs keytar'
-	},
-	resolve: {
-		alias: {
-			'uuid': path.resolve(__dirname, 'node_modules/uuid/dist/esm-node/index.js')
-		}
 	}
 });

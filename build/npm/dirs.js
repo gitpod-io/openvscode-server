@@ -45,7 +45,7 @@ exports.dirs = [
 	'extensions/gitpod',
 	'extensions/gitpod-remote-ssh',
 	'extensions/gitpod-web',
-	'extensions/gitpod-ui',
+	'extensions/gitpod-desktop',
 	'remote',
 	'remote/web',
 	'test/automation',

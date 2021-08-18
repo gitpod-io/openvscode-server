@@ -207,7 +207,7 @@ const excludedExtensions = [
     'vscode-custom-editor-tests',
     'github-authentication',
     'gitpod-remote-ssh',
-    'gitpod-ui',
+    'gitpod-desktop',
 ];
 const marketplaceWebExtensionsExclude = new Set([
     'ms-vscode.node-debug',

@@ -5,7 +5,6 @@
 import * as vscode from 'vscode';
 import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
 import { GitpodExtension } from './gitpod';
-import { v4 } from 'uuid';
 import { performance } from 'perf_hooks';
 
 let gitpodContext: GitpodExtensionContext | undefined;
@@ -16,8 +15,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Gitpod
 
 	gitpodContext = await createGitpodExtensionContext(context);
 	if (!gitpodContext) {
+		vscode.commands.executeCommand('setContext', 'gitpod.inWorkspace', false);
 		return undefined;
 	}
+	vscode.commands.executeCommand('setContext', 'gitpod.inWorkspace', true);
 	registerUsageAnalytics(gitpodContext);
 	registerWorkspaceCommands(gitpodContext);
 	registerWorkspaceSharing(gitpodContext);
@@ -42,9 +43,8 @@ function registerUsageAnalytics(context: GitpodExtensionContext): void {
 	if (context.devMode && vscode.env.uiKind === vscode.UIKind.Web) {
 		return;
 	}
-	const sessionId = v4();
 	const properties = {
-		id: sessionId,
+		id: vscode.env.sessionId,
 		workspaceId: context.info.getWorkspaceId(),
 		appName: vscode.env.appName,
 		uiKind: vscode.env.uiKind === vscode.UIKind.Web ? 'web' : 'desktop',
