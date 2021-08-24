@@ -75,7 +75,7 @@ main({
 	port,
 	main: path.join(APP_ROOT, 'out', 'vs', 'gitpod', 'browser', 'workbench', 'workbench.html'),
 	mainDev: path.join(APP_ROOT, 'out', 'vs', 'gitpod', 'browser', 'workbench', 'workbench-dev.html'),
-	skipExtensions: new Set(['vscode.github-authentication', 'gitpod.gitpod-remote-ssh', 'gitpod.gitpod-desktop']),
+	skipExtensions: new Set(['vscode.github-authentication', 'gitpod.gitpod-shared', 'gitpod.gitpod-remote-ssh', 'gitpod.gitpod-desktop']),
 	configure: services => {
 		services.set(IExtensionManagementCLIService, new SyncDescriptor(ExtensionManagementCLIService));
 	},

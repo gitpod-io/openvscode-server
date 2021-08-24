@@ -8,6 +8,13 @@
 import * as workspaceInstance from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
+import * as shared from 'gitpod-shared/out/extension';
+import { GitpodExtensionContext } from 'gitpod-shared/out/features';
+import { GitpodPluginModel } from 'gitpod-shared/out/gitpod-plugin-model';
+import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
+import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortAutoExposure, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
+import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
+import { ExposePortRequest } from '@gitpod/supervisor-api-grpc/lib/control_pb';
 import type * as keytarType from 'keytar';
 import fetch from 'node-fetch';
 import * as path from 'path';
@@ -16,15 +23,14 @@ import * as util from 'util';
 import * as vscode from 'vscode';
 import * as rpc from 'vscode-jsonrpc';
 import type { ServerExtensionHostConnection } from '../../../src/vs/gitpod/node/server-extension-host-connection';
-import type { GitpodExtension, GitpodExtensionContext, GitpodPluginModel, port, status } from 'gitpod/src/gitpod';
 import { ThrottledDelayer } from './async';
 
+let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
-	const gitpodExtension = vscode.extensions.getExtension<GitpodExtension | undefined>('gitpod.gitpod')!.exports;
-	if (!gitpodExtension) {
+	gitpodContext = await shared.createContext(context);
+	if (!gitpodContext) {
 		return;
 	}
-	const gitpodContext = gitpodExtension.newContext(context);
 	registerAuth(gitpodContext);
 	registerPorts(gitpodContext);
 
@@ -34,7 +40,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	await gitpodContext.active;
 }
 
-export function deactivate() { }
+export function deactivate() {
+	if (!gitpodContext) {
+		return;
+	}
+	return gitpodContext.dispose();
+}
 
 class MessageReader extends rpc.IPCMessageReader {
 	override listen(callback: rpc.DataCallback): void {
@@ -136,7 +147,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 					}
 				}
 			} else {
-				const getTokenRequest = new context.supervisor.GetTokenRequest();
+				const getTokenRequest = new GetTokenRequest();
 				getTokenRequest.setKind('gitpod');
 				getTokenRequest.setHost(context.info.getGitpodApi()!.getHost());
 				const scopes = [
@@ -205,7 +216,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 		}
 
 		async function loginGitHub(scopes?: readonly string[]): Promise<vscode.AuthenticationSession> {
-			const getTokenRequest = new context.supervisor.GetTokenRequest();
+			const getTokenRequest = new GetTokenRequest();
 			getTokenRequest.setKind('git');
 			getTokenRequest.setHost('github.com');
 			if (scopes) {
@@ -262,7 +273,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 }
 
 export class GitpodWorkspacePort extends vscode.TreeItem {
-	status?: status.PortsStatus.AsObject;
+	status?: PortsStatus.AsObject;
 	tunnel?: vscode.TunnelDescription;
 	readonly localUrl: string;
 	constructor(
@@ -304,8 +315,8 @@ export class GitpodWorkspacePort extends vscode.TreeItem {
 			});
 		}
 	}
-	async setTunnelVisibility(visibility: port.TunnelVisiblity): Promise<void> {
-		const request = new this.context.supervisor.TunnelPortRequest();
+	async setTunnelVisibility(visibility: TunnelVisiblity): Promise<void> {
+		const request = new TunnelPortRequest();
 		request.setPort(this.portNumber);
 		request.setTargetPort(this.portNumber);
 		request.setVisibility(visibility);
@@ -315,16 +326,16 @@ export class GitpodWorkspacePort extends vscode.TreeItem {
 	}
 }
 
-interface ExposedPort extends status.PortsStatus.AsObject {
-	exposed: status.ExposedPortInfo.AsObject
+interface ExposedPort extends PortsStatus.AsObject {
+	exposed: ExposedPortInfo.AsObject
 }
-function isExposedPort(port: status.PortsStatus.AsObject | undefined): port is ExposedPort {
+function isExposedPort(port: PortsStatus.AsObject | undefined): port is ExposedPort {
 	return !!port?.exposed;
 }
 interface ExposedServedPort extends ExposedPort {
 	served: true
 }
-function isExposedServedPort(port: status.PortsStatus.AsObject | undefined): port is ExposedServedPort {
+function isExposedServedPort(port: PortsStatus.AsObject | undefined): port is ExposedServedPort {
 	return isExposedPort(port) && !!port.served;
 }
 interface ExposedServedGitpodWorkspacePort extends GitpodWorkspacePort {
@@ -388,8 +399,8 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 		this.update();
 	}
 
-	private portStatus: status.PortsStatusResponse | undefined;
-	updatePortsStatus(portsStatus: status.PortsStatusResponse): void {
+	private portStatus: PortsStatusResponse | undefined;
+	updatePortsStatus(portsStatus: PortsStatusResponse): void {
 		this.portStatus = portsStatus;
 		this.update();
 	}
@@ -426,7 +437,7 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 					port.description = 'not served';
 					port.iconPath = new vscode.ThemeIcon('circle-outline');
 				} else if (!accessible) {
-					if (portStatus.getAutoExposure() === this.context.supervisor.PortAutoExposure.FAILED) {
+					if (portStatus.getAutoExposure() === PortAutoExposure.FAILED) {
 						port.description = 'failed to expose';
 						port.iconPath = new vscode.ThemeIcon('warning', new vscode.ThemeColor('editorWarning.foreground'));
 					} else {
@@ -439,7 +450,7 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 						port.description += ` on ${!!port.tunnel.public ? 'all interfaces' : 'localhost'}`;
 					}
 					if (exposed) {
-						port.description += ` ${exposed.getVisibility() === this.context.supervisor.PortVisibility.PUBLIC ? '(public)' : '(private)'}`;
+						port.description += ` ${exposed.getVisibility() === PortVisibility.PUBLIC ? '(public)' : '(private)'}`;
 					}
 					port.iconPath = new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('ports.iconRunningProcessForeground'));
 				}
@@ -450,7 +461,7 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 				}
 				if (exposed) {
 					port.contextValue = 'exposed-' + port.contextValue;
-					if (exposed.getVisibility() === this.context.supervisor.PortVisibility.PUBLIC) {
+					if (exposed.getVisibility() === PortVisibility.PUBLIC) {
 						port.contextValue = 'public-' + port.contextValue;
 					} else {
 						port.contextValue = 'private-' + port.contextValue;
@@ -464,7 +475,7 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 						port.contextValue = 'host-' + port.contextValue;
 					}
 				}
-				if (!accessible && portStatus.getAutoExposure() === this.context.supervisor.PortAutoExposure.FAILED) {
+				if (!accessible && portStatus.getAutoExposure() === PortAutoExposure.FAILED) {
 					port.contextValue = 'failed-' + port.contextValue;
 				}
 				if (isExposedServedGitpodWorkspacePort(port) && !isExposedServedPort(currentStatus)) {
@@ -496,7 +507,7 @@ export function registerPorts(context: GitpodExtensionContext): void {
 		(async () => {
 			while (run) {
 				try {
-					const req = new context.supervisor.PortsStatusRequest();
+					const req = new PortsStatusRequest();
 					req.setObserve(true);
 					const evts = context.supervisor.status.portsStatus(req, context.supervisor.metadata);
 					stopUpdates = evts.cancel.bind(evts);
@@ -504,7 +515,7 @@ export function registerPorts(context: GitpodExtensionContext): void {
 					await new Promise((resolve, reject) => {
 						evts.on('end', resolve);
 						evts.on('error', reject);
-						evts.on('data', (update: status.PortsStatusResponse) => {
+						evts.on('data', (update: PortsStatusResponse) => {
 							gitpodWorkspaceTreeDataProvider.updatePortsStatus(update);
 						});
 					});
@@ -544,7 +555,7 @@ export function registerPorts(context: GitpodExtensionContext): void {
 							listener.dispose();
 						}
 					});
-					const request = new context.supervisor.ExposePortRequest();
+					const request = new ExposePortRequest();
 					request.setPort(portNumber);
 					request.setTargetPort(portNumber);
 					await util.promisify(context.supervisor.control.exposePort.bind(context.supervisor.control, request, context.supervisor.metadata, {
@@ -563,10 +574,10 @@ export function registerPorts(context: GitpodExtensionContext): void {
 		port.setPortVisibility('public')
 	));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.tunnelNetwork', (port: GitpodWorkspacePort) =>
-		port.setTunnelVisibility(context.supervisor.TunnelVisiblity.NETWORK)
+		port.setTunnelVisibility(TunnelVisiblity.NETWORK)
 	));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.tunnelHost', async (port: GitpodWorkspacePort) =>
-		port.setTunnelVisibility(context.supervisor.TunnelVisiblity.HOST)
+		port.setTunnelVisibility(TunnelVisiblity.HOST)
 	));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.preview', (port: GitpodWorkspacePort) =>
 		openPreview(port)
@@ -575,7 +586,7 @@ export function registerPorts(context: GitpodExtensionContext): void {
 		port.openExternal()
 	));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.retryAutoExpose', async (port: GitpodWorkspacePort) => {
-		const request = new context.supervisor.RetryAutoExposeRequest();
+		const request = new RetryAutoExposeRequest();
 		request.setPort(port.portNumber);
 		await util.promisify(context.supervisor.port.retryAutoExpose.bind(context.supervisor.port, request, context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.normal
@@ -652,27 +663,27 @@ export function registerPorts(context: GitpodExtensionContext): void {
 		});
 	}
 	context.subscriptions.push(gitpodWorkspaceTreeDataProvider.onDidExposeServedPort(port => {
-		if (port.status.exposed.onExposed === context.supervisor.OnPortExposedAction.IGNORE) {
+		if (port.status.exposed.onExposed === OnPortExposedAction.IGNORE) {
 			return;
 		}
 
-		if (port.status.exposed.onExposed === context.supervisor.OnPortExposedAction.OPEN_BROWSER) {
+		if (port.status.exposed.onExposed === OnPortExposedAction.OPEN_BROWSER) {
 			port.openExternal();
 			return;
 		}
 
-		if (port.status.exposed.onExposed === context.supervisor.OnPortExposedAction.OPEN_PREVIEW) {
+		if (port.status.exposed.onExposed === OnPortExposedAction.OPEN_PREVIEW) {
 			openPreview(port);
 			return;
 		}
 
-		if (port.status.exposed.onExposed === context.supervisor.OnPortExposedAction.NOTIFY) {
+		if (port.status.exposed.onExposed === OnPortExposedAction.NOTIFY) {
 			showOpenServiceNotification(port);
 			return;
 		}
 
-		if (port.status.exposed.onExposed === context.supervisor.OnPortExposedAction.NOTIFY_PRIVATE) {
-			showOpenServiceNotification(port, port.status.exposed.visibility !== context.supervisor.PortVisibility.PUBLIC);
+		if (port.status.exposed.onExposed === OnPortExposedAction.NOTIFY_PRIVATE) {
+			showOpenServiceNotification(port, port.status.exposed.visibility !== PortVisibility.PUBLIC);
 			return;
 		}
 	}));
@@ -697,16 +708,16 @@ export function registerPorts(context: GitpodExtensionContext): void {
 		return vscode.workspace.openTunnel(tunnelOptions);
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.api.openTunnel', async (tunnelOptions: vscode.TunnelOptions, _tunnelCreationOptions: vscode.TunnelCreationOptions) => {
-		const request = new context.supervisor.TunnelPortRequest();
+		const request = new TunnelPortRequest();
 		request.setPort(tunnelOptions.remoteAddress.port);
 		request.setTargetPort(tunnelOptions.localAddressPort || tunnelOptions.remoteAddress.port);
-		request.setVisibility(!!tunnelOptions?.public ? context.supervisor.TunnelVisiblity.NETWORK : context.supervisor.TunnelVisiblity.HOST);
+		request.setVisibility(!!tunnelOptions?.public ? TunnelVisiblity.NETWORK : TunnelVisiblity.HOST);
 		await util.promisify(context.supervisor.port.tunnel.bind(context.supervisor.port, request, context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.normal
 		}))();
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.api.closeTunnel', async (port: number) => {
-		const request = new context.supervisor.CloseTunnelRequest();
+		const request = new CloseTunnelRequest();
 		request.setPort(port);
 		await util.promisify(context.supervisor.port.closeTunnel.bind(context.supervisor.port, request, context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.normal

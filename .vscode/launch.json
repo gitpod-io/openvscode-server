@@ -502,13 +502,12 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"/workspace/vscode",
-				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod",
-				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod-remote-ssh",
+				"--extensionDevelopmentPath=${workspaceRoot}/extensions/gitpod-remote",
 				"--log=debug"
 			],
 			"outFiles": [
-				"${workspaceRoot}/extensions/gitpod/out/**/*.js",
-				"${workspaceRoot}/extensions/gitpod-remote-ssh/out/**/*.js",
+				"${workspaceRoot}/extensions/gitpod-shared/out/**/*.js",
+				"${workspaceRoot}/extensions/gitpod-remote/out/**/*.js",
 			]
 		}
 	],

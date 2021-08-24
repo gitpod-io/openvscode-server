@@ -4,5 +4,8 @@
 		"outDir": "./out",
 		"rootDir": "./src",
 		"esModuleInterop": true
-	}
+	},
+	"references": [
+		{ "path": "../gitpod-shared" }
+	]
 }

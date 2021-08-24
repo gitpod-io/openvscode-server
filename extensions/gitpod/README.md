@@ -1,7 +1,5 @@
-# Gitpod integration
-
-**Notice:** This extension is bundled with Gitpod Code. It can be disabled but not uninstalled.
+# Gitpod Desktop integration
 
 ## Features
 
-This extension provides support for Gitpod integration.
+This extension provides support for Gitpod Desktop integration.

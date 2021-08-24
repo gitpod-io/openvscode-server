@@ -65,10 +65,6 @@ const compilations = [
 	'vscode-custom-editor-tests/tsconfig.json',
 	'vscode-notebook-tests/tsconfig.json',
 	'vscode-test-resolver/tsconfig.json',
-	'gitpod/tsconfig.json',
-	'gitpod-remote-ssh/tsconfig.json',
-	'gitpod-web/tsconfig.json',
-	'gitpod-desktop/tsconfig.json',
 ];
 
 const getBaseUrl = out => `https://ticino.blob.core.windows.net/sourcemaps/${commit}/${out}`;

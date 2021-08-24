@@ -10,17 +10,14 @@ import { JsonRpcProxyFactory } from '@gitpod/gitpod-protocol/lib/messaging/proxy
 import { NavigatorContext, PullRequestContext, User } from '@gitpod/gitpod-protocol/lib/protocol';
 import { GitpodHostUrl } from '@gitpod/gitpod-protocol/lib/util/gitpod-host-url';
 import { ControlServiceClient } from '@gitpod/supervisor-api-grpc/lib/control_grpc_pb';
-import { ExposePortRequest } from '@gitpod/supervisor-api-grpc/lib/control_pb';
 import { InfoServiceClient } from '@gitpod/supervisor-api-grpc/lib/info_grpc_pb';
 import { WorkspaceInfoRequest, WorkspaceInfoResponse } from '@gitpod/supervisor-api-grpc/lib/info_pb';
 import { NotificationServiceClient } from '@gitpod/supervisor-api-grpc/lib/notification_grpc_pb';
 import { NotifyRequest, NotifyResponse, RespondRequest, SubscribeRequest, SubscribeResponse } from '@gitpod/supervisor-api-grpc/lib/notification_pb';
 import { PortServiceClient } from '@gitpod/supervisor-api-grpc/lib/port_grpc_pb';
-import { CloseTunnelRequest, RetryAutoExposeRequest, TunnelPortRequest, TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
 import { StatusServiceClient } from '@gitpod/supervisor-api-grpc/lib/status_grpc_pb';
-import { ContentStatusRequest, ExposedPortInfo, OnPortExposedAction, PortAutoExposure, PortsStatus, PortsStatusRequest, PortsStatusResponse, PortVisibility, TasksStatusRequest, TaskState } from '@gitpod/supervisor-api-grpc/lib/status_pb';
+import { ContentStatusRequest } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TerminalServiceClient } from '@gitpod/supervisor-api-grpc/lib/terminal_grpc_pb';
-import { ListenTerminalRequest, ListTerminalsRequest, SetTerminalSizeRequest, ShutdownTerminalRequest, TerminalSize, WriteTerminalRequest } from '@gitpod/supervisor-api-grpc/lib/terminal_pb';
 import { TokenServiceClient } from '@gitpod/supervisor-api-grpc/lib/token_grpc_pb';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import * as grpc from '@grpc/grpc-js';
@@ -65,32 +62,6 @@ export class SupervisorConnection {
 		this.port = new PortServiceClient(this.addr, grpc.credentials.createInsecure(), this.clientOptions);
 		this.terminal = new TerminalServiceClient(this.addr, grpc.credentials.createInsecure(), this.clientOptions);
 	}
-
-	ExposePortRequest = ExposePortRequest;
-
-	CloseTunnelRequest = CloseTunnelRequest;
-	RetryAutoExposeRequest = RetryAutoExposeRequest;
-	TunnelPortRequest = TunnelPortRequest;
-	TunnelVisiblity = TunnelVisiblity;
-
-	ExposedPortInfo = ExposedPortInfo;
-	OnPortExposedAction = OnPortExposedAction;
-	PortAutoExposure = PortAutoExposure;
-	PortsStatus = PortsStatus;
-	PortsStatusRequest = PortsStatusRequest;
-	PortsStatusResponse = PortsStatusResponse;
-	PortVisibility = PortVisibility;
-	TaskState = TaskState;
-	TasksStatusRequest = TasksStatusRequest;
-
-	GetTokenRequest = GetTokenRequest;
-
-	TerminalSize = TerminalSize;
-	ListTerminalsRequest = ListTerminalsRequest;
-	ListenTerminalRequest = ListenTerminalRequest;
-	WriteTerminalRequest = WriteTerminalRequest;
-	SetTerminalSizeRequest = SetTerminalSizeRequest;
-	ShutdownTerminalRequest = ShutdownTerminalRequest;
 }
 
 type UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
@@ -121,13 +92,6 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 		readonly ipcHookCli: string | undefined
 	) {
 		this.workspaceContextUrl = vscode.Uri.parse(info.getWorkspaceContextUrl());
-	}
-
-	fork(context: vscode.ExtensionContext): GitpodExtensionContext {
-		const { devMode, config, supervisor, gitpod, pendingWillCloseSocket, info, owner, user, instanceListener, workspaceOwned, output, ipcHookCli } = this;
-		return new GitpodExtensionContext(
-			context, devMode, config, supervisor, gitpod, undefined, pendingWillCloseSocket, info, owner, user, instanceListener, workspaceOwned, output, ipcHookCli
-		);
 	}
 
 	get active() {
@@ -206,7 +170,7 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 }
 
 export async function createGitpodExtensionContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
-	const output = vscode.window.createOutputChannel('Gitpod');
+	const output = vscode.window.createOutputChannel('Gitpod Workspace');
 	const devMode = context.extensionMode === vscode.ExtensionMode.Development || !!process.env['VSCODE_DEV'];
 
 	const supervisor = new SupervisorConnection(context);
