@@ -6,18 +6,30 @@
 
 import * as grpc from '@grpc/grpc-js';
 import * as cp from 'child_process';
-import type { GitpodExtension, GitpodExtensionContext, status, terminal } from 'gitpod/src/gitpod';
+import * as shared from 'gitpod-shared/out/extension';
+import { GitpodExtensionContext } from 'gitpod-shared/out/features';
+import { TaskStatus, TasksStatusRequest, TasksStatusResponse, TaskState } from '@gitpod/supervisor-api-grpc/lib/status_pb';
+import { Terminal, ListTerminalsRequest, TerminalSize, SetTerminalSizeRequest, ListenTerminalRequest, ListenTerminalResponse, ShutdownTerminalRequest, WriteTerminalRequest } from '@gitpod/supervisor-api-grpc/lib/terminal_pb';
 import * as http from 'http';
 import * as path from 'path';
 import * as util from 'util';
 import * as vscode from 'vscode';
 
+let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
-	const gitpodExtension = vscode.extensions.getExtension<GitpodExtension | undefined>('gitpod.gitpod')!.exports;
-	if (!gitpodExtension) {
+	gitpodContext = await shared.createContext(context);
+	if (!gitpodContext) {
 		return;
 	}
-	const gitpodContext = gitpodExtension.newContext(context);
+	if (vscode.extensions.getExtension('gitpod.gitpod')) {
+		try {
+			await util.promisify(cp.exec)('code --uninstall-extension gitpod.gitpod');
+			vscode.commands.executeCommand('workbench.action.reloadWindow');
+		} catch (e) {
+			gitpodContext.output.appendLine('failed to uninstall gitpod.gitpod: ' + e);
+		}
+		return;
+	}
 	if (openWorkspaceLocation(gitpodContext)) {
 		return;
 	}
@@ -28,8 +40,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerCLI(gitpodContext);
 
 	// For port tunneling we rely on Remote SSH capabilities
-	// and gitpod.gitpod-desktop to disable auto tunneling from the current local machine.
-	vscode.commands.executeCommand('gitpod-desktop.api.autoTunnel', gitpodContext.info.getGitpodHost(), gitpodContext.info.getInstanceId(), false);
+	// and gitpod.gitpod to disable auto tunneling from the current local machine.
+	vscode.commands.executeCommand('gitpod.api.autoTunnel', gitpodContext.info.getGitpodHost(), gitpodContext.info.getInstanceId(), false);
 
 	// TODO
 	// - auth?
@@ -40,7 +52,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	await gitpodContext.active;
 }
 
-export function deactivate() { }
+export function deactivate() {
+	if (!gitpodContext) {
+		return;
+	}
+	return gitpodContext.dispose();
+}
 
 export function registerCLI(context: GitpodExtensionContext): void {
 	// configure regular terminals
@@ -247,12 +264,12 @@ async function registerTasks(context: GitpodExtensionContext): Promise<void> {
 		dispose: () => tokenSource.cancel()
 	});
 
-	const tasks = new Map<string, status.TaskStatus>();
+	const tasks = new Map<string, TaskStatus>();
 	let synched = false;
 	while (!synched) {
 		let listener: vscode.Disposable | undefined;
 		try {
-			const req = new context.supervisor.TasksStatusRequest();
+			const req = new TasksStatusRequest();
 			req.setObserve(true);
 			const stream = context.supervisor.status.tasksStatus(req, context.supervisor.metadata);
 			function done() {
@@ -263,10 +280,10 @@ async function registerTasks(context: GitpodExtensionContext): Promise<void> {
 			await new Promise((resolve, reject) => {
 				stream.on('end', resolve);
 				stream.on('error', reject);
-				stream.on('data', (response: status.TasksStatusResponse) => {
+				stream.on('data', (response: TasksStatusResponse) => {
 					if (response.getTasksList().every(status => {
 						tasks.set(status.getTerminal(), status);
-						return status.getState() !== context.supervisor.TaskState.OPENING;
+						return status.getState() !== TaskState.OPENING;
 					})) {
 						done();
 					}
@@ -287,9 +304,9 @@ async function registerTasks(context: GitpodExtensionContext): Promise<void> {
 		return;
 	}
 
-	const terminals = new Map<string, terminal.Terminal>();
+	const terminals = new Map<string, Terminal>();
 	try {
-		const response = await util.promisify(context.supervisor.terminal.list.bind(context.supervisor.terminal, new context.supervisor.ListTerminalsRequest(), context.supervisor.metadata, {
+		const response = await util.promisify(context.supervisor.terminal.list.bind(context.supervisor.terminal, new ListTerminalsRequest(), context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.long
 		}))();
 		for (const terminal of response.getTerminalsList()) {
@@ -330,11 +347,11 @@ function regsiterTask(alias: string, initialTitle: string, context: GitpodExtens
 				return;
 			}
 			try {
-				const size = new context.supervisor.TerminalSize();
+				const size = new TerminalSize();
 				size.setCols(dimensions.columns);
 				size.setRows(dimensions.rows);
 
-				const request = new context.supervisor.SetTerminalSizeRequest();
+				const request = new SetTerminalSizeRequest();
 				request.setAlias(alias);
 				request.setSize(size);
 				request.setForce(true);
@@ -364,13 +381,13 @@ function regsiterTask(alias: string, initialTitle: string, context: GitpodExtens
 					let listener: vscode.Disposable | undefined;
 					try {
 						await new Promise((resolve, reject) => {
-							const request = new context.supervisor.ListenTerminalRequest();
+							const request = new ListenTerminalRequest();
 							request.setAlias(alias);
 							const stream = context.supervisor.terminal.listen(request, context.supervisor.metadata);
 							listener = token.onCancellationRequested(() => stream.cancel());
 							stream.on('end', resolve);
 							stream.on('error', reject);
-							stream.on('data', (response: terminal.ListenTerminalResponse) => {
+							stream.on('data', (response: ListenTerminalResponse) => {
 								if (response.hasTitle()) {
 									const title = response.getTitle();
 									if (title) {
@@ -426,7 +443,7 @@ function regsiterTask(alias: string, initialTitle: string, context: GitpodExtens
 					// Attempt to kill the pty, it may have already been killed at this
 					// point but we want to make sure
 					try {
-						const request = new context.supervisor.ShutdownTerminalRequest();
+						const request = new ShutdownTerminalRequest();
 						request.setAlias(alias);
 						await util.promisify(context.supervisor.terminal.shutdown.bind(context.supervisor.terminal, request, context.supervisor.metadata, {
 							deadline: Date.now() + context.supervisor.deadlines.short
@@ -450,7 +467,7 @@ function regsiterTask(alias: string, initialTitle: string, context: GitpodExtens
 						return;
 					}
 					try {
-						const request = new context.supervisor.WriteTerminalRequest();
+						const request = new WriteTerminalRequest();
 						request.setAlias(alias);
 						request.setStdin(Buffer.from(data, 'utf8'));
 						await util.promisify(context.supervisor.terminal.write.bind(context.supervisor.terminal, request, context.supervisor.metadata, {

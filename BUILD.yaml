@@ -13,6 +13,5 @@ packages:
     config:
       commands:
         - ["yarn", "--cwd", "./install/build", "compile"]
-        - ["yarn", "--cwd", "./install", "gitpod:link"]
         - ["yarn", "--cwd", "./install", "compile"]
         - ["yarn", "--cwd", "./install", "download-builtin-extensions"]

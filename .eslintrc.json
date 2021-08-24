@@ -923,14 +923,6 @@
 				]
 			},
 			{
-				"target": "**/extensions/gitpod-web/**",
-				"restrictions": "!@gitpod/supervisor-api-grpc/**"
-			},
-			{
-				"target": "**/extensions/gitpod-remote-ssh/**",
-				"restrictions": "!@gitpod/supervisor-api-grpc/**"
-			},
-			{
 				"target": "**/extensions/**",
 				"restrictions": "**/*"
 			},

@@ -55,9 +55,7 @@
     "minify-vscode-reh-web": "node --max_old_space_size=4095 ./node_modules/gulp/bin/gulp.js minify-vscode-reh-web",
     "hygiene": "node --max_old_space_size=4095 ./node_modules/gulp/bin/gulp.js hygiene",
     "core-ci": "node --max_old_space_size=4095 ./node_modules/gulp/bin/gulp.js core-ci",
-    "extensions-ci": "node --max_old_space_size=4095 ./node_modules/gulp/bin/gulp.js extensions-ci",
-    "gitpod:link": "yarn rimraf ~/.config/yarn/link/gitpod && yarn link --cwd ./extensions/gitpod && yarn link --cwd ./extensions/gitpod-remote-ssh gitpod && yarn link --cwd ./extensions/gitpod-web gitpod",
-    "gitpod:watch": "yarn gitpod:link && (yarn gulp watch-extension:gitpod & yarn gulp watch-extension:gitpod-web & yarn gulp watch-extension:gitpod-remote-ssh & yarn gulp watch-extension:gitpod-desktop)"
+    "extensions-ci": "node --max_old_space_size=4095 ./node_modules/gulp/bin/gulp.js extensions-ci"
   },
   "dependencies": {
     "@vscode/vscode-languagedetection": "1.0.15",

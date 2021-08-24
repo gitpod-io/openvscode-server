@@ -8,7 +8,6 @@ tasks:
       export VSCODE_INIT_BUILD_DIR=$(leeway describe "//:init" -t "/tmp/build/{{ .Metadata.Name }}.{{ .Metadata.Version }}")
       leeway build
       sudo cp -rup "$VSCODE_INIT_BUILD_DIR/install/." . | true
-      yarn gitpod:link
     command: |
       gp sync-done init
       export NODE_ENV=development
@@ -19,7 +18,8 @@ tasks:
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
-      yarn gitpod:watch
+      cd ./extensions
+      yarn watch
     name: watch extension
   - command: |
       export NODE_ENV=development

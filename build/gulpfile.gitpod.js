@@ -27,7 +27,7 @@ const rename = require('gulp-rename');
 const ext = require('./lib/extensions');
 
 const extensionsPath = path.join(path.dirname(__dirname), 'extensions');
-const marketplaceExtensions = ['gitpod', 'gitpod-desktop', 'gitpod-remote-ssh'];
+const marketplaceExtensions = ['gitpod', 'gitpod-remote'];
 const outMarketplaceExtensions = 'out-gitpod-marketplace';
 const cleanMarketplaceExtensions = task.define('clean-gitpod-marketplace-extensions', util.rimraf(outMarketplaceExtensions));
 const bumpMarketplaceExtensions = task.define('bump-marketplace-extensions', () => {
