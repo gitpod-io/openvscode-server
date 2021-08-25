@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@gitpod/gitpod-protocol": "main",
-    "@gitpod/supervisor-api-grpc": "main",
+    "@gitpod/supervisor-api-grpc": "jeanp413-your-workspace-is-currently-5313",
     "bufferutil": "^4.0.1",
     "reconnecting-websocket": "^4.4.0",
     "utf-8-validate": "^5.0.2",
