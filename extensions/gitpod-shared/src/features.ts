@@ -435,7 +435,12 @@ export async function registerWorkspaceSharing(context: GitpodExtensionContext):
 			});
 			setWorkspaceShared(level === 'everyone');
 			if (level === 'everyone') {
-				await vscode.window.showInformationMessage(`Your workspace is currently shared. Anyone with the link can access this workspace.`);
+				const uri = context.info.getWorkspaceUrl();
+				const copyToClipboard = 'Copy URL to Clipboard';
+				const res = await vscode.window.showInformationMessage(`Your workspace is currently shared. Anyone with [the link](${uri}) can access this workspace.`, copyToClipboard);
+				if (res === copyToClipboard) {
+					await vscode.env.clipboard.writeText(uri);
+				}
 			} else {
 				await vscode.window.showInformationMessage(`Your workspace is currently not shared. Only you can access it.`);
 			}
