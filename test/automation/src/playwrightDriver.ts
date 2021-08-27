@@ -40,7 +40,7 @@ function buildDriver(browser: playwright.Browser, context: playwright.BrowserCon
 		getWindowIds: () => {
 			return Promise.resolve([1]);
 		},
-		capturePage: () => Promise.resolve(''),
+		capturePage: () => page.screenshot().then(buffer => buffer.toString('base64')),
 		reloadWindow: (windowId) => Promise.resolve(),
 		exitApplication: async () => {
 			await context.tracing.stop({ path: join(logsPath, `playwright-trace-${traceCounter++}.zip`) });
@@ -189,7 +189,8 @@ export function connect(options: Options = {}): Promise<{ client: IDisposable, d
 		const page = await context.newPage();
 		await page.setViewportSize({ width, height });
 		const payloadParam = `[["enableProposedApi",""],["skipWelcome","true"]]`;
-		await page.goto(`${endpoint}&folder=vscode-remote://localhost:9888${URI.file(workspacePath!).path}&payload=${payloadParam}`);
+		const match = /http:\/\/(.*)/.exec(endpoint!);
+		await page.goto(`${endpoint}/?folder=vscode-remote://${match![1]}${URI.file(workspacePath!).path}&payload=${payloadParam}`);
 		const result = {
 			client: { dispose: () => browser.close() && teardown() },
 			driver: buildDriver(browser, context, page)
