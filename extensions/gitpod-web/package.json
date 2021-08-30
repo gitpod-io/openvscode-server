@@ -101,17 +101,17 @@
       {
         "command": "gitpod.openInStable",
         "title": "%openInStable%",
-        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
+        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web' && gitpod.ideAlias == 'code-latest'"
       },
       {
         "command": "gitpod.openInInsiders",
         "title": "%openInInsiders%",
-        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
+        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web' && gitpod.ideAlias == 'code-latest'"
       },
       {
         "command": "gitpod.openInBrowser",
         "title": "%openInBrowser%",
-        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop'"
+        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop' && gitpod.ideAlias == 'code-latest'"
       },
       {
         "command": "gitpod.ports.openBrowser",
@@ -193,11 +193,13 @@
         },
         {
           "command": "gitpod.openInStable",
-          "group": "gitpod@60"
+          "group": "gitpod@60",
+          "when": "gitpod.ideAlias == 'code-latest'"
         },
         {
           "command": "gitpod.openInInsiders",
-          "group": "gitpod@70"
+          "group": "gitpod@70",
+          "when": "gitpod.ideAlias == 'code-latest'"
         }
       ],
       "accounts/context": [
@@ -394,17 +396,17 @@
         {
           "command": "gitpod.openInStable",
           "group": "remote_00_gitpod_navigation@900",
-          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
+          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web' && gitpod.ideAlias == 'code-latest'"
         },
         {
           "command": "gitpod.openInInsiders",
           "group": "remote_00_gitpod_navigation@1000",
-          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
+          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web' && gitpod.ideAlias == 'code-latest'"
         },
         {
           "command": "gitpod.openInBrowser",
           "group": "remote_00_gitpod_navigation@1000",
-          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop'"
+          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop' && gitpod.ideAlias == 'code-latest'"
         }
       ]
     },

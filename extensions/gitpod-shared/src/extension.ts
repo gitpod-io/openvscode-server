@@ -17,6 +17,14 @@ export async function createContext(context: vscode.ExtensionContext): Promise<G
 		return undefined;
 	}
 	vscode.commands.executeCommand('setContext', 'gitpod.inWorkspace', true);
+
+	vscode.commands.executeCommand('setContext', 'gitpod.ideAlias', gitpodContext.info.getIdeAlias());
+	if (vscode.env.uiKind === vscode.UIKind.Web) {
+		vscode.commands.executeCommand('setContext', 'gitpod.UIKind', 'web');
+	} else if (vscode.env.uiKind === vscode.UIKind.Desktop) {
+		vscode.commands.executeCommand('setContext', 'gitpod.UIKind', 'desktop');
+	}
+
 	registerUsageAnalytics(gitpodContext);
 	registerWorkspaceCommands(gitpodContext);
 	registerWorkspaceSharing(gitpodContext);

@@ -31,10 +31,10 @@
     "@improbable-eng/grpc-web" "0.14.0"
     google-protobuf "^3.17.0"
 
-"@gitpod/supervisor-api-grpc@jeanp413-your-workspace-is-currently-5313":
-  version "0.1.5-jeanp413-your-workspace-is-currently-5313.0"
-  resolved "https://registry.yarnpkg.com/@gitpod/supervisor-api-grpc/-/supervisor-api-grpc-0.1.5-jeanp413-your-workspace-is-currently-5313.0.tgz#dae4e6c93d324f8df72d34320c6a9281c82a2c86"
-  integrity sha512-/4Y5bQ1braB4yxD5C5m9+2kdpqj5xwP0d9eUXqZ5i6S16uV1Qr0jqinKDOFRo0XT3/jdrvZyhU9THmOGNHzVGQ==
+"@gitpod/supervisor-api-grpc@ak-no-code-desktop-in-stable":
+  version "0.1.5-ak-no-code-desktop-in-stable.2"
+  resolved "https://registry.yarnpkg.com/@gitpod/supervisor-api-grpc/-/supervisor-api-grpc-0.1.5-ak-no-code-desktop-in-stable.2.tgz#b71f3792cee310e5eb00111a169be17253e0dacd"
+  integrity sha512-wHd/F4dI75MtNH8DjZlUZ+SUIJGyXjq6VvpQXqUGyWRPKQelgPrOx4nbCfNzsRIsAgsJvoAFU8rg7O4tr4vYtg==
   dependencies:
     "@grpc/grpc-js" "^1.3.6"
     google-protobuf "^3.17.3"

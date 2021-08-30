@@ -79,14 +79,12 @@ export function registerCLI(context: GitpodExtensionContext): void {
 		return;
 	}
 
-	// TODO(ak) fetch ide port from supervisor
-	const idePort = Number(process.env.GITPOD_THEIA_PORT);
 	async function updateIpcHookCli(): Promise<void> {
 		try {
 			await new Promise<void>((resolve, reject) => {
 				const req = http.request({
 					hostname: 'localhost',
-					port: idePort,
+					port: context.info.getIdePort(),
 					protocol: 'http:',
 					path: '/cli',
 					method: vscode.window.state.focused ? 'PUT' : 'DELETE'
