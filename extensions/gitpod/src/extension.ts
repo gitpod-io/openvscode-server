@@ -14,10 +14,9 @@ import * as net from 'net';
 import fetch, { Response } from 'node-fetch';
 import { performance } from 'perf_hooks';
 import * as tmp from 'tmp';
-import * as util from 'util';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { grpc } from '@improbable-eng/grpc-web';
-const streamPipeline = util.promisify(require('stream').pipeline);
 
 interface SSHConnectionParams {
 	workspaceId: string
@@ -45,12 +44,15 @@ interface LocalAppInstallation {
 
 export async function activate(context: vscode.ExtensionContext) {
 	const output = vscode.window.createOutputChannel('Gitpod');
+	function log(value: string) {
+		output.appendLine(`[${new Date().toLocaleString()}] ${value}`);
+	}
 
 	// TODO(ak) commands to show logs and stop local apps
 	// TODO(ak) auto stop local apps if not used for 3 hours
 
-	function throwIfCancelled(token: vscode.CancellationToken): void {
-		if (token.isCancellationRequested) {
+	function throwIfCancelled(token?: vscode.CancellationToken): void {
+		if (token?.isCancellationRequested) {
 			throw new Error('cancelled');
 		}
 	}
@@ -64,15 +66,15 @@ export async function activate(context: vscode.ExtensionContext) {
 				const lock = context.globalState.get<Lock>(key);
 				if (typeof lock !== 'object' || performance.now() >= lock.deadline) {
 					const lockName = key.substr(lockPrefix.length);
-					output.appendLine(`cancel stale lock: ${lockName}`);
+					log(`cancel stale lock: ${lockName}`);
 					context.globalState.update(key, undefined);
 				}
 			}
 		}
 	}
 	let lockCount = 0;
-	async function withLock<T>(lockName: string, op: (token: vscode.CancellationToken) => Promise<T>, timeout: number): Promise<T> {
-		output.appendLine(`acquiring lock: ${lockName}`);
+	async function withLock<T>(lockName: string, op: (token: vscode.CancellationToken) => Promise<T>, timeout: number, token?: vscode.CancellationToken): Promise<T> {
+		log(`acquiring lock: ${lockName}`);
 		const lockKey = lockPrefix + lockName;
 		const value = vscode.env.sessionId + '/' + lockCount++;
 		let currentLock: Lock | undefined;
@@ -88,8 +90,9 @@ export async function activate(context: vscode.ExtensionContext) {
 			await new Promise(resolve => setTimeout(resolve, updateTimeout));
 			currentLock = context.globalState.get<Lock>(lockKey);
 		}
-		output.appendLine(`acquired lock: ${lockName}`);
+		log(`acquired lock: ${lockName}`);
 		const tokenSource = new vscode.CancellationTokenSource();
+		token?.onCancellationRequested(() => tokenSource.cancel());
 		let timer = setInterval(() => {
 			currentLock = context.globalState.get<Lock>(lockKey);
 			if (currentLock?.value !== value) {
@@ -103,7 +106,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			if (timer) {
 				clearTimeout(timer);
 			}
-			output.appendLine(`released lock: ${lockName}`);
+			log(`released lock: ${lockName}`);
 			await context.globalState.update(lockKey, undefined);
 		}
 	}
@@ -126,7 +129,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				path: '/static/bin/gitpod-local-companion-linux'
 			});
 		}
-		output.appendLine(`fetching the local app from ${downloadUri.toString()}`);
+		log(`fetching the local app from ${downloadUri.toString()}`);
 		return fetch(downloadUri.toString());
 	}
 
@@ -134,7 +137,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		try {
 			const fileExtension = process.platform === 'win32' ? '.exe' : undefined;
 			const installationPath = await new Promise<string>((resolve, reject) =>
-				tmp.file({ prefix: 'gitpod-local-companion', postfix: fileExtension }, (err, path) => {
+				tmp.file({ prefix: 'gitpod-local-companion', postfix: fileExtension, keep: true, discardDescriptor: true }, (err, path) => {
 					if (err) {
 						return reject(err);
 					}
@@ -142,19 +145,28 @@ export async function activate(context: vscode.ExtensionContext) {
 				})
 			);
 			throwIfCancelled(token);
-			output.appendLine(`installing the local app to ${installationPath}`);
-			throwIfCancelled(token);
-			await streamPipeline(download.body, fs.createWriteStream(installationPath));
+			log(`installing the local app to ${installationPath}`);
+			const installationStream = fs.createWriteStream(installationPath);
+			const cancelInstallationListener = token.onCancellationRequested(() => installationStream.destroy(new Error('cancelled')));
+			await new Promise((resolve, reject) => {
+				download.body.pipe(installationStream)
+					.on('error', reject)
+					.on('finish', resolve);
+			}).finally(() => {
+				cancelInstallationListener.dispose();
+				installationStream.destroy();
+			});
+
 			throwIfCancelled(token);
 			if (process.platform !== 'win32') {
 				await fs.promises.chmod(installationPath, '755');
 				throwIfCancelled(token);
 			}
 			const installation: LocalAppInstallation = { path: installationPath, etag: download.headers.get('etag') };
-			output.appendLine(`installing the local app: ${JSON.stringify(installation, undefined, 2)}`);
+			log(`installing the local app: ${JSON.stringify(installation, undefined, 2)}`);
 			return installation;
 		} catch (e) {
-			output.appendLine(`failed to install the local app: ${e}`);
+			log(`failed to install the local app: ${e}`);
 			throw e;
 		}
 	}
@@ -162,7 +174,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	async function startLocalApp(gitpodHost: string, installation: LocalAppInstallation, token: vscode.CancellationToken): Promise<LocalAppConfig> {
 		try {
 			const [configFile, apiPort] = await Promise.all([new Promise<string>((resolve, reject) =>
-				tmp.file({ prefix: 'gitpod_ssh_config' }, (err, path) => {
+				tmp.file({ prefix: 'gitpod_ssh_config', keep: true, discardDescriptor: true }, (err, path) => {
 					if (err) {
 						return reject(err);
 					}
@@ -176,51 +188,59 @@ export async function activate(context: vscode.ExtensionContext) {
 				});
 			})]);
 			throwIfCancelled(token);
-			output.appendLine(`starting the local app with the config: ${JSON.stringify({ gitpodHost, configFile, apiPort }, undefined, 2)}`);
-			const logPath = installation.path + '.log';
-			let spawnTimer: NodeJS.Timeout | undefined;
-			const pid = await new Promise<number>((resolve, reject) => {
-				const logStream = fs.createWriteStream(logPath);
+			log(`starting the local app with the config: ${JSON.stringify({ gitpodHost, configFile: vscode.Uri.file(configFile).toString(), apiPort }, undefined, 2)}`);
+
+			const parsed = path.parse(installation.path);
+			const logPath = path.join(parsed.dir, parsed.name) + '.log';
+			const logStream = fs.createWriteStream(logPath);
+			const cancelLogStreamListener = token.onCancellationRequested(() => logStream.destroy(new Error('cancelled')));
+			await new Promise((resolve, reject) => {
 				logStream.on('error', reject);
-				logStream.on('open', () => {
-					if (token.isCancellationRequested) {
-						reject(new Error('cancelled'));
-					}
-					const localAppProcess = cp.spawn(installation.path, {
-						detached: true,
-						stdio: ['ignore', logStream, logStream],
-						env: {
-							...process.env,
-							GITPOD_HOST: gitpodHost,
-							GITPOD_LCA_SSH_CONFIG: configFile,
-							GITPOD_LCA_API_PORT: String(apiPort),
-							GITPOD_LCA_AUTO_TUNNEL: String(false),
-							GITPOD_LCA_AUTH_REDIRECT_URL: `${vscode.env.uriScheme}://${context.extension.id}${authCompletePath}`
-						}
-					});
-					localAppProcess.on('error', reject);
-					localAppProcess.on('exit', code => reject(new Error('unexpectedly exit with code: ' + code)));
-					localAppProcess.unref();
-					if (localAppProcess.pid) {
-						// TODO(ak) when Node.js > 14.17
-						// localAppProcess.on('spwan', () => resolve(localAppProcess.pid)));
-						spawnTimer = setInterval(() => {
-							try {
-								process.kill(localAppProcess.pid, 0);
-								resolve(localAppProcess.pid);
-							} catch { }
-						}, 150);
-					}
-				});
+				logStream.on('open', resolve);
 			}).finally(() => {
+				cancelLogStreamListener.dispose();
+			});
+
+			let spawnTimer: NodeJS.Timeout | undefined;
+			const localAppProcess = cp.spawn(installation.path, {
+				detached: true,
+				stdio: ['ignore', logStream, logStream],
+				env: {
+					...process.env,
+					GITPOD_HOST: gitpodHost,
+					GITPOD_LCA_SSH_CONFIG: configFile,
+					GITPOD_LCA_API_PORT: String(apiPort),
+					GITPOD_LCA_AUTO_TUNNEL: String(false),
+					GITPOD_LCA_AUTH_REDIRECT_URL: `${vscode.env.uriScheme}://${context.extension.id}${authCompletePath}`,
+					GITPOD_LCA_VERBOSE: String(vscode.workspace.getConfiguration('gitpod').get<boolean>('verbose', false))
+				}
+			});
+			localAppProcess.unref();
+			const cancelLocalAppProcessListener = token.onCancellationRequested(() => localAppProcess.kill());
+			const pid = await new Promise<number>((resolve, reject) => {
+				localAppProcess.on('error', reject);
+				localAppProcess.on('exit', code => reject(new Error('unexpectedly exit with code: ' + code)));
+				if (localAppProcess.pid) {
+					// TODO(ak) when Node.js > 14.17
+					// localAppProcess.on('spwan', () => resolve(localAppProcess.pid)));
+					spawnTimer = setInterval(() => {
+						try {
+							process.kill(localAppProcess.pid, 0);
+							resolve(localAppProcess.pid);
+						} catch { }
+					}, 150);
+				}
+			}).finally(() => {
+				cancelLocalAppProcessListener.dispose();
 				if (spawnTimer) {
 					clearInterval(spawnTimer);
 				}
 			});
-			output.appendLine(`the local app has been stared: ${JSON.stringify({ pid, log: vscode.Uri.file(logPath).toString() }, undefined, 2)}`);
+
+			log(`the local app has been stared: ${JSON.stringify({ pid, log: vscode.Uri.file(logPath).toString() }, undefined, 2)}`);
 			return { gitpodHost, configFile, apiPort, pid, logPath };
 		} catch (e) {
-			output.appendLine(`failed to start the local app: ${e}`);
+			log(`failed to start the local app: ${e}`);
 			throw e;
 		}
 	}
@@ -229,51 +249,77 @@ export async function activate(context: vscode.ExtensionContext) {
 	 * **Important: it should not call the local app to manage in 30sec**
 	 */
 	async function ensureLocalApp(gitpodHost: string, configKey: string, installationKey: string, token: vscode.CancellationToken): Promise<LocalAppConfig> {
-		let download: Response | Error;
-		try {
-			download = await downloadLocalApp(gitpodHost);
-			throwIfCancelled(token);
-			if (!download.ok) {
-				download = new Error(`unexpected download response ${download.statusText} (${download.status})`);
-			}
-		} catch (e) {
-			download = e;
-		}
 		let config = context.globalState.get<LocalAppConfig>(configKey);
 		let installation = context.globalState.get<LocalAppInstallation>(installationKey);
-		if (installation) {
-			const upgrade = !(download instanceof Error) && { etag: download.headers.get('etag'), url: download.url };
-			if (upgrade && upgrade.etag && upgrade.etag !== installation.etag) {
-				output.appendLine(`the local app is outdated, upgrading: ${JSON.stringify({ installation, upgrade }, undefined, 2)}`);
+
+		const gitpodConfig = vscode.workspace.getConfiguration('gitpod');
+		const configuredInstallationPath = gitpodConfig.get<string>('installationPath');
+		if (configuredInstallationPath) {
+			if (installation && installation.path !== configuredInstallationPath) {
+				log(`the local app is different from configured, switching: ${JSON.stringify({ installed: installation.path, configured: configuredInstallationPath }, undefined, 2)}`);
 				installation = undefined;
 				if (config) {
 					try {
 						process.kill(config.pid);
 					} catch (e) {
-						output.appendLine(`failed to kill the outdated local app (pid: ${config.pid}): ${e}`);
+						log(`failed to kill the outdated local app (pid: ${config.pid}): ${e}`);
 					}
 				}
 				config = undefined;
 			}
-		}
-		if (config) {
-			return config;
-		}
-		if (installation) {
-			try {
-				await fs.promises.access(installation.path, fs.constants.X_OK);
-				throwIfCancelled(token);
-			} catch {
-				installation = undefined;
+			if (config) {
+				return config;
 			}
-		}
-		if (!installation) {
-			if (download instanceof Error) {
-				throw download;
-			}
-			installation = await installLocalApp(download, token);
+			await fs.promises.access(configuredInstallationPath, fs.constants.X_OK);
+			throwIfCancelled(token);
+			installation = { path: configuredInstallationPath, etag: null };
 			await context.globalState.update(installationKey, installation);
 			throwIfCancelled(token);
+		} else {
+			let download: Response | Error;
+			try {
+				download = await downloadLocalApp(gitpodHost);
+				throwIfCancelled(token);
+				if (!download.ok) {
+					download = new Error(`unexpected download response ${download.statusText} (${download.status})`);
+				}
+			} catch (e) {
+				download = e;
+			}
+			if (installation) {
+				const upgrade = !(download instanceof Error) && { etag: download.headers.get('etag'), url: download.url };
+				if (upgrade && upgrade.etag && upgrade.etag !== installation.etag) {
+					log(`the local app is outdated, upgrading: ${JSON.stringify({ installation, upgrade }, undefined, 2)}`);
+					installation = undefined;
+					if (config) {
+						try {
+							process.kill(config.pid);
+						} catch (e) {
+							log(`failed to kill the outdated local app (pid: ${config.pid}): ${e}`);
+						}
+					}
+					config = undefined;
+				}
+			}
+			if (config) {
+				return config;
+			}
+			if (installation) {
+				try {
+					await fs.promises.access(installation.path, fs.constants.X_OK);
+				} catch {
+					installation = undefined;
+				}
+				throwIfCancelled(token);
+			}
+			if (!installation) {
+				if (download instanceof Error) {
+					throw download;
+				}
+				installation = await installLocalApp(download, token);
+				await context.globalState.update(installationKey, installation);
+				throwIfCancelled(token);
+			}
 		}
 		config = await startLocalApp(gitpodHost, installation, token);
 		await context.globalState.update(configKey, config);
@@ -281,7 +327,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		return config;
 	}
 
-	async function withLocalApp<T>(gitpodHost: string, op: (client: LocalAppClient, config: LocalAppConfig) => Promise<T>): Promise<T> {
+	async function withLocalApp<T>(gitpodHost: string, op: (client: LocalAppClient, config: LocalAppConfig) => Promise<T>, token?: vscode.CancellationToken): Promise<T> {
 		const gitpodAuthority = vscode.Uri.parse(gitpodHost).authority;
 		const configKey = 'config/' + gitpodAuthority;
 		const installationKey = 'installation/' + gitpodAuthority;
@@ -289,12 +335,15 @@ export async function activate(context: vscode.ExtensionContext) {
 		while (restartAttempts < 5) {
 			const config = await withLock(gitpodAuthority, token =>
 				ensureLocalApp(gitpodHost, configKey, installationKey, token)
-				, slowLockTimeout);
+				, slowLockTimeout, token);
+			throwIfCancelled(token);
 			const client = new LocalAppClient('http://localhost:' + config.apiPort, { transport: NodeHttpTransport() });
 			try {
 				const result = await op(client, config);
+				throwIfCancelled(token);
 				return result;
 			} catch (e) {
+				throwIfCancelled(token);
 				let running: true | Error;
 				try {
 					process.kill(config.pid, 0);
@@ -303,22 +352,24 @@ export async function activate(context: vscode.ExtensionContext) {
 					running = e2;
 				}
 				if (running === true && (e.code === grpc.Code.Unavailable || e.code === grpc.Code.Unknown)) {
-					output.appendLine(`the local app (pid: ${config.pid}) is running, but the api endpoint is not ready: ${e}`);
-					output.appendLine(`retying again after 1s delay...`);
+					log(`the local app (pid: ${config.pid}) is running, but the api endpoint is not ready: ${e}`);
+					log(`retying again after 1s delay...`);
 					await new Promise(resolve => setTimeout(resolve, 1000));
+					throwIfCancelled(token);
 					continue;
 				}
 				if (running === true) {
 					throw e;
 				}
-				output.appendLine(`failed to access the local app: ${e}`);
-				output.appendLine(`the local app (pid: ${config.pid}) is not running: ${running}`);
-				output.appendLine(`restarting the local app...`);
+				log(`failed to access the local app: ${e}`);
+				log(`the local app (pid: ${config.pid}) is not running: ${running}`);
+				log(`restarting the local app...`);
 				await withLock(gitpodAuthority, async () => {
 					if (JSON.stringify(context.globalState.get<LocalAppConfig>(configKey)) === JSON.stringify(config)) {
 						await context.globalState.update(configKey, undefined);
 					}
-				}, fastLockTimeout);
+				}, fastLockTimeout, token);
+				throwIfCancelled(token);
 				restartAttempts++;
 			}
 		}
@@ -329,18 +380,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.window.registerUriHandler({
 		handleUri: async uri => {
 			if (uri.path === authCompletePath) {
-				output.appendLine('auth completed');
+				log('auth completed');
 				return;
 			}
-			output.appendLine('open workspace window: ' + uri.toString());
+			log('open workspace window: ' + uri.toString());
 			const params: SSHConnectionParams = JSON.parse(uri.query);
 			let resolvedConfig: LocalAppConfig | undefined;
 			try {
 				await vscode.window.withProgress({
 					location: vscode.ProgressLocation.Notification,
-					cancellable: false,
+					cancellable: true,
 					title: `Connecting to Gitpod workspace: ${params.workspaceId}`
-				}, async () => {
+				}, async (_, token) => {
 					const connection = await withLocalApp(params.gitpodHost, (client, config) => {
 						resolvedConfig = config;
 						const request = new ResolveSSHConnectionRequest();
@@ -349,7 +400,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						return new Promise<ResolveSSHConnectionResponse>((resolve, reject) =>
 							client.resolveSSHConnection(request, (e, r) => r ? resolve(r) : reject(e))
 						);
-					});
+					}, token);
 
 					const config = vscode.workspace.getConfiguration('remote.SSH');
 					const defaultExtensions = config.get<string[]>('defaultExtensions') || [];
@@ -382,7 +433,7 @@ export async function activate(context: vscode.ExtensionContext) {
 						vscode.window.showTextDocument(document);
 					}
 				});
-				output.appendLine(`failed to open uri: ${e}`);
+				log(`failed to open uri: ${e}`);
 				throw e;
 			}
 		}
