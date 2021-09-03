@@ -168,37 +168,41 @@
           "group": "gitpod@10"
         },
         {
-          "command": "gitpod.open.documentation",
+          "command": "gitpod.open.dashboard",
           "group": "gitpod@20"
         },
         {
+          "command": "gitpod.open.documentation",
+          "group": "gitpod@30"
+        },
+        {
           "command": "gitpod.takeSnapshot",
-          "group": "gitpod@30",
+          "group": "gitpod@40",
           "when": "gitpod.workspaceOwned == true"
         },
         {
           "command": "gitpod.shareWorkspace",
-          "group": "gitpod@40",
+          "group": "gitpod@50",
           "when": "gitpod.workspaceOwned == true && gitpod.workspaceShared == false"
         },
         {
           "command": "gitpod.stopSharingWorkspace",
-          "group": "gitpod@40",
+          "group": "gitpod@50",
           "when": "gitpod.workspaceOwned == true && gitpod.workspaceShared == true"
         },
         {
           "command": "gitpod.stop.ws",
-          "group": "gitpod@50",
+          "group": "gitpod@60",
           "when": "gitpod.workspaceOwned == true"
         },
         {
           "command": "gitpod.openInStable",
-          "group": "gitpod@60",
+          "group": "gitpod@70",
           "when": "gitpod.ideAlias == 'code-latest'"
         },
         {
           "command": "gitpod.openInInsiders",
-          "group": "gitpod@70",
+          "group": "gitpod@80",
           "when": "gitpod.ideAlias == 'code-latest'"
         }
       ],
