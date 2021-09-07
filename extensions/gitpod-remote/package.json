@@ -3,18 +3,26 @@
   "displayName": "%displayName%",
   "description": "%description%",
   "publisher": "gitpod",
-  "version": "0.0.17",
+  "version": "0.0.20",
   "license": "MIT",
   "preview": true,
+  "icon": "resources/gitpod.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/gitpod-io/vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gitpod-io/gitpod/issues"
   },
   "engines": {
     "vscode": "^1.58.2"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "remote development",
+    "remote"
   ],
   "extensionKind": [
     "workspace"
