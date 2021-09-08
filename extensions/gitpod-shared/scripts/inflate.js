@@ -106,17 +106,17 @@ const commands = [
 	{
 		'command': 'gitpod.openInStable',
 		'title': '%openInStable%',
-		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\' && gitpod.ideAlias == \'code-latest\''
+		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\''
 	},
 	{
 		'command': 'gitpod.openInInsiders',
 		'title': '%openInInsiders%',
-		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\' && gitpod.ideAlias == \'code-latest\''
+		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\''
 	},
 	{
 		'command': 'gitpod.openInBrowser',
 		'title': '%openInBrowser%',
-		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'desktop\' && gitpod.ideAlias == \'code-latest\''
+		'enablement': 'gitpod.inWorkspace == true && gitpod.UIKind == \'desktop\''
 	}
 ];
 
@@ -199,17 +199,17 @@ const remoteMenus = [
 	{
 		'command': 'gitpod.openInStable',
 		'group': 'remote_00_gitpod_navigation@900',
-		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\' && gitpod.ideAlias == \'code-latest\''
+		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\''
 	},
 	{
 		'command': 'gitpod.openInInsiders',
 		'group': 'remote_00_gitpod_navigation@1000',
-		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\' && gitpod.ideAlias == \'code-latest\''
+		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'web\''
 	},
 	{
 		'command': 'gitpod.openInBrowser',
 		'group': 'remote_00_gitpod_navigation@1000',
-		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'desktop\' && gitpod.ideAlias == \'code-latest\''
+		'when': 'gitpod.inWorkspace == true && gitpod.UIKind == \'desktop\''
 	}
 ];
 
