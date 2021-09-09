@@ -90,7 +90,7 @@ export class SupervisorTerminalProcess extends DisposableStore implements ITermi
 		this.add(this.onProcessExit(() => this._bufferer.stopBuffering(this.id)));
 
 		// Data recording for reconnect
-		this.add(this._onProcessData.event(e => this._recorder.recordData(e)));
+		this.add(this._onProcessData.event(e => this._recorder.handleData(e)));
 
 		this.add({
 			dispose: () => {
@@ -112,7 +112,7 @@ export class SupervisorTerminalProcess extends DisposableStore implements ITermi
 			this._onProcessReady.fire({ pid: this.syncState.getPid(), cwd: this.syncState.getCurrentWorkdir() });
 			this._onProcessTitleChanged.fire(this.syncState.getTitle());
 			this.monitorChildProcess();
-			this.triggerReplay();
+			await this.triggerReplay();
 			this.listen();
 			return undefined;
 		}
@@ -398,6 +398,10 @@ export class SupervisorTerminalProcess extends DisposableStore implements ITermi
 		});
 	}
 
+	async setUnicodeVersion(version: '6' | '11'): Promise<void> {
+		// No-op
+	}
+
 	getInitialCwd(): Promise<string> {
 		return Promise.resolve(this.initialCwd);
 	}
@@ -429,7 +433,7 @@ export class SupervisorTerminalProcess extends DisposableStore implements ITermi
 	}
 
 	private toSize(cols: number, rows: number): TerminalSize | undefined {
-		this._recorder.recordResize(cols, rows);
+		this._recorder.handleResize(cols, rows);
 
 		if (typeof cols !== 'number' || typeof rows !== 'number' || isNaN(cols) || isNaN(rows)) {
 			return undefined;
@@ -440,8 +444,8 @@ export class SupervisorTerminalProcess extends DisposableStore implements ITermi
 		return size;
 	}
 
-	private triggerReplay(): void {
-		const event = this._recorder.generateReplayEvent();
+	private async triggerReplay(): Promise<void> {
+		const event = await this._recorder.generateReplayEvent();
 		this._onProcessReplay.fire(event);
 	}
 

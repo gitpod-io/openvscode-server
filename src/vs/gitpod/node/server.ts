@@ -21,7 +21,7 @@ import { RemoteTerminalChannelServer } from 'vs/gitpod/node/remoteTerminalChanne
 import type { ServerExtensionHostConnection } from 'vs/gitpod/node/server-extension-host-connection';
 import { infoServiceClient, statusServiceClient, supervisorAddr, supervisorDeadlines, supervisorMetadata } from 'vs/gitpod/node/supervisor-client';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService } from 'vs/platform/extensionManagement/common/extensionManagement';
+import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService, CURRENT_TARGET_PLATFORM } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
 import { ExtensionType } from 'vs/platform/extensions/common/extensions';
 import { IFileService } from 'vs/platform/files/common/files';
@@ -296,7 +296,7 @@ main({
 			const lookup = new Set(param.extensions.map(({ id }) => id));
 			const uninstalled = new Set<string>([...lookup]);
 			lookup.add('github.vscode-pull-request-github');
-			const extensionIds = param.extensions.filter(({ version }) => version === undefined).map(({ id }) => id);
+			const extensionIds = param.extensions.filter(({ version }) => version === undefined).map(({ id }) => ({ id }));
 			const extensionsWithIdAndVersion = param.extensions.filter(({ version }) => version !== undefined);
 			await Promise.all([
 				extensionManagementService.getInstalled(ExtensionType.User).then(extensions => {
@@ -311,7 +311,7 @@ main({
 				extensionGalleryService.getExtensions(extensionIds, token).then(result =>
 					result.forEach(extension => extensions.add(extension.identifier.id.toLocaleLowerCase())), () => { }),
 				...extensionsWithIdAndVersion.map(({ id, version }) =>
-					extensionGalleryService.getCompatibleExtension({ id }, version, token).
+					extensionGalleryService.getCompatibleExtension({ id }, CURRENT_TARGET_PLATFORM).
 						then(extension => extension && extensions.add(extension.identifier.id.toLocaleLowerCase()), () => { })),
 				...param.links.map(async vsix => {
 					try {
