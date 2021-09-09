@@ -113,6 +113,15 @@ export async function activate(context: vscode.ExtensionContext) {
 	const releaseStaleLocksTimer = setInterval(() => releaseStaleLocks(), fastLockTimeout);
 	context.subscriptions.push(new vscode.Disposable(() => clearInterval(releaseStaleLocksTimer)));
 
+	function checkRunning(pid: number): true | Error {
+		try {
+			process.kill(pid, 0);
+			return true;
+		} catch (e) {
+			return e;
+		}
+	}
+
 	function downloadLocalApp(gitpodHost: string): Promise<Response> {
 		let downloadUri = vscode.Uri.parse(gitpodHost);
 		if (process.platform === 'win32') {
@@ -223,10 +232,9 @@ export async function activate(context: vscode.ExtensionContext) {
 					// TODO(ak) when Node.js > 14.17
 					// localAppProcess.on('spwan', () => resolve(localAppProcess.pid)));
 					spawnTimer = setInterval(() => {
-						try {
-							process.kill(localAppProcess.pid, 0);
+						if (checkRunning(localAppProcess.pid) === true) {
 							resolve(localAppProcess.pid);
-						} catch { }
+						}
 					}, 150);
 				}
 			}).finally(() => {
@@ -250,6 +258,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	async function ensureLocalApp(gitpodHost: string, configKey: string, installationKey: string, token: vscode.CancellationToken): Promise<LocalAppConfig> {
 		let config = context.globalState.get<LocalAppConfig>(configKey);
 		let installation = context.globalState.get<LocalAppInstallation>(installationKey);
+
+		if (config && checkRunning(config?.pid) !== true) {
+			config = undefined;
+		}
 
 		const gitpodConfig = vscode.workspace.getConfiguration('gitpod');
 		const configuredInstallationPath = gitpodConfig.get<string>('installationPath');
@@ -330,12 +342,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		const gitpodAuthority = vscode.Uri.parse(gitpodHost).authority;
 		const configKey = 'config/' + gitpodAuthority;
 		const installationKey = 'installation/' + gitpodAuthority;
-		let restartAttempts = 0;
-		while (restartAttempts < 5) {
-			const config = await withLock(gitpodAuthority, token =>
-				ensureLocalApp(gitpodHost, configKey, installationKey, token)
-				, slowLockTimeout, token);
-			throwIfCancelled(token);
+		const config = await withLock(gitpodAuthority, token =>
+			ensureLocalApp(gitpodHost, configKey, installationKey, token)
+			, slowLockTimeout, token);
+		throwIfCancelled(token);
+		while (true) {
 			const client = new LocalAppClient('http://localhost:' + config.apiPort, { transport: NodeHttpTransport() });
 			try {
 				const result = await op(client, config);
@@ -343,13 +354,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				return result;
 			} catch (e) {
 				throwIfCancelled(token);
-				let running: true | Error;
-				try {
-					process.kill(config.pid, 0);
-					running = true;
-				} catch (e2) {
-					running = e2;
-				}
+				const running = checkRunning(config.pid);
 				if (running === true && (e.code === grpc.Code.Unavailable || e.code === grpc.Code.Unknown)) {
 					log(`the local app (pid: ${config.pid}) is running, but the api endpoint is not ready: ${e}`);
 					log(`retying again after 1s delay...`);
@@ -357,22 +362,13 @@ export async function activate(context: vscode.ExtensionContext) {
 					throwIfCancelled(token);
 					continue;
 				}
-				if (running === true) {
-					throw e;
+				if (running !== true) {
+					log(`the local app (pid: ${config.pid}) is not running: ${running}`);
 				}
 				log(`failed to access the local app: ${e}`);
-				log(`the local app (pid: ${config.pid}) is not running: ${running}`);
-				log(`restarting the local app...`);
-				await withLock(gitpodAuthority, async () => {
-					if (JSON.stringify(context.globalState.get<LocalAppConfig>(configKey)) === JSON.stringify(config)) {
-						await context.globalState.update(configKey, undefined);
-					}
-				}, fastLockTimeout, token);
-				throwIfCancelled(token);
-				restartAttempts++;
+				throw e;
 			}
 		}
-		throw new Error('failed to access the local app');
 	}
 
 	const authCompletePath = '/auth-complete';
