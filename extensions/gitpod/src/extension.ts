@@ -12,7 +12,6 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as net from 'net';
 import fetch, { Response } from 'node-fetch';
-import { performance } from 'perf_hooks';
 import * as tmp from 'tmp';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -64,7 +63,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		for (const key of context.globalState.keys()) {
 			if (key.startsWith(lockPrefix)) {
 				const lock = context.globalState.get<Lock>(key);
-				if (typeof lock !== 'object' || performance.now() >= lock.deadline) {
+				if (typeof lock !== 'object' || Date.now() >= lock.deadline) {
 					const lockName = key.substr(lockPrefix.length);
 					log(`cancel stale lock: ${lockName}`);
 					context.globalState.update(key, undefined);
@@ -83,7 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		while (currentLock?.value !== value) {
 			currentLock = context.globalState.get<Lock>(lockKey);
 			if (!currentLock) {
-				deadline = performance.now() + timeout + updateTimeout * 2;
+				deadline = Date.now() + timeout + updateTimeout * 2;
 				await context.globalState.update(lockKey, <Lock>{ value, deadline });
 			}
 			// TODO(ak) env.globaState.onDidChange instead, see https://github.com/microsoft/vscode/issues/131182
