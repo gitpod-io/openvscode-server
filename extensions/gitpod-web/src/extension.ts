@@ -8,9 +8,7 @@
 import * as workspaceInstance from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
-import * as shared from 'gitpod-shared/out/extension';
-import { GitpodExtensionContext } from 'gitpod-shared/out/features';
-import { GitpodPluginModel } from 'gitpod-shared/out/gitpod-plugin-model';
+import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortAutoExposure, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
@@ -27,7 +25,7 @@ import { ThrottledDelayer } from './async';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
-	gitpodContext = await shared.createContext(context);
+	gitpodContext = await setupGitpodContext(context);
 	if (!gitpodContext) {
 		return;
 	}

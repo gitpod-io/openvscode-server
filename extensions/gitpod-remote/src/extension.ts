@@ -4,12 +4,8 @@
 
 /// <reference path='../../../src/vs/vscode.d.ts'/>
 
-import * as grpc from '@grpc/grpc-js';
 import * as cp from 'child_process';
-import * as shared from 'gitpod-shared/out/extension';
-import { GitpodExtensionContext } from 'gitpod-shared/out/features';
-import { TaskStatus, TasksStatusRequest, TasksStatusResponse, TaskState } from '@gitpod/supervisor-api-grpc/lib/status_pb';
-import { Terminal, ListTerminalsRequest, TerminalSize, SetTerminalSizeRequest, ListenTerminalRequest, ListenTerminalResponse, ShutdownTerminalRequest, WriteTerminalRequest } from '@gitpod/supervisor-api-grpc/lib/terminal_pb';
+import { GitpodExtensionContext, setupGitpodContext } from 'gitpod-shared';
 import * as http from 'http';
 import * as path from 'path';
 import * as util from 'util';
@@ -17,7 +13,7 @@ import * as vscode from 'vscode';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
-	gitpodContext = await shared.createContext(context);
+	gitpodContext = await setupGitpodContext(context);
 	if (!gitpodContext) {
 		return;
 	}
@@ -36,7 +32,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	installInitialExtensions(gitpodContext);
 	registerHearbeat(gitpodContext);
-	registerTasks(gitpodContext);
 	registerCLI(gitpodContext);
 
 	// For port tunneling we rely on Remote SSH capabilities
@@ -254,233 +249,3 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 		vscode.workspace.onDidChangeConfiguration(updateLastActivitiy)
 	);
 }
-
-async function registerTasks(context: GitpodExtensionContext): Promise<void> {
-	const tokenSource = new vscode.CancellationTokenSource();
-	const token = tokenSource.token;
-	context.subscriptions.push({
-		dispose: () => tokenSource.cancel()
-	});
-
-	const tasks = new Map<string, TaskStatus>();
-	let synched = false;
-	while (!synched) {
-		let listener: vscode.Disposable | undefined;
-		try {
-			const req = new TasksStatusRequest();
-			req.setObserve(true);
-			const stream = context.supervisor.status.tasksStatus(req, context.supervisor.metadata);
-			function done() {
-				synched = true;
-				stream.cancel();
-			}
-			listener = token.onCancellationRequested(() => done());
-			await new Promise((resolve, reject) => {
-				stream.on('end', resolve);
-				stream.on('error', reject);
-				stream.on('data', (response: TasksStatusResponse) => {
-					if (response.getTasksList().every(status => {
-						tasks.set(status.getTerminal(), status);
-						return status.getState() !== TaskState.OPENING;
-					})) {
-						done();
-					}
-				});
-			});
-		} catch (err) {
-			if (!('code' in err && err.code === grpc.status.CANCELLED)) {
-				console.error('code server: listening task updates failed:', err);
-			}
-		} finally {
-			listener?.dispose();
-		}
-		if (!synched) {
-			await new Promise(resolve => setTimeout(resolve, 1000));
-		}
-	}
-	if (token.isCancellationRequested) {
-		return;
-	}
-
-	const terminals = new Map<string, Terminal>();
-	try {
-		const response = await util.promisify(context.supervisor.terminal.list.bind(context.supervisor.terminal, new ListTerminalsRequest(), context.supervisor.metadata, {
-			deadline: Date.now() + context.supervisor.deadlines.long
-		}))();
-		for (const terminal of response.getTerminalsList()) {
-			terminals.set(terminal.getAlias(), terminal);
-		}
-	} catch (e) {
-		console.error('failed to list terminals:', e);
-	}
-
-	for (const alias of tasks.keys()) {
-		const terminal = terminals.get(alias);
-		if (!terminal) {
-			return;
-		}
-		regsiterTask(alias, terminal.getTitle(), context, token);
-	}
-}
-
-function regsiterTask(alias: string, initialTitle: string, context: GitpodExtensionContext, contextToken: vscode.CancellationToken): void {
-	const tokenSource = new vscode.CancellationTokenSource();
-	contextToken.onCancellationRequested(() => tokenSource.cancel());
-	const token = tokenSource.token;
-
-	const onDidWriteEmitter = new vscode.EventEmitter<string>();
-	const onDidCloseEmitter = new vscode.EventEmitter<void | number>();
-	const onDidChangeNameEmitter = new vscode.EventEmitter<string>();
-	const toDispose = vscode.Disposable.from(onDidWriteEmitter, onDidCloseEmitter, onDidChangeNameEmitter);
-	token.onCancellationRequested(() => toDispose.dispose());
-
-	let pendingWrite = Promise.resolve();
-	let pendinResize = Promise.resolve();
-	function setDimensions(dimensions: vscode.TerminalDimensions): void {
-		if (token.isCancellationRequested) {
-			return;
-		}
-		pendinResize = pendinResize.then(async () => {
-			if (token.isCancellationRequested) {
-				return;
-			}
-			try {
-				const size = new TerminalSize();
-				size.setCols(dimensions.columns);
-				size.setRows(dimensions.rows);
-
-				const request = new SetTerminalSizeRequest();
-				request.setAlias(alias);
-				request.setSize(size);
-				request.setForce(true);
-				await util.promisify(context.supervisor.terminal.setSize.bind(context.supervisor.terminal, request, context.supervisor.metadata, {
-					deadline: Date.now() + context.supervisor.deadlines.short
-				}))();
-			} catch (e) {
-				if (e && e.code !== grpc.status.NOT_FOUND) {
-					console.error(`${alias} terminal: resize failed:`, e);
-				}
-			}
-		});
-	}
-	const terminal = vscode.window.createTerminal({
-		name: initialTitle,
-		pty: {
-			onDidWrite: onDidWriteEmitter.event,
-			onDidClose: onDidCloseEmitter.event,
-			onDidChangeName: onDidChangeNameEmitter.event,
-			open: async (dimensions: vscode.TerminalDimensions | undefined) => {
-				if (dimensions) {
-					setDimensions(dimensions);
-				}
-				while (!token.isCancellationRequested) {
-					let notFound = false;
-					let exitCode: number | undefined;
-					let listener: vscode.Disposable | undefined;
-					try {
-						await new Promise((resolve, reject) => {
-							const request = new ListenTerminalRequest();
-							request.setAlias(alias);
-							const stream = context.supervisor.terminal.listen(request, context.supervisor.metadata);
-							listener = token.onCancellationRequested(() => stream.cancel());
-							stream.on('end', resolve);
-							stream.on('error', reject);
-							stream.on('data', (response: ListenTerminalResponse) => {
-								if (response.hasTitle()) {
-									const title = response.getTitle();
-									if (title) {
-										onDidChangeNameEmitter.fire(title);
-									}
-								} else if (response.hasData()) {
-									let data = '';
-									const buffer = response.getData();
-									if (typeof buffer === 'string') {
-										data += buffer;
-									} else {
-										data += Buffer.from(buffer).toString();
-									}
-									if (data !== '') {
-										onDidWriteEmitter.fire(data);
-									}
-								} else if (response.hasExitCode()) {
-									exitCode = response.getExitCode();
-								}
-							});
-						});
-					} catch (e) {
-						notFound = 'code' in e && e.code === grpc.status.NOT_FOUND;
-						if (!token.isCancellationRequested && !notFound && !('code' in e && e.code === grpc.status.CANCELLED)) {
-							console.error(`${alias} terminal: listening failed:`, e);
-						}
-					} finally {
-						listener?.dispose();
-					}
-					if (token.isCancellationRequested) {
-						return;
-					}
-					if (notFound) {
-						onDidCloseEmitter.fire();
-					} else if (typeof exitCode === 'number') {
-						onDidCloseEmitter.fire(exitCode);
-					}
-					await new Promise(resolve => setTimeout(resolve, 2000));
-				}
-			},
-			close: async () => {
-				if (token.isCancellationRequested) {
-					return;
-				}
-				tokenSource.cancel();
-
-				// await to make sure that close is not cause by the extension host process termination
-				// in such case we don't want to stop supervisor terminals
-				setTimeout(async () => {
-					if (contextToken.isCancellationRequested) {
-						return;
-					}
-					// Attempt to kill the pty, it may have already been killed at this
-					// point but we want to make sure
-					try {
-						const request = new ShutdownTerminalRequest();
-						request.setAlias(alias);
-						await util.promisify(context.supervisor.terminal.shutdown.bind(context.supervisor.terminal, request, context.supervisor.metadata, {
-							deadline: Date.now() + context.supervisor.deadlines.short
-						}))();
-					} catch (e) {
-						if (e && e.code === grpc.status.NOT_FOUND) {
-							// Swallow, the pty has already been killed
-						} else {
-							console.error(`${alias} terminal: shutdown failed:`, e);
-						}
-					}
-				}, 1000);
-
-			},
-			handleInput: async (data: string) => {
-				if (token.isCancellationRequested) {
-					return;
-				}
-				pendingWrite = pendingWrite.then(async () => {
-					if (token.isCancellationRequested) {
-						return;
-					}
-					try {
-						const request = new WriteTerminalRequest();
-						request.setAlias(alias);
-						request.setStdin(Buffer.from(data, 'utf8'));
-						await util.promisify(context.supervisor.terminal.write.bind(context.supervisor.terminal, request, context.supervisor.metadata, {
-							deadline: Date.now() + context.supervisor.deadlines.short
-						}))();
-					} catch (e) {
-						if (e && e.code !== grpc.status.NOT_FOUND) {
-							console.error(`${alias} terminal: write failed:`, e);
-						}
-					}
-				});
-			},
-			setDimensions: (dimensions: vscode.TerminalDimensions) => setDimensions(dimensions)
-		}
-	});
-	terminal.show();
-}
-

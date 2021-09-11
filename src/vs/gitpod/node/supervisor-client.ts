@@ -3,8 +3,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { InfoServiceClient } from '@gitpod/supervisor-api-grpc/lib/info_grpc_pb';
-import { StatusServiceClient } from '@gitpod/supervisor-api-grpc/lib/status_grpc_pb';
-import { TerminalServiceClient } from '@gitpod/supervisor-api-grpc/lib/terminal_grpc_pb';
 import * as grpc from '@grpc/grpc-js';
 import product from 'vs/platform/product/common/product';
 
@@ -19,5 +17,3 @@ const supervisorClientOptions: Partial<grpc.ClientOptions> = {
 };
 export const supervisorAddr = process.env.SUPERVISOR_ADDR || 'localhost:22999';
 export const infoServiceClient = new InfoServiceClient(supervisorAddr, grpc.credentials.createInsecure(), supervisorClientOptions);
-export const terminalServiceClient = new TerminalServiceClient(supervisorAddr, grpc.credentials.createInsecure(), supervisorClientOptions);
-export const statusServiceClient = new StatusServiceClient(supervisorAddr, grpc.credentials.createInsecure(), supervisorClientOptions);

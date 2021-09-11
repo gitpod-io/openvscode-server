@@ -4,8 +4,6 @@
 
 import type { ResolvedPlugins } from '@gitpod/gitpod-protocol';
 import { WorkspaceInfoRequest } from '@gitpod/supervisor-api-grpc/lib/info_pb';
-import { TasksStatusRequest, TasksStatusResponse, TaskState, TaskStatus } from '@gitpod/supervisor-api-grpc/lib/status_pb';
-import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as http from 'http';
 import * as yaml from 'js-yaml';
@@ -17,10 +15,8 @@ import { Emitter } from 'vs/base/common/event';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
-import { RemoteTerminalChannelServer } from 'vs/gitpod/node/remoteTerminalChannelServer';
 import type { ServerExtensionHostConnection } from 'vs/gitpod/node/server-extension-host-connection';
-import { infoServiceClient, statusServiceClient, supervisorAddr, supervisorDeadlines, supervisorMetadata } from 'vs/gitpod/node/supervisor-client';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { infoServiceClient, supervisorAddr, supervisorDeadlines, supervisorMetadata } from 'vs/gitpod/node/supervisor-client';
 import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService, CURRENT_TARGET_PLATFORM } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
 import { ExtensionType } from 'vs/platform/extensions/common/extensions';
@@ -28,8 +24,8 @@ import { IFileService } from 'vs/platform/files/common/files';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { ILogService } from 'vs/platform/log/common/log';
 import { asText, IRequestService } from 'vs/platform/request/common/request';
-import { IRawURITransformerFactory, main } from 'vs/server/node/server.main';
-import { REMOTE_TERMINAL_CHANNEL_NAME } from 'vs/workbench/contrib/terminal/common/remoteTerminalChannel';
+import { registerRemoteTerminal } from 'vs/server/node/remote-terminal';
+import { main } from 'vs/server/node/server.main';
 import * as rpc from 'vscode-jsonrpc';
 
 const devMode = !!process.env['VSCODE_DEV'];
@@ -81,45 +77,7 @@ main({
 	},
 	start: (accessor, channelServer) => {
 		const logService = accessor.get(ILogService);
-		channelServer.registerChannel(REMOTE_TERMINAL_CHANNEL_NAME, new RemoteTerminalChannelServer(
-			accessor.get(IRawURITransformerFactory),
-			logService,
-			accessor.get(IConfigurationService),
-			(async () => {
-				const tasks = new Map<string, TaskStatus>();
-				logService.info('code server: synching tasks...');
-				let synched = false;
-				while (!synched) {
-					try {
-						const req = new TasksStatusRequest();
-						req.setObserve(true);
-						const stream = statusServiceClient.tasksStatus(req, supervisorMetadata);
-						await new Promise((resolve, reject) => {
-							stream.on('end', resolve);
-							stream.on('error', reject);
-							stream.on('data', (response: TasksStatusResponse) => {
-								if (response.getTasksList().every(status => {
-									tasks.set(status.getTerminal(), status);
-									return status.getState() !== TaskState.OPENING;
-								})) {
-									synched = true;
-									stream.cancel();
-								}
-							});
-						});
-					} catch (err) {
-						if (!('code' in err && err.code === grpc.status.CANCELLED)) {
-							logService.error('code server: listening task updates failed:', err);
-						}
-					}
-					if (!synched) {
-						await new Promise(resolve => setTimeout(resolve, 1000));
-					}
-				}
-				logService.info('code server: tasks synched');
-				return tasks;
-			})()
-		));
+		registerRemoteTerminal(accessor, channelServer);
 
 		const extensionManagementCLIService = accessor.get(IExtensionManagementCLIService);
 		const requestService = accessor.get(IRequestService);

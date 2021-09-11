@@ -4,6 +4,7 @@
 		"outDir": "./out",
 		"rootDir": "./src",
 		"composite": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"sourceMap": true,
 	}
 }
