@@ -8,7 +8,7 @@
 import * as workspaceInstance from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
-import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext } from 'gitpod-shared';
+import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortAutoExposure, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
@@ -31,6 +31,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 	registerAuth(gitpodContext);
 	registerPorts(gitpodContext);
+	registerTasks(gitpodContext, (options, parentTerminal) => {
+		return vscode.window.createTerminal({
+			...options,
+			location: parentTerminal ? { parentTerminal } : vscode.TerminalLocation.Panel
+		});
+	});
 
 	const codeServer = new GitpodCodeServer();
 	registerCLI(codeServer, gitpodContext);

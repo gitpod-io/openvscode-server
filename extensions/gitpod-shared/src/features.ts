@@ -651,7 +651,7 @@ function installCLIProxy(context: vscode.ExtensionContext, output: vscode.Output
 
 type TerminalOpenMode = 'tab-before' | 'tab-after' | 'split-left' | 'split-right' | 'split-top' | 'split-bottom';
 
-export async function registerTasks(context: GitpodExtensionContext): Promise<void> {
+export async function registerTasks(context: GitpodExtensionContext, createTerminal: (options: vscode.ExtensionTerminalOptions, parent: vscode.Terminal | undefined) => vscode.Terminal): Promise<void> {
 	const tokenSource = new vscode.CancellationTokenSource();
 	const token = tokenSource.token;
 	context.subscriptions.push({
@@ -698,30 +698,42 @@ export async function registerTasks(context: GitpodExtensionContext): Promise<vo
 		return;
 	}
 
-	const terminals = new Map<string, SupervisorTerminal>();
+	const taskTerminals = new Map<string, SupervisorTerminal>();
 	try {
 		const response = await util.promisify(context.supervisor.terminal.list.bind(context.supervisor.terminal, new ListTerminalsRequest(), context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.long
 		}))();
-		for (const terminal of response.getTerminalsList()) {
-			terminals.set(terminal.getAlias(), terminal);
+		for (const term of response.getTerminalsList()) {
+			taskTerminals.set(term.getAlias(), term);
 		}
 	} catch (e) {
-		console.error('failed to list terminals:', e);
+		console.error('failed to list task terminals:', e);
 	}
 
 	let prevTerminal: vscode.Terminal | undefined;
 	for (const [alias, taskStatus] of tasks.entries()) {
-		const terminal = terminals.get(alias);
-		if (terminal) {
+		const taskTerminal = taskTerminals.get(alias);
+		if (taskTerminal) {
 			const openMode: TerminalOpenMode | undefined = taskStatus.getPresentation()?.getOpenMode() as TerminalOpenMode;
-			let parentTerminal = (openMode && openMode !== 'tab-before' && openMode !== 'tab-after') ? prevTerminal : undefined;
-			prevTerminal = registerTask(alias, terminal.getTitle(), context, token, parentTerminal);
+			const parentTerminal = (openMode && openMode !== 'tab-before' && openMode !== 'tab-after') ? prevTerminal : undefined;
+			const pty = createTaskPty(alias, context, token);
+
+			// Delegate creation of the terminal to the extension caller
+			// if proposed API usage is required.
+			const terminal = createTerminal(
+				{
+					name: taskTerminal.getTitle(),
+					pty
+				},
+				parentTerminal
+			);
+			terminal.show();
+			prevTerminal = terminal;
 		}
 	}
 }
 
-function registerTask(alias: string, initialTitle: string, context: GitpodExtensionContext, contextToken: vscode.CancellationToken, parentTerminal?: vscode.Terminal): vscode.Terminal {
+function createTaskPty(alias: string, context: GitpodExtensionContext, contextToken: vscode.CancellationToken): vscode.Pseudoterminal {
 	const tokenSource = new vscode.CancellationTokenSource();
 	contextToken.onCancellationRequested(() => tokenSource.cancel());
 	const token = tokenSource.token;
@@ -876,16 +888,5 @@ function registerTask(alias: string, initialTitle: string, context: GitpodExtens
 		}
 	};
 
-	let proposedOptions = vscode.env.uiKind === vscode.UIKind.Web ? {
-		location: parentTerminal ? { parentTerminal } : 1 /* vscode.TerminalLocation.Panel */
-	} : {};
-	proposedOptions = {}; // TODO: enable this
-	const terminal = vscode.window.createTerminal({
-		name: initialTitle,
-		pty,
-		...proposedOptions
-	});
-	terminal.show();
-
-	return terminal;
+	return pty;
 }

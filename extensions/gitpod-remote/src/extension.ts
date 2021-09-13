@@ -5,7 +5,7 @@
 /// <reference path='../../../src/vs/vscode.d.ts'/>
 
 import * as cp from 'child_process';
-import { GitpodExtensionContext, setupGitpodContext } from 'gitpod-shared';
+import { GitpodExtensionContext, registerTasks, setupGitpodContext } from 'gitpod-shared';
 import * as http from 'http';
 import * as path from 'path';
 import * as util from 'util';
@@ -30,6 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		return;
 	}
 
+	registerTasks(gitpodContext, (options) => vscode.window.createTerminal(options));
 	installInitialExtensions(gitpodContext);
 	registerHearbeat(gitpodContext);
 	registerCLI(gitpodContext);

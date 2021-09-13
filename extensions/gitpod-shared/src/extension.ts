@@ -3,10 +3,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout, registerTasks } from './features';
+import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
 import { performance } from 'perf_hooks';
 
-export { GitpodExtensionContext, SupervisorConnection } from './features';
+export { GitpodExtensionContext, SupervisorConnection, registerTasks } from './features';
 export * from './gitpod-plugin-model';
 
 export async function setupGitpodContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
@@ -34,7 +34,6 @@ export async function setupGitpodContext(context: vscode.ExtensionContext): Prom
 	registerWorkspaceTimeout(gitpodContext);
 	registerNotifications(gitpodContext);
 	registerDefaultLayout(gitpodContext);
-	registerTasks(gitpodContext);
 	return gitpodContext;
 }
 
