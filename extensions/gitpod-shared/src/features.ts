@@ -723,7 +723,8 @@ export async function registerTasks(context: GitpodExtensionContext, createTermi
 			const terminal = createTerminal(
 				{
 					name: taskTerminal.getTitle(),
-					pty
+					pty,
+					iconPath: new vscode.ThemeIcon('tools')
 				},
 				parentTerminal
 			);
