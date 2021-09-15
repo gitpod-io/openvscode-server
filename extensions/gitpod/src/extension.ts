@@ -32,6 +32,7 @@ interface LocalAppConfig {
 }
 
 interface Lock {
+	pid?: number
 	value: string
 	deadline: number
 }
@@ -57,13 +58,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	const lockPrefix = 'lock/';
-	const fastLockTimeout = 30000;
-	const slowLockTimeout = 300000;
+	const checkStaleInterval = 30000;
+	const installLockTimeout = 300000;
+	function isLock(lock: any): lock is Lock {
+		return !!lock && typeof lock === 'object';
+	}
 	function releaseStaleLocks(): void {
 		for (const key of context.globalState.keys()) {
 			if (key.startsWith(lockPrefix)) {
-				const lock = context.globalState.get<Lock>(key);
-				if (typeof lock !== 'object' || Date.now() >= lock.deadline) {
+				const lock = context.globalState.get(key);
+				if (!isLock(lock) || Date.now() >= lock.deadline || (typeof lock.pid === 'number' && checkRunning(lock.pid) !== true)) {
 					const lockName = key.substr(lockPrefix.length);
 					log(`cancel stale lock: ${lockName}`);
 					context.globalState.update(key, undefined);
@@ -83,7 +87,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			currentLock = context.globalState.get<Lock>(lockKey);
 			if (!currentLock) {
 				deadline = Date.now() + timeout + updateTimeout * 2;
-				await context.globalState.update(lockKey, <Lock>{ value, deadline });
+				await context.globalState.update(lockKey, <Lock>{ value, deadline, pid: process.pid });
 			}
 			// TODO(ak) env.globaState.onDidChange instead, see https://github.com/microsoft/vscode/issues/131182
 			await new Promise(resolve => setTimeout(resolve, updateTimeout));
@@ -110,7 +114,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	const releaseStaleLocksTimer = setInterval(() => releaseStaleLocks(), fastLockTimeout);
+	releaseStaleLocks();
+	const releaseStaleLocksTimer = setInterval(() => releaseStaleLocks(), checkStaleInterval);
 	context.subscriptions.push(new vscode.Disposable(() => clearInterval(releaseStaleLocksTimer)));
 
 	function checkRunning(pid: number): true | Error {
@@ -344,7 +349,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		const installationKey = 'installation/' + gitpodAuthority;
 		const config = await withLock(gitpodAuthority, token =>
 			ensureLocalApp(gitpodHost, configKey, installationKey, token)
-			, slowLockTimeout, token);
+			, installLockTimeout, token);
 		throwIfCancelled(token);
 		while (true) {
 			const client = new LocalAppClient('http://localhost:' + config.apiPort, { transport: NodeHttpTransport() });
