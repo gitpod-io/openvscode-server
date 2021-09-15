@@ -441,7 +441,6 @@
   "dependencies": {
     "gitpod-shared": "0.0.1",
     "node-fetch": "^2.6.1",
-    "uuid": "^8.3.1",
     "vscode-jsonrpc": "^5.0.1",
     "vscode-nls": "^5.0.0"
   }

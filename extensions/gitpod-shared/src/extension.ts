@@ -4,7 +4,7 @@
 
 import * as vscode from 'vscode';
 import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
-import { performance } from 'perf_hooks';
+import * as uuid from 'uuid';
 
 export { GitpodExtensionContext, SupervisorConnection, registerTasks } from './features';
 export * from './gitpod-plugin-model';
@@ -41,9 +41,11 @@ function registerUsageAnalytics(context: GitpodExtensionContext): void {
 	if (context.devMode && vscode.env.uiKind === vscode.UIKind.Web) {
 		return;
 	}
+	const sessionId = uuid.v4();
 	const properties = {
-		id: vscode.env.sessionId,
+		sessionId,
 		workspaceId: context.info.getWorkspaceId(),
+		instanceId: context.info.getInstanceId(),
 		appName: vscode.env.appName,
 		uiKind: vscode.env.uiKind === vscode.UIKind.Web ? 'web' : 'desktop',
 		devMode: context.devMode,
@@ -53,7 +55,7 @@ function registerUsageAnalytics(context: GitpodExtensionContext): void {
 			event: 'vscode_session',
 			properties: {
 				...properties,
-				timestamp: performance.now(),
+				timestamp: Date.now(),
 				focused: vscode.window.state.focused,
 				phase,
 			}
