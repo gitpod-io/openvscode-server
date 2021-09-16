@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@gitpod/gitpod-protocol@main":
-  version "0.1.5-main.1291"
-  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-main.1291.tgz#98b6d9c14a8eb0ed852352723f7087787411f61c"
-  integrity sha512-GmonU20iiu/LMGgI2cSYHdM87zywPq2tZJnhvK20WIxCh4lEgk+PIECdIyJgiUafZ9g4LWkSyrikJfgB0ZVqjQ==
+"@gitpod/gitpod-protocol@akosyakov-code-new-gitpod-protocol-5717":
+  version "0.1.5-akosyakov-code-new-gitpod-protocol-5717.0"
+  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-akosyakov-code-new-gitpod-protocol-5717.0.tgz#2ba3dbf8977a918617c43e057a632cf491a63a17"
+  integrity sha512-/A4NU1YVa9ACnmQMxZTHoiSzbJvhl4yubFUot3HcptUnzSND4DUj3Se4m7hIRCT2GNtpbQyeTDJhdXwVxgrOrg==
   dependencies:
     ajv "^6.5.4"
     analytics-node "^4.0.1"
