@@ -429,7 +429,17 @@
         "id": "github",
         "label": "GitHub"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Gitpod",
+      "properties": {
+        "gitpod.openInStable.neverPrompt": {
+          "type": "boolean",
+          "description": "Control whether to prompt to open in VS Code Desktop on page load.",
+          "default": false
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile --cwd .."

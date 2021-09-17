@@ -29,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	if (!gitpodContext) {
 		return;
 	}
+	registerDesktop(gitpodContext);
 	registerAuth(gitpodContext);
 	registerPorts(gitpodContext);
 	registerTasks(gitpodContext, (options, parentTerminal) => {
@@ -1076,4 +1077,19 @@ export function registerExtensionManagement(codeServer: GitpodCodeServer, contex
 	context.subscriptions.push(gitpodFileWatcher.onDidDelete(() => validateGitpodFile()));
 	context.subscriptions.push(codeServer.onDidInstallExtension(() => validateGitpodFile()));
 	context.subscriptions.push(codeServer.onDidUninstallExtension(() => validateGitpodFile()));
+}
+
+export async function registerDesktop(_: GitpodExtensionContext): Promise<void> {
+	const config = vscode.workspace.getConfiguration('gitpod.openInStable');
+	if (config.get<boolean>('neverPrompt') === true) {
+		return;
+	}
+	const openAction = 'Open';
+	const neverAgain = 'Don\'t Show Again';
+	const action = await vscode.window.showInformationMessage('Do you want to open this workspace in VS Code Desktop?', openAction, neverAgain);
+	if (action === openAction) {
+		vscode.commands.executeCommand('gitpod.openInStable');
+	} else if (action === neverAgain) {
+		config.update('neverPrompt', true, true);
+	}
 }
