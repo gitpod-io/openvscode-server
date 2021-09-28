@@ -1,0 +1,5 @@
+#@ load("@ytt:data", "data")
+#@overlay/match by=overlay.subset({"kind": "Service", "metadata":{"name":"server"}}),expects=1
+---
+spec:
+  type: LoadBalancer
