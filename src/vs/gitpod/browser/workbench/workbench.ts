@@ -826,7 +826,8 @@ async function doStart(): Promise<IDisposable> {
 				'minimapSlider.activeBackground': '#F9F9F9',
 				'tab.inactiveBackground': '#F9F9F9',
 				'editor.selectionBackground': '#FFE4BC',
-				'editor.inactiveSelectionBackground': '#FFE4BC'
+				'editor.inactiveSelectionBackground': '#FFE4BC',
+				'textLink.foreground': '#ffb45b'
 			}
 		},
 		configurationDefaults: {

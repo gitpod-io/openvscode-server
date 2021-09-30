@@ -23,6 +23,8 @@
         "minimapSlider.activeBackground": "#44403C",
         "tab.inactiveBackground": "#1C1917",
         "editor.selectionBackground": "#A35800",
-        "editor.inactiveSelectionBackground": "#7A4200"
+        "editor.inactiveSelectionBackground": "#7A4200",
+        "textLink.foreground": "#ffb45b",
+        "textLink.activeForeground": "#ff8a00"
 	}
 }
