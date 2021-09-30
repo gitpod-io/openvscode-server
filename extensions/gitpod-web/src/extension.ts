@@ -38,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			location: parentTerminal ? { parentTerminal } : vscode.TerminalLocation.Panel
 		});
 	});
+	registerWelcomeWalkthroughCommands(gitpodContext);
 
 	const codeServer = new GitpodCodeServer();
 	registerCLI(codeServer, gitpodContext);
@@ -751,6 +752,14 @@ export function registerPorts(context: GitpodExtensionContext): void {
 			const apiPort = Number(apiPortInput);
 			vscode.commands.executeCommand('gitpod.api.connectLocalApp', apiPort);
 		}
+	}));
+}
+
+export function registerWelcomeWalkthroughCommands(context: GitpodExtensionContext): void {
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.welcome.createTerminalAndRunDockerCommand', () => {
+		const terminal = vscode.window.createTerminal('Welcome');
+		terminal.show();
+		terminal.sendText('docker run hello-world');
 	}));
 }
 

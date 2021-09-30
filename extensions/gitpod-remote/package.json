@@ -9,7 +9,7 @@
   "icon": "resources/gitpod.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gitpod-io/vscode.git"
+    "url": "https://github.com/gitpod-io/openvscode-server.git"
   },
   "bugs": {
     "url": "https://github.com/gitpod-io/gitpod/issues"
