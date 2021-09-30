@@ -26,8 +26,6 @@ Use the steps on the left side to learn more about the following features:
 
 To be most productive with Gitpod, it is best if you [install the browser extension](https://www.gitpod.io/docs/browser-extension). It will add a convenient "Gitpod" button when you look at your repo, an issue or a pull request.
 
-The most productive way to use Gitpod is by installing its browser extension.
-
 ## Documentation
 
 To learn more about Gitpod, how to customize it and about best practices, please [check out the documentation](https://www.gitpod.io/docs).
