@@ -1,6 +1,8 @@
 # Workspaces
 
-When you work with Gitpod, your goal is to open as many workspaces as possible ;-). To be more specific, you want to open a new workspace for each task you work on. We call this ephemeral workspaces.
+When you work with Gitpod, you use a new workspace for each task you work on. This is different from your local environment where you have only one and maintain it over time.
+
+Gitpod workspaces are automated and disposable, they are ephemeral workspaces.
 
 ## Benefits of ephemeral workspaces
 
