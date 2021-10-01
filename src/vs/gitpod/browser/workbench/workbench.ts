@@ -40,6 +40,20 @@ interface ICredential {
 	password: string;
 }
 
+interface WorkspaceInfoResponse {
+	workspaceId: string
+	instanceId: string
+	checkoutLocation: string
+	workspaceLocationFile?: string
+	workspaceLocationFolder?: string
+	userHome: string
+	gitpodHost: string
+	gitpodApi: { host: string }
+	workspaceContextUrl: string
+	workspaceClusterHost: string
+	ideAlias: string
+}
+
 function doCreateUri(path: string, queryValues: Map<string, string>): URI {
 	let query: string | undefined = undefined;
 
@@ -357,20 +371,7 @@ async function doStart(): Promise<IDisposable> {
 
 	const subscriptions = new DisposableStore();
 
-	const info: {
-		workspaceId: string
-		instanceId: string
-		checkoutLocation: string
-		workspaceLocationFile?: string
-		workspaceLocationFolder?: string
-		userHome: string
-		gitpodHost: string
-		gitpodApi: {
-			host: string
-		}
-		workspaceContextUrl: string
-		workspaceClusterHost: string
-	} = await infoResponse.json();
+	const info: WorkspaceInfoResponse = await infoResponse.json();
 	if (_state as any === 'terminated') {
 		return Disposable.None;
 	}
@@ -825,6 +826,9 @@ async function doStart(): Promise<IDisposable> {
 		urlCallbackProvider: new PollingURLCallbackProvider(),
 		credentialsProvider,
 		productConfiguration: {
+			nameShort: product.nameShort + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
+			nameLong: product.nameLong + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
+			version: product.version + (info.ideAlias === 'code-latest' ? '-insider' : ''),
 			linkProtectionTrustedDomains: [
 				...(product.linkProtectionTrustedDomains || []),
 				gitpodDomain
