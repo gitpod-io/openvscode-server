@@ -8,11 +8,15 @@
 import type { IDEFrontendState } from '@gitpod/gitpod-protocol/lib/ide-frontend-service';
 import type { Status, TunnelStatus } from '@gitpod/local-app-api-grpcweb';
 import { isStandalone } from 'vs/base/browser/browser';
+import { streamToBuffer } from 'vs/base/common/buffer';
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
+import { URI, UriComponents } from 'vs/base/common/uri';
+import { generateUuid } from 'vs/base/common/uuid';
+import { request } from 'vs/base/parts/request/browser/request';
 import { localize } from 'vs/nls';
 import { parseLogLevel } from 'vs/platform/log/common/log';
 import product from 'vs/platform/product/common/product';
@@ -21,7 +25,7 @@ import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from '
 import { extractLocalHostUriMetaDataForPortMapping, isLocalhost } from 'vs/platform/remote/common/tunnel';
 import { ColorScheme } from 'vs/platform/theme/common/theme';
 import { isFolderToOpen, isWorkspaceToOpen } from 'vs/platform/windows/common/windows';
-import { commands, create, ICommand, ICredentialsProvider, IHomeIndicator, ITunnel, ITunnelProvider, IWorkspace, IWorkspaceProvider } from 'vs/workbench/workbench.web.api';
+import { commands, create, ICommand, ICredentialsProvider, IHomeIndicator, ITunnel, ITunnelProvider, IURLCallbackProvider, IWorkspace, IWorkspaceProvider } from 'vs/workbench/workbench.web.api';
 
 const loadingGrpc = import('@improbable-eng/grpc-web');
 const loadingLocalApp = (async () => {
@@ -34,6 +38,24 @@ interface ICredential {
 	service: string;
 	account: string;
 	password: string;
+}
+
+function doCreateUri(path: string, queryValues: Map<string, string>): URI {
+	let query: string | undefined = undefined;
+
+	if (queryValues) {
+		let index = 0;
+		queryValues.forEach((value, key) => {
+			if (!query) {
+				query = '';
+			}
+
+			const prefix = (index++ === 0) ? '' : '&';
+			query += `${prefix}${key}=${encodeURIComponent(value)}`;
+		});
+	}
+
+	return URI.parse(window.location.href).with({ path, query });
 }
 
 class LocalStorageCredentialsProvider implements ICredentialsProvider {
@@ -112,6 +134,86 @@ class LocalStorageCredentialsProvider implements ICredentialsProvider {
 		return [];
 	}
 
+}
+
+class PollingURLCallbackProvider extends Disposable implements IURLCallbackProvider {
+
+	static readonly FETCH_INTERVAL = 500; 			// fetch every 500ms
+	static readonly FETCH_TIMEOUT = 5 * 60 * 1000; 	// ...but stop after 5min
+
+	static readonly QUERY_KEYS = {
+		REQUEST_ID: 'vscode-requestId',
+		SCHEME: 'vscode-scheme',
+		AUTHORITY: 'vscode-authority',
+		PATH: 'vscode-path',
+		QUERY: 'vscode-query',
+		FRAGMENT: 'vscode-fragment'
+	};
+
+	private readonly _onCallback = this._register(new Emitter<URI>());
+	readonly onCallback = this._onCallback.event;
+
+	create(options?: Partial<UriComponents>): URI {
+		const queryValues: Map<string, string> = new Map();
+
+		const requestId = generateUuid();
+		queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.REQUEST_ID, requestId);
+
+		const { scheme, authority, path, query, fragment } = options ? options : { scheme: undefined, authority: undefined, path: undefined, query: undefined, fragment: undefined };
+
+		if (scheme) {
+			queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.SCHEME, scheme);
+		}
+
+		if (authority) {
+			queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.AUTHORITY, authority);
+		}
+
+		if (path) {
+			queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.PATH, path);
+		}
+
+		if (query) {
+			queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.QUERY, query);
+		}
+
+		if (fragment) {
+			queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.FRAGMENT, fragment);
+		}
+
+		// Start to poll on the callback being fired
+		this.periodicFetchCallback(requestId, Date.now());
+
+		return doCreateUri('/callback', queryValues);
+	}
+
+	private async periodicFetchCallback(requestId: string, startTime: number): Promise<void> {
+
+		// Ask server for callback results
+		const queryValues: Map<string, string> = new Map();
+		queryValues.set(PollingURLCallbackProvider.QUERY_KEYS.REQUEST_ID, requestId);
+
+		const result = await request({
+			url: doCreateUri('/fetch-callback', queryValues).toString(true)
+		}, CancellationToken.None);
+
+		// Check for callback results
+		const content = await streamToBuffer(result.stream);
+		if (content.byteLength > 0) {
+			try {
+				this._onCallback.fire(URI.revive(JSON.parse(content.toString())));
+			} catch (error) {
+				console.error(error);
+			}
+
+			return; // done
+		}
+
+		// Continue fetching unless we hit the timeout
+		if (Date.now() - startTime < PollingURLCallbackProvider.FETCH_TIMEOUT) {
+			setTimeout(() => this.periodicFetchCallback(requestId, startTime), PollingURLCallbackProvider.FETCH_INTERVAL);
+		}
+	}
 }
 
 class WorkspaceProvider implements IWorkspaceProvider {
@@ -720,6 +822,7 @@ async function doStart(): Promise<IDisposable> {
 		developmentOptions: {
 			logLevel: logLevel ? parseLogLevel(logLevel) : undefined
 		},
+		urlCallbackProvider: new PollingURLCallbackProvider(),
 		credentialsProvider,
 		productConfiguration: {
 			linkProtectionTrustedDomains: [
