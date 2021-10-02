@@ -71,21 +71,4 @@ To learn what others are up to and to provide feedback, please head over to the 
 
 You can also follow us on Twitter [@gitpod](https://twitter.com/gitpod) or come [chat with us](https://www.gitpod.io/chat).
 
-## FAQ'S
 
-1. How is OpenVSCode Server different from VS Code?
-- It makes use of the power of the cloud - dependencies, compilation, testing, large data sets can all be run on machines far more powerful than your laptop.
-
-2. How is OpenVSCode Server different from Gitpod?
-- If you want one-click, fully automated developer environments that give yourself and your team an unparalleled productivity boost try Gitpod.
-
-- If you have a machine somewhere which you would like to access with VS Code through a browser, then go for OpenVsCode Server.
-
-3. How is OpenVSCode Server different from the Remote SSH VS Code extension?
-- In OpenVSCode Server you can access those machines from any device such as iPads and Chromebooks via a web browser with the familiar VS Code experience.
-
-4. How is OpenVSCode Server different from code-server?
--  Developers can simply run a Docker command to install the project on their local desktop machine and then work remotely from a much lower-powered device, such as an iPad or Chromebook. Moreover, they can install OpenVSCode Server to the cloud, and the project includes guides for running on AWS and Google Cloud, for the data science use case.
-
-5. How do I create a Node / Java / C / etc environment?
-- The same way like you used to do it locally. Just run docker command 'docker run -it --init -p 3000:3000 -v "$(pwd):/home/workspace:cached" gitpod/openvscode-server', visit the localhost where your vs code is up and running and just get started with it.
