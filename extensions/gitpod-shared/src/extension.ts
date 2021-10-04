@@ -49,6 +49,7 @@ function registerUsageAnalytics(context: GitpodExtensionContext): void {
 		appName: vscode.env.appName,
 		uiKind: vscode.env.uiKind === vscode.UIKind.Web ? 'web' : 'desktop',
 		devMode: context.devMode,
+		version: vscode.version,
 	};
 	function fireEvent(phase: 'start' | 'running' | 'end'): Promise<void> {
 		return context.gitpod.server.trackEvent({
