@@ -39,6 +39,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		});
 	});
 	registerWelcomeWalkthroughCommands(gitpodContext);
+	startWelcomeWalkthrough();
 
 	const codeServer = new GitpodCodeServer();
 	registerCLI(codeServer, gitpodContext);
@@ -761,6 +762,12 @@ export function registerWelcomeWalkthroughCommands(context: GitpodExtensionConte
 		terminal.show();
 		terminal.sendText('docker run hello-world');
 	}));
+}
+
+export function startWelcomeWalkthrough() {
+	if (vscode.window.visibleTextEditors.length === 0) {
+		vscode.commands.executeCommand('workbench.action.openWalkthrough', 'gitpod.gitpod-web#gitpod-getstarted', false);
+	}
 }
 
 export function registerCLI(codeServer: GitpodCodeServer, context: GitpodExtensionContext): void {
