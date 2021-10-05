@@ -1,0 +1,14 @@
+#@ load("@ytt:data", "data")
+#@ load("helpers.star", "labels_for_component")
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: #@ data.values.NAMESPACE
+spec:
+  ports:
+    - port: 3000
+      protocol: TCP
+      targetPort: http
+  selector: #@ labels_for_component("openvscode-server")

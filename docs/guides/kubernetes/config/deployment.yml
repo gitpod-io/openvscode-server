@@ -1,0 +1,52 @@
+#@ load("@ytt:data", "data")
+#@ load("helpers.star", "labels_for_component")
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server
+  namespace: #@ data.values.NAMESPACE
+  labels: #@ labels_for_component("openvscode-server")
+spec:
+  replicas: 1
+  selector:
+    matchLabels: #@ labels_for_component("openvscode-server")
+  template:
+    metadata:
+      labels: #@ labels_for_component("openvscode-server")
+    spec:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+      - name: init-data
+        image: busybox:1.34.0
+        command: [ "mkdir", "-p", "/home/workspace/.opencode-server" ]
+        volumeMounts:
+        - mountPath: /home/workspace
+          name: data
+      containers:
+      - name: server
+        image: gitpod/openvscode-server
+        resources:
+          requests:
+            memory: 256M
+          limits:
+            memory: 256M
+        ports:
+        - name: http
+          containerPort: 3000
+        livenessProbe:
+          httpGet:
+            port: http
+            path: /
+        readinessProbe:
+          httpGet:
+            port: http
+            path: /
+        volumeMounts:
+        - mountPath: /home/workspace
+          name: data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: data-pv-claim

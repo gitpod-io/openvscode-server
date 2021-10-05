@@ -1,0 +1,22 @@
+#@data/values
+---
+#! Set application name.
+APP: openvscode-server
+
+#! Set target namespace.
+NAMESPACE: openvscode
+
+#! Set the public-facing domain used for accessing the application.
+DOMAIN: openvscode.example.com
+
+#! Set storage class to use for persistent data.
+STORAGE_CLASS: ""
+
+#! Set storage size for persistent data.
+STORAGE_SIZE: 2Gi
+
+#! Set storage mode for persistent data.
+STORAGE_ACCESS_MODE: ReadWriteOnce
+
+#! Set cert-manager cluster issuer to use when ingress TLS is enabled.
+CERT_MANAGER_CLUSTER_ISSUER: letsencrypt-prod

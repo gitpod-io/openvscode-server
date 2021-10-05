@@ -1,0 +1,10 @@
+#@ load("@ytt:overlay", "overlay")
+#@ load("@ytt:data", "data")
+
+#@overlay/match by=overlay.subset({"kind": "Ingress", "metadata":{"name":"server"}}),expects=1
+---
+metadata:
+  #@overlay/match missing_ok=True
+  annotations:
+    #@overlay/match missing_ok=True
+    projectcontour.io/websocket-routes: /

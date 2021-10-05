@@ -1,0 +1,15 @@
+#@ load("@ytt:data", "data")
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-pv-claim
+  namespace: #@ data.values.NAMESPACE
+spec:
+  #@ if/end data.values.STORAGE_CLASS != "":
+  storageClassName: #@ data.values.STORAGE_CLASS
+  accessModes:
+    - #@ data.values.STORAGE_ACCESS_MODE
+  resources:
+    requests:
+      storage: #@ data.values.STORAGE_SIZE
