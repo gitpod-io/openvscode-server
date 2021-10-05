@@ -666,6 +666,18 @@ async function doStart(): Promise<IDisposable> {
 	};
 	const tunnelProvider: ITunnelProvider = {
 		features: {
+			privacyOptions: [
+				{
+					id: 'public',
+					label: 'Public',
+					themeIcon: 'eye'
+				},
+				{
+					id: 'private',
+					label: 'Private',
+					themeIcon: 'lock'
+				}
+			],
 			public: true,
 			elevation: false
 		},

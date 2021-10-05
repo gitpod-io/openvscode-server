@@ -13,11 +13,13 @@ import * as util from 'util';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter } from 'vs/base/common/event';
 import { IDisposable } from 'vs/base/common/lifecycle';
+import { platform } from 'vs/base/common/platform';
+import { arch } from 'vs/base/common/process';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import type { ServerExtensionHostConnection } from 'vs/gitpod/node/server-extension-host-connection';
 import { infoServiceClient, supervisorAddr, supervisorDeadlines, supervisorMetadata } from 'vs/gitpod/node/supervisor-client';
-import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService, CURRENT_TARGET_PLATFORM } from 'vs/platform/extensionManagement/common/extensionManagement';
+import { IExtensionGalleryService, IExtensionManagementCLIService, IExtensionManagementService, getTargetPlatform } from 'vs/platform/extensionManagement/common/extensionManagement';
 import { ExtensionManagementCLIService } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
 import { ExtensionType } from 'vs/platform/extensions/common/extensions';
 import { IFileService } from 'vs/platform/files/common/files';
@@ -269,7 +271,7 @@ main({
 				extensionGalleryService.getExtensions(extensionIds, token).then(result =>
 					result.forEach(extension => extensions.add(extension.identifier.id.toLocaleLowerCase())), () => { }),
 				...extensionsWithIdAndVersion.map(({ id, version }) =>
-					extensionGalleryService.getCompatibleExtension({ id }, CURRENT_TARGET_PLATFORM).
+					extensionGalleryService.getCompatibleExtension({ id }, getTargetPlatform(platform, arch)).
 						then(extension => extension && extensions.add(extension.identifier.id.toLocaleLowerCase()), () => { })),
 				...param.links.map(async vsix => {
 					try {
