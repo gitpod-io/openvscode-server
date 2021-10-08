@@ -129,23 +129,23 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	function downloadLocalApp(gitpodHost: string): Promise<Response> {
 		let downloadUri = vscode.Uri.parse(gitpodHost);
-		let arch = 'amd64';
+		let arch = '';
 		if (process.arch === 'arm64') {
-			arch = 'arm64';
+			arch = '-arm64';
 		} if (process.arch === 'x32' && process.platform === 'win32') {
-			arch = '386';
+			arch = '-386';
 		}
 		if (process.platform === 'win32') {
 			downloadUri = downloadUri.with({
-				path: `/static/bin/gitpod-local-companion-windows-${arch}.exe`
+				path: `/static/bin/gitpod-local-companion-windows${arch}.exe`
 			});
 		} else if (process.platform === 'darwin') {
 			downloadUri = downloadUri.with({
-				path: `/static/bin/gitpod-local-companion-darwin-${arch}`
+				path: `/static/bin/gitpod-local-companion-darwin${arch}`
 			});
 		} else {
 			downloadUri = downloadUri.with({
-				path: `/static/bin/gitpod-local-companion-linux-${arch}`
+				path: `/static/bin/gitpod-local-companion-linux${arch}`
 			});
 		}
 		log(`fetching the local app from ${downloadUri.toString()}`);
