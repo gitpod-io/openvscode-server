@@ -839,9 +839,9 @@ async function doStart(): Promise<IDisposable> {
 		urlCallbackProvider: new PollingURLCallbackProvider(),
 		credentialsProvider,
 		productConfiguration: {
-			nameShort: product.nameShort + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
-			nameLong: product.nameLong + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
-			version: product.version + (info.ideAlias === 'code-latest' ? '-insider' : ''),
+			nameShort: product.nameShort + (info.ideAlias === 'code-latest' ? ' - Insiders' : (info.ideAlias === 'code-nightly' ? ' - Nightly' : '')),
+			nameLong: product.nameLong + (info.ideAlias === 'code-latest' ? ' - Insiders' : (info.ideAlias === 'code-nightly' ? ' - Nightly' : '')),
+			version: product.version + (info.ideAlias === 'code-latest' ? '-insider' : (info.ideAlias === 'code-nightly' ? '-nightly' : '')),
 			linkProtectionTrustedDomains: [
 				...(product.linkProtectionTrustedDomains || []),
 				gitpodDomain
