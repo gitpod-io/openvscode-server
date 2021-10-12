@@ -48,7 +48,7 @@ Run this command
 `az vm show -d -g gitpod-vscode-server -n gitpod-vscode-server-vm --query publicIps -o tsv`
 <br> <br>
 
-Paste public ip in browser with :3000 at the end <br>
+Paste public IP in browser with :3000 at the end <br>
 Example - 199.199.199.199:3000
 
 ## Teardown
