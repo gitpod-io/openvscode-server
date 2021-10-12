@@ -28,7 +28,7 @@ terraform apply "main.tfplan"
 ```
 
 3. Voila! Virtual machine is created
-4. Now if you are using linux/mac operating system then follow below steps if you are using windows then go to step
+4. Now if you are using Linux/Mac operating system then follow the below steps if you are using windows then go to step
    Open command prompt in terraform folder and type below commands
 
 ```
