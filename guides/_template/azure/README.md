@@ -18,7 +18,7 @@
 
 ## Start the server
 
-1. Open azure into any text editor, click on `variables.tf` file. Chnage the defaul location to your nearest azure data-center location.
+1. Open azure into any text editor, click on `variables.tf` file. Change the default location to your nearest azure data-center location.
 2. Open command line in that folder and run following commands.
 
 ```
