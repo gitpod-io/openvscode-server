@@ -40,7 +40,7 @@ chmod +x ssh-setup.sh
 
 ## Access OpenVSCode Server
 
-Go to Azure console and click on your virtual machine and copy public ip
+Go to Azure console and click on your virtual machine and copy public IP
 
 #### or
 
