@@ -53,5 +53,5 @@ Example - 199.199.199.199:3000
 
 ## Teardown
 
-Open same azure folder in command line and type `terraform destroy` and then type yes. <br>
+Open the same azure folder in the command line and type `terraform destroy` and then type yes. <br>
 It will delete every resources.
