@@ -175,7 +175,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 					scopes
 				}, resolveGitpodUser);
 				sessions.push(session);
-				onDidChangeSessionsEmitter.fire({ added: [session] });
+				onDidChangeSessionsEmitter.fire({ added: [session], changed: [], removed: [] });
 			}
 		} catch (e) {
 			console.error('Failed to restore Gitpod session:', e);
@@ -240,7 +240,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 				accessToken,
 				scopes: getTokenResponse.getScopeList()
 			}, resolveGitHubUser);
-			onDidChangeGitHubSessionsEmitter.fire({ added: [gitHubSession] });
+			onDidChangeGitHubSessionsEmitter.fire({ added: [gitHubSession], changed: [], removed: [] });
 			return gitHubSession;
 		}
 
@@ -272,7 +272,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 				if (id === gitHubSession?.id) {
 					const session = gitHubSession;
 					gitHubSession = undefined;
-					onDidChangeGitHubSessionsEmitter.fire({ removed: [session] });
+					onDidChangeGitHubSessionsEmitter.fire({ removed: [session], added: [], changed: [] });
 				}
 			},
 		}, { supportsMultipleAccounts: false }));
