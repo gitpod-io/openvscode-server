@@ -37,6 +37,11 @@ export async function activate(context: vscode.ExtensionContext) {
 			...options,
 			location: parentTerminal ? { parentTerminal } : vscode.TerminalLocation.Panel
 		});
+	}).then(() => {
+		if (vscode.window.terminals.length === 0) {
+			// Always show a terminal if no task terminals are created
+			vscode.window.createTerminal();
+		}
 	});
 	registerWelcomeWalkthroughCommands(gitpodContext);
 	startWelcomeWalkthrough();

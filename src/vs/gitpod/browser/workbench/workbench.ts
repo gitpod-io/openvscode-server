@@ -858,11 +858,6 @@ async function doStart(): Promise<IDisposable> {
 				}
 			}
 		},
-		defaultLayout: {
-			views: [{
-				id: 'terminal'
-			}]
-		},
 		settingsSyncOptions: {
 			enabled: true,
 			enablementHandler: enablement => {
