@@ -43,8 +43,12 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.createTerminal();
 		}
 	});
+
+	const versionKey = 'walkthrough.version';
+	context.globalState.setKeysForSync([versionKey]);
+
 	registerWelcomeWalkthroughCommands(gitpodContext);
-	startWelcomeWalkthrough();
+	startWelcomeWalkthrough(context, versionKey);
 
 	const codeServer = new GitpodCodeServer();
 	registerCLI(codeServer, gitpodContext);
@@ -769,10 +773,17 @@ export function registerWelcomeWalkthroughCommands(context: GitpodExtensionConte
 	}));
 }
 
-export function startWelcomeWalkthrough() {
-	if (vscode.window.visibleTextEditors.length === 0) {
-		vscode.commands.executeCommand('workbench.action.openWalkthrough', 'gitpod.gitpod-web#gitpod-getstarted', false);
+export function startWelcomeWalkthrough(context: vscode.ExtensionContext, versionKey: string): void {
+	type WalkthroughVersion = 0.1;
+	const currentVersion: WalkthroughVersion = 0.1;
+	const lastVersionShown = context.globalState.get<number>(versionKey);
+
+	if (typeof lastVersionShown === 'number' || vscode.window.visibleTextEditors.length !== 0) {
+		return;
 	}
+
+	context.globalState.update(versionKey, currentVersion);
+	vscode.commands.executeCommand('workbench.action.openWalkthrough', 'gitpod.gitpod-web#gitpod-getstarted', false);
 }
 
 export function registerCLI(codeServer: GitpodCodeServer, context: GitpodExtensionContext): void {
