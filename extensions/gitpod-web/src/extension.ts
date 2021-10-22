@@ -774,7 +774,7 @@ export function registerWelcomeWalkthroughCommands(context: GitpodExtensionConte
 }
 
 export function startWelcomeWalkthrough(context: vscode.ExtensionContext, versionKey: string): void {
-	type WalkthroughVersion = 0.1;
+	type WalkthroughVersion = number;
 	const currentVersion: WalkthroughVersion = 0.1;
 	const lastVersionShown = context.globalState.get<number>(versionKey);
 
