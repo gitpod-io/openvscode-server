@@ -33,7 +33,8 @@
 		"ms-vscode.vscode-js-profile-flame",
 		"ms-vscode.vscode-js-profile-table",
 		"ms-vscode.vscode-selfhost-test-provider",
-		"dbaeumer.vscode-eslint"
+		"dbaeumer.vscode-eslint",
+		"genuitecllc.codetogether"
 	],
 	"extensionTips": {
 		"msjsdiag.debugger-for-chrome": "{**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.es6,**/.babelrc}",
