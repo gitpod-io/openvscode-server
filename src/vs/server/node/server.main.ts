@@ -1023,9 +1023,10 @@ export async function main(options: IServerOptions): Promise<void> {
 			if (typeof addressInfo === 'string') {
 				logService.info(`Server listening on ${addressInfo}`);
 			} else if (addressInfo) {
+				logService.info(`Server listening on ${addressInfo.address}:${addressInfo.port}`);
 				const address = addressInfo.address === '0.0.0.0' || addressInfo.address === '127.0.0.1' ? 'localhost' : addressInfo.address;
-				const formattedPort = addressInfo.port === 80 ? '' : String(addressInfo.port);
-				logService.info(`Web UI available at http://${address}:${formattedPort}`);
+				const formattedPort = addressInfo.port === 80 ? '' : `:${addressInfo.port}`;
+				logService.info(`Web UI available at http://${address}${formattedPort}`);
 			}
 		});
 	});
