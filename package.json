@@ -64,7 +64,9 @@
     "extensions-ci": "node --max-old-space-size=8095 ./node_modules/gulp/bin/gulp.js extensions-ci",
     "extensions-ci-pr": "node --max-old-space-size=4095 ./node_modules/gulp/bin/gulp.js extensions-ci-pr",
     "perf": "node scripts/code-perf.js",
-    "update-build-ts-version": "yarn add typescript@next && tsc -p ./build/tsconfig.build.json"
+    "update-build-ts-version": "yarn add typescript@next && tsc -p ./build/tsconfig.build.json",
+    "server:init": "yarn --cwd ./build compile && yarn compile && yarn download-builtin-extensions",
+    "server:smoketest": "yarn --cwd ./test/smoke compile && yarn smoketest-no-compile --web --verbose --headless --electronArgs=\"--disable-dev-shm-usage --use-gl=swiftshader\""
   },
   "dependencies": {
     "@microsoft/1ds-core-js": "^3.2.13",
