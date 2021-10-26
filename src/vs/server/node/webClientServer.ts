@@ -306,15 +306,15 @@ export class WebClientServer {
 		} : undefined;
 
 		const productConfiguration = <Partial<IProductConfiguration>>{
-			embedderIdentifier: 'server-distro',
-			extensionsGallery: this._webExtensionResourceUrlTemplate ? {
-				...this._productService.extensionsGallery,
-				'resourceUrlTemplate': this._webExtensionResourceUrlTemplate.with({
-					scheme: 'http',
-					authority: remoteAuthority,
-					path: `${this._webExtensionRoute}/${this._webExtensionResourceUrlTemplate.authority}${this._webExtensionResourceUrlTemplate.path}`
-				}).toString(true)
-			} : undefined
+			// embedderIdentifier: 'server-distro',
+			// extensionsGallery: this._webExtensionResourceUrlTemplate ? {
+			// 	...this._productService.extensionsGallery,
+			// 	'resourceUrlTemplate': this._webExtensionResourceUrlTemplate.with({
+			// 		scheme: 'http',
+			// 		authority: remoteAuthority,
+			// 		path: `${this._webExtensionRoute}/${this._webExtensionResourceUrlTemplate.authority}${this._webExtensionResourceUrlTemplate.path}`
+			// 	}).toString(true)
+			// } : undefined
 		};
 
 		if (!this._environmentService.isBuilt) {
