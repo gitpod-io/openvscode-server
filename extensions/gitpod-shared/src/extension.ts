@@ -5,11 +5,10 @@
 import * as vscode from 'vscode';
 import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
 
-export { GitpodExtensionContext, SupervisorConnection, registerTasks } from './features';
+export { GitpodExtensionContext, registerTasks, SupervisorConnection } from './features';
 export * from './gitpod-plugin-model';
 
 export async function setupGitpodContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
-
 	if (typeof vscode.env.remoteName === 'undefined' || context.extension.extensionKind !== vscode.ExtensionKind.Workspace) {
 		return undefined;
 	}
@@ -40,18 +39,18 @@ export async function setupGitpodContext(context: vscode.ExtensionContext): Prom
 function registerUsageAnalytics(context: GitpodExtensionContext): void {
 	context.fireAnalyticsEvent({
 		eventName: 'vscode_session',
-		optionalProperties: { phase: 'start' }
+		properties: { phase: 'start', focused: vscode.window.state.focused }
 	});
 	context.subscriptions.push(vscode.window.onDidChangeWindowState(() =>
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_session',
-			optionalProperties: { phase: 'running' }
+			properties: { phase: 'running', focused: vscode.window.state.focused }
 		})
 	));
 	context.pendingWillCloseSocket.push(() =>
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_session',
-			optionalProperties: { phase: 'end' },
+			properties: { phase: 'end', focused: vscode.window.state.focused },
 		})
 	);
 }

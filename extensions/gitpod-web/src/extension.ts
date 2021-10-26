@@ -587,14 +587,14 @@ export function registerPorts(context: GitpodExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.makePrivate', (port: GitpodWorkspacePort) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			optionalProperties: { action: 'private' }
+			properties: { action: 'private' }
 		});
 		return port.setPortVisibility('private');
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.makePublic', (port: GitpodWorkspacePort) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			optionalProperties: { action: 'public' }
+			properties: { action: 'public' }
 		});
 		return port.setPortVisibility('public');
 	}));
@@ -607,14 +607,14 @@ export function registerPorts(context: GitpodExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.preview', (port: GitpodWorkspacePort) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			optionalProperties: { action: 'preview' }
+			properties: { action: 'preview' }
 		});
 		return openPreview(port);
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.openBrowser', (port: GitpodWorkspacePort) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			optionalProperties: { action: 'openBrowser' }
+			properties: { action: 'openBrowser' }
 		});
 		return port.openExternal();
 	}));
@@ -844,14 +844,14 @@ export function registerExtensionManagement(codeServer: GitpodCodeServer, contex
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.addToConfig', (id: string) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_config',
-			optionalProperties: { action: 'add' }
+			properties: { action: 'add' }
 		});
 		return modifyGipodPluginModel(model => model.add(id));
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.removeFromConfig', (id: string) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_config',
-			optionalProperties: { action: 'remove' }
+			properties: { action: 'remove' }
 		});
 		return modifyGipodPluginModel(model => model.remove(id));
 	}));

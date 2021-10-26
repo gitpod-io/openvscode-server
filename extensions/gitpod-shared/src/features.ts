@@ -31,8 +31,9 @@ import * as util from 'util';
 import * as vscode from 'vscode';
 import { ConsoleLogger, listen as doListen } from 'vscode-ws-jsonrpc';
 import WebSocket = require('ws');
-import { GitpodAnalyticsEvent } from './types';
+import { BaseGitpodAnalyticsEventPropeties, GitpodAnalyticsEvent } from './analytics';
 import * as uuid from 'uuid';
+import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 
 export class SupervisorConnection {
 	readonly deadlines = {
@@ -75,6 +76,7 @@ export type GitpodConnection = Omit<GitpodServiceImpl<GitpodClient, GitpodServer
 
 export class GitpodExtensionContext implements vscode.ExtensionContext {
 
+	readonly sessionId = uuid.v4();
 	readonly pendingActivate: Promise<void>[] = [];
 	readonly workspaceContextUrl: vscode.Uri;
 
@@ -92,8 +94,7 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 		readonly instanceListener: Promise<WorkspaceInstanceUpdateListener>,
 		readonly workspaceOwned: Promise<boolean>,
 		readonly output: vscode.OutputChannel,
-		readonly ipcHookCli: string | undefined,
-		public fireAnalyticsEvent: ({ }: GitpodAnalyticsEvent) => Promise<void>
+		readonly ipcHookCli: string | undefined
 	) {
 		this.workspaceContextUrl = vscode.Uri.parse(info.getWorkspaceContextUrl());
 	}
@@ -171,10 +172,39 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 			}
 		})();
 	}
+
+	async fireAnalyticsEvent({ eventName, properties }: GitpodAnalyticsEvent): Promise<void> {
+		const baseProperties: BaseGitpodAnalyticsEventPropeties = {
+			sessionId: this.sessionId,
+			workspaceId: this.info.getWorkspaceId(),
+			instanceId: this.info.getInstanceId(),
+			appName: vscode.env.appName,
+			uiKind: vscode.env.uiKind === vscode.UIKind.Web ? 'web' : 'desktop',
+			devMode: this.devMode,
+			version: vscode.version,
+			timestamp: Date.now(),
+		};
+		const msg: RemoteTrackMessage = {
+			event: eventName,
+			properties: {
+				...baseProperties,
+				...properties,
+			}
+		};
+		if (this.devMode && vscode.env.uiKind === vscode.UIKind.Web) {
+			this.output.appendLine(`ANALYTICS: ${JSON.stringify(msg)} `);
+			return Promise.resolve();
+		}
+		try {
+			await this.gitpod.server.trackEvent(msg);
+		} catch (e) {
+			this.output.appendLine('failed to track event: ' + e);
+			console.error('failed to track event:', e);
+		}
+	}
 }
 
 export async function createGitpodExtensionContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
-
 	const output = vscode.window.createOutputChannel('Gitpod Workspace');
 	const devMode = context.extensionMode === vscode.ExtensionMode.Development || !!process.env['VSCODE_DEV'];
 
@@ -279,35 +309,6 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 	const ipcHookCli = installCLIProxy(context, output);
 
 	const config = await import('./gitpod-plugin-model');
-
-	const sessionId = uuid.v4();
-	const defaultProperties = {
-		sessionId,
-		workspaceId: workspaceInfo.getWorkspaceId(),
-		instanceId: workspaceInfo.getInstanceId(),
-		appName: vscode.env.appName,
-		uiKind: vscode.env.uiKind === vscode.UIKind.Web ? 'web' : 'desktop',
-		devMode: devMode,
-		version: vscode.version,
-	};
-
-	const fireAnalyticsEvent = ({ eventName, optionalProperties }: GitpodAnalyticsEvent): Promise<void> => {
-		const args = {
-			event: eventName,
-			properties: {
-				...optionalProperties,
-				...defaultProperties,
-				timestamp: Date.now(),
-			}
-		};
-		if (devMode && vscode.env.uiKind === vscode.UIKind.Web) {
-			output.appendLine(`ANALYTICS: ${JSON.stringify(args)} `);
-			return Promise.resolve();
-		} else {
-			return gitpodService.server.trackEvent(args);
-		}
-	};
-
 	return new GitpodExtensionContext(
 		context,
 		devMode,
@@ -322,8 +323,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 		pendingInstanceListener,
 		pendingWorkspaceOwned,
 		output,
-		ipcHookCli,
-		fireAnalyticsEvent
+		ipcHookCli
 	);
 }
 
@@ -332,7 +332,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = context.info.getGitpodHost();
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -340,7 +340,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = new GitpodHostUrl(context.info.getGitpodHost()).asAccessControl().toString();
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -348,7 +348,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = new GitpodHostUrl(context.info.getGitpodHost()).asSettings().toString();
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -356,7 +356,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = context.workspaceContextUrl.toString();
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -364,7 +364,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = 'https://www.gitpod.io/docs';
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -372,7 +372,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = 'https://twitter.com/gitpod';
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -380,7 +380,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = 'https://www.gitpod.io/chat';
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -388,7 +388,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = 'https://community.gitpod.io';
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -396,7 +396,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = 'https://github.com/gitpod-io/gitpod/issues/new/choose';
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
@@ -418,14 +418,14 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		context.subscriptions.push(vscode.commands.registerCommand('gitpod.openInStable', () => {
 			context.fireAnalyticsEvent({
 				eventName: 'vscode_execute_command_gitpod_change_vscode_type',
-				optionalProperties: { type: 'desktop' }
+				properties: { targetUiKind: 'desktop', targetQualifier: 'stable' }
 			});
 			return openDesktop('vscode');
 		}));
 		context.subscriptions.push(vscode.commands.registerCommand('gitpod.openInInsiders', () => {
 			context.fireAnalyticsEvent({
 				eventName: 'vscode_execute_command_gitpod_change_vscode_type',
-				optionalProperties: { type: 'desktop', version: 'insiders' }
+				properties: { targetUiKind: 'desktop', targetQualifier: 'insiders' }
 			});
 			return openDesktop('vscode-insiders');
 		}));
@@ -435,7 +435,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 			const url = context.info.getWorkspaceUrl();
 			context.fireAnalyticsEvent({
 				eventName: 'vscode_execute_command_gitpod_change_vscode_type',
-				optionalProperties: { type: 'browser' }
+				properties: { targetUiKind: 'web' }
 			});
 			return vscode.env.openExternal(vscode.Uri.parse(url));
 		}));
@@ -456,7 +456,7 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.stop.ws', () => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_workspace',
-			optionalProperties: { action: 'stop' }
+			properties: { action: 'stop' }
 		});
 		return context.gitpod.server.stopWorkspace(context.info.getWorkspaceId());
 	}));
@@ -464,14 +464,14 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		const url = new GitpodHostUrl(context.info.getGitpodHost()).asUpgradeSubscription().toString();
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_open_link',
-			optionalProperties: { url }
+			properties: { url }
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.takeSnapshot', async () => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_workspace',
-			optionalProperties: { action: 'snapshot' }
+			properties: { action: 'snapshot' }
 		});
 		try {
 			const snapshotId = await vscode.window.withProgress({
@@ -562,14 +562,14 @@ export async function registerWorkspaceSharing(context: GitpodExtensionContext):
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.shareWorkspace', () => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_workspace',
-			optionalProperties: { action: 'share' }
+			properties: { action: 'share' }
 		});
 		return controlAdmission('everyone');
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.stopSharingWorkspace', () => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_workspace',
-			optionalProperties: { action: 'stop-sharing' }
+			properties: { action: 'stop-sharing' }
 		});
 		return controlAdmission('owner');
 	}));
@@ -584,7 +584,7 @@ export async function registerWorkspaceTimeout(context: GitpodExtensionContext):
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ExtendTimeout', async () => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_workspace',
-			optionalProperties: {
+			properties: {
 				action: 'extend-timeout'
 			}
 		});
