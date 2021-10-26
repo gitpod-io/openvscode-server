@@ -189,7 +189,7 @@ async function parsePort(host: string | undefined, strPort: string | undefined):
 			process.exit(1);
 		}
 	}
-	return 8000;
+	return 3000;
 }
 
 function parseRange(strRange: string): { start: number; end: number } | undefined {
