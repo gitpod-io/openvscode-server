@@ -175,7 +175,9 @@ function sanitizeStringArg(val) {
  * then find a free port in that range. Throw error if no
  * free port available in range.
  *
- * In absence of specified ports, connect to port 8000.
+ * If only `--port` is provided then connect to that port.
+ *
+ * In absence of specified ports, connect to port 3000.
  * @param {string | undefined} host
  * @param {string | undefined} strPort
  * @returns {Promise<number>}
@@ -200,7 +202,7 @@ async function parsePort(host, strPort) {
 			process.exit(1);
 		}
 	}
-	return 8000;
+	return 3000;
 }
 
 /**

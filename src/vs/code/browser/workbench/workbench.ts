@@ -398,13 +398,22 @@ class WorkspaceProvider implements IWorkspaceProvider {
 	if (!configElement || !configElementAttribute) {
 		throw new Error('Missing web configuration element');
 	}
-	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = JSON.parse(configElementAttribute);
+	const originalConfig: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = JSON.parse(configElementAttribute);
+	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = {
+		remoteAuthority: window.location.host,
+		developmentOptions: originalConfig.developmentOptions,
+		settingsSyncOptions: originalConfig.settingsSyncOptions,
+		folderUri: originalConfig.folderUri,
+		workspaceUri: originalConfig.workspaceUri,
+		callbackRoute: originalConfig.callbackRoute
+	};
 
 	// Create workbench
 	create(document.body, {
 		...config,
 		windowIndicator: config.windowIndicator ?? { label: '$(remote)', tooltip: `${product.nameShort} Web` },
 		settingsSyncOptions: config.settingsSyncOptions ? { enabled: config.settingsSyncOptions.enabled, } : undefined,
+		developmentOptions: { ...config.developmentOptions },
 		workspaceProvider: WorkspaceProvider.create(config),
 		urlCallbackProvider: new LocalStorageURLCallbackProvider(config.callbackRoute),
 		secretStorageProvider: config.remoteAuthority ? undefined /* with a remote, we don't use a local secret storage provider */ : new LocalStorageSecretStorageProvider()

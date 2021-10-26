@@ -20,6 +20,9 @@ import * as task from './task';
 import { Mangler } from './mangle/index';
 import { RawSourceMap } from 'source-map';
 const watch = require('./watch');
+const packageJson = require('../../package.json');
+const productJson = require('../../product.json');
+const replace = require('gulp-replace');
 
 
 // --- gulp-tsb: compile and transpile --------------------------------
@@ -66,8 +69,20 @@ function createCompile(src: string, build: boolean, emitError: boolean, transpil
 		const isRuntimeJs = (f: File) => f.path.endsWith('.js') && !f.path.includes('fixtures');
 		const noDeclarationsFilter = util.filter(data => !(/\.d\.ts$/.test(data.path)));
 
+		const productJsFilter = util.filter(data => !build && data.path.endsWith('vs/platform/product/common/product.ts'));
+		const productConfiguration = JSON.stringify({
+			...productJson,
+			version: `${packageJson.version}-dev`,
+			nameShort: `${productJson.nameShort} Dev`,
+			nameLong: `${productJson.nameLong} Dev`,
+			dataFolderName: `${productJson.dataFolderName}-dev`
+		});
+
 		const input = es.through();
 		const output = input
+			.pipe(productJsFilter)
+			.pipe(replace(/{\s*\/\*BUILD->INSERT_PRODUCT_CONFIGURATION\*\/\s*}/, productConfiguration, { skipBinary: true }))
+			.pipe(productJsFilter.restore)
 			.pipe(util.$if(isUtf8Test, bom())) // this is required to preserve BOM in test files that loose it otherwise
 			.pipe(util.$if(!build && isRuntimeJs, util.appendOwnPathSourceURL()))
 			.pipe(tsFilter)
