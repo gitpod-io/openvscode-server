@@ -229,7 +229,7 @@ async function parsePort(host, strPort) {
 			process.exit(1);
 		}
 	}
-	return 8000;
+	return 3000;
 }
 
 /**
