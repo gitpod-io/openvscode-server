@@ -7,17 +7,16 @@ import { isStandalone } from 'vs/base/browser/browser';
 import { streamToBuffer } from 'vs/base/common/buffer';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
+import { RemoteAuthorities, Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { request } from 'vs/base/parts/request/browser/request';
 import { localize } from 'vs/nls';
 import { parseLogLevel } from 'vs/platform/log/common/log';
-import product from 'vs/platform/product/common/product';
+import { defaultWebSocketFactory } from 'vs/platform/remote/browser/browserSocketFactory';
 import { isFolderToOpen, isWorkspaceToOpen } from 'vs/platform/windows/common/windows';
-import { create, ICredentialsProvider, IHomeIndicator, IProductQualityChangeHandler, ISettingsSyncOptions, IURLCallbackProvider, IWelcomeBanner, IWindowIndicator, IWorkbenchConstructionOptions, IWorkspace, IWorkspaceProvider } from 'vs/workbench/workbench.web.api';
+import { create, Disposable, ICredentialsProvider, IHomeIndicator, IProductQualityChangeHandler, IURLCallbackProvider, IWindowIndicator, IWorkbenchConstructionOptions, IWorkspace, IWorkspaceProvider } from 'vs/workbench/workbench.web.api';
 
 function doCreateUri(path: string, queryValues: Map<string, string>): URI {
 	let query: string | undefined = undefined;
@@ -48,30 +47,6 @@ class LocalStorageCredentialsProvider implements ICredentialsProvider {
 	static readonly CREDENTIALS_OPENED_KEY = 'credentials.provider';
 
 	private readonly authService: string | undefined;
-
-	constructor() {
-		let authSessionInfo: { readonly id: string, readonly accessToken: string, readonly providerId: string, readonly canSignOut?: boolean, readonly scopes: string[][] } | undefined;
-		const authSessionElement = document.getElementById('vscode-workbench-auth-session');
-		const authSessionElementAttribute = authSessionElement ? authSessionElement.getAttribute('data-settings') : undefined;
-		if (authSessionElementAttribute) {
-			try {
-				authSessionInfo = JSON.parse(authSessionElementAttribute);
-			} catch (error) { /* Invalid session is passed. Ignore. */ }
-		}
-
-		if (authSessionInfo) {
-			// Settings Sync Entry
-			this.setPassword(`${product.urlProtocol}.login`, 'account', JSON.stringify(authSessionInfo));
-
-			// Auth extension Entry
-			this.authService = `${product.urlProtocol}-${authSessionInfo.providerId}.login`;
-			this.setPassword(this.authService, 'account', JSON.stringify(authSessionInfo.scopes.map(scopes => ({
-				id: authSessionInfo!.id,
-				scopes,
-				accessToken: authSessionInfo!.accessToken
-			}))));
-		}
-	}
 
 	private _credentials: ICredential[] | undefined;
 	private get credentials(): ICredential[] {
@@ -184,10 +159,6 @@ class LocalStorageCredentialsProvider implements ICredentialsProvider {
 		await request({
 			url: doCreateUri('/auth/logout', queryValues).toString(true)
 		}, CancellationToken.None);
-	}
-
-	async clear(): Promise<void> {
-		window.localStorage.removeItem(LocalStorageCredentialsProvider.CREDENTIALS_OPENED_KEY);
 	}
 }
 
@@ -394,20 +365,20 @@ class WindowIndicator implements IWindowIndicator {
 
 		// Repo
 		if (repositoryName && repositoryOwner) {
-			this.label = localize('playgroundLabelRepository', "$(remote) Visual Studio Code Playground: {0}/{1}", repositoryOwner, repositoryName);
-			this.tooltip = localize('playgroundRepositoryTooltip', "Visual Studio Code Playground: {0}/{1}", repositoryOwner, repositoryName);
+			this.label = localize('playgroundLabelRepository', "$(remote) VS Code Web Playground: {0}/{1}", repositoryOwner, repositoryName);
+			this.tooltip = localize('playgroundRepositoryTooltip', "VS Code Web Playground: {0}/{1}", repositoryOwner, repositoryName);
 		}
 
 		// No Repo
 		else {
-			this.label = localize('playgroundLabel', "$(remote) Visual Studio Code Playground");
-			this.tooltip = localize('playgroundTooltip', "Visual Studio Code Playground");
+			this.label = localize('playgroundLabel', "$(remote) VS Code Web Playground");
+			this.tooltip = localize('playgroundTooltip', "VS Code Web Playground");
 		}
 	}
 }
 
-(function () {
 
+(function () {
 	// Find config by checking for DOM
 	const configElement = document.getElementById('vscode-workbench-web-configuration');
 	const configElementAttribute = configElement ? configElement.getAttribute('data-settings') : undefined;
@@ -482,15 +453,6 @@ class WindowIndicator implements IWindowIndicator {
 		title: localize('home', "Home")
 	};
 
-	// Welcome Banner
-	const welcomeBanner: IWelcomeBanner = {
-		message: localize('welcomeBannerMessage', "{0} Web. Browser based playground for testing.", product.nameShort),
-		actions: [{
-			href: 'https://github.com/microsoft/vscode',
-			label: localize('learnMore', "Learn More")
-		}]
-	};
-
 	// Window indicator (unless connected to a remote)
 	let windowIndicator: WindowIndicator | undefined = undefined;
 	if (!workspaceProvider.hasRemote()) {
@@ -512,22 +474,49 @@ class WindowIndicator implements IWindowIndicator {
 		window.location.href = `${window.location.origin}?${queryString}`;
 	};
 
-	// settings sync options
-	const settingsSyncOptions: ISettingsSyncOptions | undefined = config.settingsSyncOptions ? {
-		enabled: config.settingsSyncOptions.enabled,
-	} : undefined;
-
 	// Finally create workbench
+	const remoteAuthority = window.location.host;
+	// TODO(ak) secure by using external endpoint
+	const webviewEndpoint = new URL(window.location.href);
+	webviewEndpoint.pathname = '/static/out/vs/workbench/contrib/webview/browser/pre/';
+	webviewEndpoint.search = '';
+
+	// TODO(ak) secure by using external endpoint
+	const webWorkerExtensionEndpoint = new URL(window.location.href);
+	webWorkerExtensionEndpoint.pathname = `/static/out/vs/workbench/services/extensions/worker/${window.location.protocol === 'https:' ? 'https' : 'http'}WebWorkerExtensionHostIframe.html`;
+	webWorkerExtensionEndpoint.search = '';
+
 	create(document.body, {
-		...config,
+		webviewEndpoint: webviewEndpoint.href,
+		webWorkerExtensionHostIframeSrc: webWorkerExtensionEndpoint.href,
+		remoteAuthority,
+		webSocketFactory: {
+			create: url => {
+				const codeServerUrl = new URL(url);
+				codeServerUrl.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+				return defaultWebSocketFactory.create(codeServerUrl.toString());
+			}
+		},
+		resourceUriProvider: uri => {
+			const connectionToken = RemoteAuthorities['_connectionTokens'][remoteAuthority];
+			let query = `path=${encodeURIComponent(uri.path)}`;
+			if (typeof connectionToken === 'string') {
+				query += `&tkn=${encodeURIComponent(connectionToken)}`;
+			}
+
+			return URI.from({
+				scheme: location.protocol === 'https:' ? 'https' : 'http',
+				authority: remoteAuthority,
+				path: `/vscode-remote-resource`,
+				query
+			});
+		},
 		developmentOptions: {
 			logLevel: logLevel ? parseLogLevel(logLevel) : undefined,
 			...config.developmentOptions
 		},
-		settingsSyncOptions,
 		homeIndicator,
 		windowIndicator,
-		welcomeBanner,
 		productQualityChangeHandler,
 		workspaceProvider,
 		urlCallbackProvider: new PollingURLCallbackProvider(),
