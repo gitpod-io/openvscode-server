@@ -22,6 +22,8 @@ gulp.task(compileClientTask);
 const watchClientTask = task.define('watch-client', task.series(util.rimraf('out'), util.buildWebNodePaths('out'), compilation.watchTask('out', false)));
 gulp.task(watchClientTask);
 
+gulp.task(task.define('watch-init', require('./lib/compilation').watchTask('out', false)));
+
 // All
 const compileTask = task.define('compile', task.parallel(monacoTypecheckTask, compileClientTask, compileExtensionsTask, compileExtensionMediaTask));
 gulp.task(compileTask);
