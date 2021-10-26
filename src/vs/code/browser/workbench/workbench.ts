@@ -485,8 +485,8 @@ function doCreateUri(path: string, queryValues: Map<string, string>): URI {
 	return URI.parse(window.location.href).with({ path, query });
 }
 
-(function () {
 
+(function () {
 	// Find config by checking for DOM
 	const configElement = document.getElementById('vscode-workbench-web-configuration');
 	const configElementAttribute = configElement ? configElement.getAttribute('data-settings') : undefined;
@@ -495,12 +495,15 @@ function doCreateUri(path: string, queryValues: Map<string, string>): URI {
 	}
 	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents } = JSON.parse(configElementAttribute);
 
+	const remoteAuthority = window.location.host;
+
 	// Create workbench
 	create(document.body, {
 		...config,
-		settingsSyncOptions: config.settingsSyncOptions ? {
-			enabled: config.settingsSyncOptions.enabled,
-		} : undefined,
+		remoteAuthority,
+		developmentOptions: {
+			...config.developmentOptions
+		},
 		workspaceProvider: WorkspaceProvider.create(config),
 		urlCallbackProvider: new LocalStorageURLCallbackProvider(),
 		credentialsProvider: config.remoteAuthority ? undefined : new LocalStorageCredentialsProvider() // with a remote, we don't use a local credentials provider
