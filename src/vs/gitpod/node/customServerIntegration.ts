@@ -52,32 +52,24 @@ function setActiveCliIpcHook(cliIpcHook: string): void {
 }
 
 export function handleGitpodCLIRequest(pathname: string, req: http.IncomingMessage, res: http.ServerResponse) {
-	if (pathname === '/cli') {
+	if (pathname.startsWith('/cli')) {
 		if (req.method === 'GET') {
 			res.writeHead(200, { 'Content-Type': 'text/plain' });
 			res.end(activeCliIpcHook);
 			return true;
 		}
 		if (req.method === 'DELETE') {
-			let cliIpcHook = '';
-			req.setEncoding('utf8');
-			req.on('data', (chunk: string) => cliIpcHook += chunk);
-			req.on('end', () => {
-				deleteActiveCliIpcHook(cliIpcHook);
-				res.writeHead(200);
-				res.end();
-			});
+			const cliIpcHook = decodeURIComponent(pathname.substring('/cli/ipcHookCli/'.length));
+			deleteActiveCliIpcHook(cliIpcHook);
+			res.writeHead(200);
+			res.end();
 			return true;
 		}
 		if (req.method === 'PUT') {
-			let cliIpcHook = '';
-			req.setEncoding('utf8');
-			req.on('data', (chunk: string) => cliIpcHook += chunk);
-			req.on('end', () => {
-				setActiveCliIpcHook(cliIpcHook);
-				res.writeHead(200);
-				res.end();
-			});
+			const cliIpcHook = decodeURIComponent(pathname.substring('/cli/ipcHookCli/'.length));
+			setActiveCliIpcHook(cliIpcHook);
+			res.writeHead(200);
+			res.end();
 			return true;
 		}
 		if (req.method === 'POST') {
