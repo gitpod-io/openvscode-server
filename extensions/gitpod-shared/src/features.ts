@@ -1023,7 +1023,7 @@ async function updateIpcHookCli(context: GitpodExtensionContext): Promise<void> 
 				hostname: 'localhost',
 				port: context.devMode ? 9888 /* From code-web.js */ : context.info.getIdePort(),
 				protocol: 'http:',
-				path: '/cli',
+				path: `/cli/ipcHookCli/${encodeURIComponent(context.ipcHookCli!)}`,
 				method: vscode.window.state.focused ? 'PUT' : 'DELETE'
 			}, res => {
 				const chunks: string[] = [];
@@ -1039,7 +1039,6 @@ async function updateIpcHookCli(context: GitpodExtensionContext): Promise<void> 
 				});
 			});
 			req.on('error', err => reject(err));
-			req.write(context.ipcHookCli);
 			req.end();
 		});
 	} catch (e) {
