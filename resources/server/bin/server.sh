@@ -8,5 +8,5 @@ case "$1" in
 esac
 
 ROOT="$(dirname "$0")"
-
+PATH=$ROOT/bin:$PATH
 "$ROOT/node" ${INSPECT:-} "$ROOT/out/vs/server/main.js" "$@"
