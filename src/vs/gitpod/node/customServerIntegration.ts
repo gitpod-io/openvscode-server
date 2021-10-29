@@ -133,12 +133,20 @@ export async function getInitialExtensionsToInstall(logService: ILogService, req
 
 				if (config?.vscode?.extensions) {
 					const extensionIdRegex = /^([^.]+\.[^@]+)(@(\d+\.\d+\.\d+(-.*)?))?$/;
+					const pendingVsixs = [];
 					for (const extension of config.vscode.extensions) {
-						const normalizedExtension = extension.toLocaleLowerCase();
-						if (extensionIdRegex.exec(normalizedExtension)) {
-							extensions.push(normalizedExtension);
+						const extIdOrUrl = extension.toLocaleLowerCase();
+						if (/^http[s]?/.test(extIdOrUrl)) {
+							pendingVsixs.push(downloadInitialExtension(extIdOrUrl, requestService).then(vsix => {
+								extensions.push(vsix);
+							}, e => {
+								logService.error(`code server: failed to download initial external extension from '${extIdOrUrl}':`, e);
+							}));
+						} else if (extensionIdRegex.exec(extIdOrUrl)) {
+							extensions.push(extIdOrUrl);
 						}
 					}
+					await Promise.all(pendingVsixs);
 				}
 			}
 		} catch (e) {
