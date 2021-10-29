@@ -26,7 +26,7 @@ At Gitpod, we've been asked a lot about how we do it. So we thought we might as 
 ```bash
 docker run -it --init -p 3000:3000 -v "$(pwd):/home/workspace:cached" gitpod/openvscode-server
 ```
-- Visit [localhost:3000](http://localhost:3000).
+- Visit the URL printed in your terminal. Just going to port 3000 won't work, because VS Code requires that you provide a uniquely generated security token to prevent unauthorized access.
 
 _Note_: Feel free to use the `nightly` tag to test the latest version, i.e. `gitpod/openvscode-server:nightly`.
 
@@ -52,7 +52,7 @@ tar -xzf openvscode-server-v${OPENVSCODE_SERVER_VERSION}.tar.gz
 cd openvscode-server-v${OPENVSCODE_SERVER_VERSION}
 ./server.sh
 ```
-- Visit [localhost:3000](http://localhost:3000).
+- Visit the URL printed in your terminal. Just going to port 3000 won't work, because VS Code requires that you provide a uniquely generated security token to prevent unauthorized access. 
 
 _Note_: You can use [pre-releases](https://github.com/gitpod-io/openvscode-server/releases) to test nightly changes.
 
