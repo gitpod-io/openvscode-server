@@ -8,6 +8,8 @@
 import * as workspaceInstance from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as uuid from 'uuid';
 import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortAutoExposure, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
@@ -19,7 +21,9 @@ import * as path from 'path';
 import { URL } from 'url';
 import * as util from 'util';
 import * as vscode from 'vscode';
-import { ThrottledDelayer } from './async';
+import { ThrottledDelayer } from './util/async';
+import { download } from './util/download';
+import { getManifest } from './util/extensionManagmentUtill';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
@@ -185,7 +189,7 @@ export function registerAuth(context: GitpodExtensionContext): void {
 			if (!userResponse.ok) {
 				throw new Error(`Getting GitHub account info failed: ${userResponse.statusText}`);
 			}
-			const user: { id: string, login: string } = await userResponse.json();
+			const user = await (userResponse.json() as Promise<{ id: string, login: string }>);
 			return {
 				id: user.id,
 				accountName: user.login
@@ -774,7 +778,7 @@ interface IOpenVSXQueryResult {
 	extensions: IOpenVSXExtensionsMetadata[];
 }
 
-async function validateExtensions(extensionsToValidate: { id: string, version?: string }[], token: vscode.CancellationToken) {
+async function validateExtensions(extensionsToValidate: { id: string, version?: string }[], linkToValidate: string[], token: vscode.CancellationToken) {
 	const allUserExtensions = vscode.extensions.all.filter(ext => !ext.packageJSON['isBuiltin'] && !ext.packageJSON['isUserBuiltin']);
 
 	const lookup = new Set<string>(extensionsToValidate.map(({ id }) => id));
@@ -795,7 +799,8 @@ async function validateExtensions(extensionsToValidate: { id: string, version?: 
 			return {
 				extensions: [],
 				missingMachined: [],
-				uninstalled: []
+				uninstalled: [],
+				links: []
 			};
 		}
 	}
@@ -806,21 +811,21 @@ async function validateExtensions(extensionsToValidate: { id: string, version?: 
 			`${process.env.VSX_REGISTRY_URL || 'https://open-vsx.org'}/api/-/query`,
 			{
 				method: 'POST',
-				timeout: 5000,
 				headers: {
 					'Content-Type': 'application/json',
 					'Accept': 'application/json'
 				},
 				body: JSON.stringify({
 					extensionId: id
-				})
+				}),
+				timeout: 2000
 			}
 		).then(resp => {
 			if (!resp.ok) {
 				console.error('Failed to query open-vsx while validating gitpod.yml');
 				return undefined;
 			}
-			return resp.json();
+			return resp.json() as Promise<IOpenVSXQueryResult>;
 		}, e => {
 			console.error('Fetch failed while querying open-vsx', e);
 			return undefined;
@@ -837,17 +842,40 @@ async function validateExtensions(extensionsToValidate: { id: string, version?: 
 			return {
 				extensions: [],
 				missingMachined: [],
-				uninstalled: []
+				uninstalled: [],
+				links: []
 			};
 		}
 	}
 
-	// TODO: validate links
+	const links = new Set<string>();
+	for (const link of linkToValidate) {
+		const downloadPath = path.join(os.tmpdir(), uuid.v4());
+		try {
+			await download(link, downloadPath, token, 10000);
+			const manifest = await getManifest(downloadPath);
+			if (manifest.engines?.vscode) {
+				links.add(link);
+			}
+		} catch (error) {
+			console.error('Failed to validate vsix url', error);
+		}
+
+		if (token.isCancellationRequested) {
+			return {
+				extensions: [],
+				missingMachined: [],
+				uninstalled: [],
+				links: []
+			};
+		}
+	}
 
 	return {
 		extensions: [...validatedExtensions],
 		missingMachined: [...missingMachined],
-		uninstalled: [...uninstalled]
+		uninstalled: [...uninstalled],
+		links: [...links]
 	};
 }
 
@@ -926,10 +954,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 			}
 			try {
 				const toLink = new Map<string, vscode.Range>();
-				const toFind = new Map<string, {
-					version?: string,
-					range: vscode.Range
-				}>();
+				const toFind = new Map<string, { version?: string, range: vscode.Range }>();
 				let document: vscode.TextDocument | undefined;
 				try {
 					document = await vscode.workspace.openTextDocument(gitpodFileUri);
@@ -994,7 +1019,8 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 					}
 
 					const extensionsToValidate = [...toFind.entries()].map(([id, { version }]) => ({ id, version }));
-					const result = await validateExtensions(extensionsToValidate, token);
+					const linksToValidate = [...toLink.keys()];
+					const result = await validateExtensions(extensionsToValidate, linksToValidate, token);
 
 					if (token.isCancellationRequested) {
 						return;
@@ -1016,14 +1042,14 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 						pushDiagnostic(diagnostic);
 					}
 
-					// for (const link of result.links) {
-					// 	toLink.delete(link);
-					// }
-					// for (const [link, range] of toLink) {
-					// 	const diagnostic = new vscode.Diagnostic(range, link + invalidVSIXLinkMessageSuffix, vscode.DiagnosticSeverity.Error);
-					// 	diagnostic.source = 'gitpod';
-					// 	pushDiagnostic(diagnostic);
-					// }
+					for (const link of result.links) {
+						toLink.delete(link);
+					}
+					for (const [link, range] of toLink) {
+						const diagnostic = new vscode.Diagnostic(range, link + invalidVSIXLinkMessageSuffix, vscode.DiagnosticSeverity.Error);
+						diagnostic.source = 'gitpod';
+						pushDiagnostic(diagnostic);
+					}
 
 					for (const id of result.missingMachined) {
 						const diagnostic = new vscode.Diagnostic(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)), id + missingExtensionMessageSuffix, vscode.DiagnosticSeverity.Warning);
@@ -1158,13 +1184,9 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 			return codeActions;
 		}
 	}));
+
 	validateGitpodFile();
 	context.subscriptions.push(gitpodDiagnostics);
-	context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(e => {
-		if (e.document.uri.toString() === gitpodFileUri.toString()) {
-			validateGitpodFile();
-		}
-	}));
 	const gitpodFileWatcher = vscode.workspace.createFileSystemWatcher(gitpodFileUri.fsPath);
 	context.subscriptions.push(gitpodFileWatcher);
 	context.subscriptions.push(gitpodFileWatcher.onDidCreate(() => validateGitpodFile()));
