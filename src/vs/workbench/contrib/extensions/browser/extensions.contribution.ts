@@ -75,6 +75,7 @@ import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { Event } from 'vs/base/common/event';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 import { UnsupportedExtensionsMigrationContrib } from 'vs/workbench/contrib/extensions/browser/unsupportedExtensionsMigrationContribution';
+import { getIdAndVersion } from 'vs/platform/extensionManagement/common/extensionManagementCLIService';
 
 // Singletons
 registerSingleton(IExtensionsWorkbenchService, ExtensionsWorkbenchService);
@@ -295,7 +296,8 @@ CommandsRegistry.registerCommand({
 		const extensionGalleryService = accessor.get(IExtensionGalleryService);
 		try {
 			if (typeof arg === 'string') {
-				const [extension] = await extensionGalleryService.getExtensions([{ id: arg }], CancellationToken.None);
+				const [id, version] = getIdAndVersion(arg);
+				const [extension] = await extensionGalleryService.getExtensions([{ id, version }], CancellationToken.None);
 				if (extension) {
 					const installOptions: InstallOptions = {
 						isMachineScoped: options?.donotSync ? true : undefined, /* do not allow syncing extensions automatically while installing through the command */
