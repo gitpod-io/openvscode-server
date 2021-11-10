@@ -152,7 +152,7 @@ async function start() {
  *
  * If only `--port` is provided then connect to that port.
  *
- * In absence of specified ports, connect to port 8000.
+ * In absence of specified ports, connect to port 3000.
  * @param {string | undefined} strPort
  * @param {string | undefined} strPickPort
  * @returns {Promise<number>}
@@ -166,7 +166,7 @@ async function parsePort(strPort, strPickPort) {
 		if (!isNaN(port)) {
 			specificPort = port;
 		} else {
-			console.log('Port is not a number, will default to 8000 if no pick-port is given.');
+			console.log('Port is not a number, will default to 3000 if no pick-port is given.');
 		}
 	}
 
@@ -181,10 +181,10 @@ async function parsePort(strPort, strPickPort) {
 					return await findFreePort(start, start, end);
 				}
 			} else {
-				console.log('Port range are not numbers, using 8000 instead.');
+				console.log('Port range are not numbers, using 3000 instead.');
 			}
 		} else {
-			console.log(`Port range: "${strPickPort}" is not properly formatted, using 8000 instead.`);
+			console.log(`Port range: "${strPickPort}" is not properly formatted, using 3000 instead.`);
 		}
 	}
 
@@ -192,7 +192,7 @@ async function parsePort(strPort, strPickPort) {
 		return specificPort;
 	}
 
-	return 8000;
+	return 3000;
 }
 
 /**
