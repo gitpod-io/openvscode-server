@@ -171,7 +171,7 @@ function sanitizeStringArg(val) {
  *
  * If only `--port` is provided then connect to that port.
  *
- * In absence of specified ports, connect to port 8000.
+ * In absence of specified ports, connect to port 3000.
  * @param {string | undefined} host
  * @param {string | undefined} strPort
  * @param {string | undefined} strPickPort
@@ -219,7 +219,7 @@ async function parsePort(host, strPort, strPickPort) {
 			process.exit(1);
 		}
 	}
-	return 8000;
+	return 3000;
 }
 
 /**
