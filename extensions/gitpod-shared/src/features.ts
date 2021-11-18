@@ -8,6 +8,7 @@ require('reflect-metadata');
 import { GitpodClient, GitpodServer, GitpodServiceImpl, WorkspaceInstanceUpdateListener } from '@gitpod/gitpod-protocol/lib/gitpod-service';
 import { JsonRpcProxyFactory } from '@gitpod/gitpod-protocol/lib/messaging/proxy-factory';
 import { NavigatorContext, User } from '@gitpod/gitpod-protocol/lib/protocol';
+import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
 import { GitpodHostUrl } from '@gitpod/gitpod-protocol/lib/util/gitpod-host-url';
 import { ControlServiceClient } from '@gitpod/supervisor-api-grpc/lib/control_grpc_pb';
 import { InfoServiceClient } from '@gitpod/supervisor-api-grpc/lib/info_grpc_pb';
@@ -29,7 +30,7 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 import { URL } from 'url';
 import * as util from 'util';
 import * as vscode from 'vscode';
-import { ConsoleLogger, listen as doListen } from 'vscode-ws-jsonrpc';
+import { CancellationToken, ConsoleLogger, listen as doListen } from 'vscode-ws-jsonrpc';
 import WebSocket = require('ws');
 import { BaseGitpodAnalyticsEventPropeties, GitpodAnalyticsEvent } from './analytics';
 import * as uuid from 'uuid';
@@ -68,7 +69,7 @@ export class SupervisorConnection {
 	}
 }
 
-type UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
+type UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
 type Union<Tuple extends any[], Union = never> = Tuple[number] | Union;
 export type GitpodConnection = Omit<GitpodServiceImpl<GitpodClient, GitpodServer>, 'server'> & {
 	server: Pick<GitpodServer, Union<UsedGitpodFunction>>
@@ -237,7 +238,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 	const gitpodApi = workspaceInfo.getGitpodApi()!;
 
 	const factory = new JsonRpcProxyFactory<GitpodServer>();
-	const gitpodFunctions: UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
+	const gitpodFunctions: UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
 	const gitpodService: GitpodConnection = new GitpodServiceImpl<GitpodClient, GitpodServer>(factory.createProxy()) as any;
 	const gitpodScopes = new Set<string>([
 		'resource:workspace::' + workspaceId + '::get/update',
@@ -458,13 +459,33 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 			properties: { action: 'snapshot' }
 		});
 		try {
-			const snapshotId = await vscode.window.withProgress({
+			let snapshotId: string | undefined = undefined;
+			await vscode.window.withProgress({
 				location: vscode.ProgressLocation.Notification,
 				cancellable: true,
 				title: 'Capturing workspace snapshot'
-			}, _ => {
-				return context.gitpod.server.takeSnapshot({ workspaceId: context.info.getWorkspaceId() /*, layoutData?*/ });
+			}, async (_, cancelToken: CancellationToken) => {
+				snapshotId = await context.gitpod.server.takeSnapshot({ workspaceId: context.info.getWorkspaceId() /*, layoutData?*/, dontWait: true });
+
+				while (!cancelToken.isCancellationRequested) {
+					try {
+						await context.gitpod.server.waitForSnapshot(snapshotId);
+						return;
+					} catch (err) {
+						if (err.code === ErrorCodes.SNAPSHOT_ERROR || err.code === ErrorCodes.NOT_FOUND) {
+							// this is indeed an error with snapshot creation itself, break here!
+							throw err;
+						}
+
+						// other errors (like connection errors): retry
+						await new Promise((resolve) => setTimeout(resolve, 3000));
+					}
+				}
 			});
+			if (!snapshotId) {
+				throw new Error('error taking snapshot');
+			}
+
 			const hostname = context.info.getGitpodApi()!.getHost();
 			const uri = `https://${hostname}#snapshot/${snapshotId}`;
 			const copyAction = await vscode.window.showInformationMessage(`The current state is captured in a snapshot. Using [this link](${uri}) anybody can create their own copy of this workspace.`,
