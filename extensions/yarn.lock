@@ -2,22 +2,25 @@
 # yarn lockfile v1
 
 
-"@gitpod/gitpod-protocol@akosyakov-code-new-gitpod-protocol-5717":
-  version "0.1.5-akosyakov-code-new-gitpod-protocol-5717.0"
-  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-akosyakov-code-new-gitpod-protocol-5717.0.tgz#2ba3dbf8977a918617c43e057a632cf491a63a17"
-  integrity sha512-/A4NU1YVa9ACnmQMxZTHoiSzbJvhl4yubFUot3HcptUnzSND4DUj3Se4m7hIRCT2GNtpbQyeTDJhdXwVxgrOrg==
+"@gitpod/gitpod-protocol@gpl-5862-snapshot":
+  version "0.1.5-gpl-5862-snapshot.33"
+  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-gpl-5862-snapshot.33.tgz#fc08bbc24559464ce7d5bd445aefaf8d29f50e7e"
+  integrity sha512-fhfCwZzOBmSM4UavpLkK3RsfPuw2U49q3eAGUKbMYGqnscEXjqLi1Z0QatFMOWGdybfTYeRghMqEm7XYBD5i4g==
   dependencies:
     ajv "^6.5.4"
     analytics-node "^4.0.1"
+    cookie "^0.4.1"
     inversify "^5.0.1"
     jaeger-client "3.17.2"
     js-yaml "^3.10.0"
     opentracing "^0.14.4"
-    prom-client "^10.2.0"
+    prom-client "^13.2.0"
     random-number-csprng "^1.0.2"
     reconnecting-websocket "^4.4.0"
     reflect-metadata "^0.1.10"
     uuid "^3.3.3"
+    vscode-jsonrpc "^5.0.1"
+    vscode-languageserver-protocol "3.15.3"
     vscode-uri "^1.0.1"
     vscode-ws-jsonrpc "^0.2.0"
     ws "^7.4.6"
@@ -265,6 +268,11 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
+
+cookie@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.4.1.tgz#afd713fe26ebd21ba95ceb61f9a8116e50a537d1"
+  integrity sha512-ZwrFkGJxUR3EIoXtO+yVE69Eb7KlixbaeAWfBQB9vVsNn/o+Yw69gBWSSDK825hQNdN+wF8zELf3dFNl/kxkUA==
 
 create-error@^0.3.1:
   version "0.3.1"
@@ -542,10 +550,10 @@ process@^0.10.0:
   resolved "https://registry.yarnpkg.com/process/-/process-0.10.1.tgz#842457cc51cfed72dc775afeeafb8c6034372725"
   integrity sha1-hCRXzFHP7XLcd1r+6vuMYDQ3JyU=
 
-prom-client@^10.2.0:
-  version "10.2.3"
-  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-10.2.3.tgz#a51bf21c239c954a6c5be4b1361fdd380218bb41"
-  integrity sha512-Xboq5+TdUwuQtSSDRZRNnb5NprINlgQN999VqUjZxnLKydUNLeIPx6Eiahg6oJua3XBg2TGnh5Cth1s4I6+r7g==
+prom-client@^13.2.0:
+  version "13.2.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-13.2.0.tgz#99d13357912dd400f8911b77df19f7b328a93e92"
+  integrity sha512-wGr5mlNNdRNzEhRYXgboUU2LxHWIojxscJKmtG3R8f4/KiWqyYgXTLHs0+Ted7tG3zFT7pgHJbtomzZ1L0ARaQ==
   dependencies:
     tdigest "^0.1.1"
 
@@ -668,6 +676,19 @@ vscode-jsonrpc@^5.0.0, vscode-jsonrpc@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/vscode-jsonrpc/-/vscode-jsonrpc-5.0.1.tgz#9bab9c330d89f43fc8c1e8702b5c36e058a01794"
   integrity sha512-JvONPptw3GAQGXlVV2utDcHx0BiY34FupW/kI6mZ5x06ER5DdPG/tXWMVHjTNULF5uKPOUUD0SaXg5QaubJL0A==
+
+vscode-languageserver-protocol@3.15.3:
+  version "3.15.3"
+  resolved "https://registry.yarnpkg.com/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.15.3.tgz#3fa9a0702d742cf7883cb6182a6212fcd0a1d8bb"
+  integrity sha512-zrMuwHOAQRhjDSnflWdJG+O2ztMWss8GqUUB8dXLR/FPenwkiBNkMIJJYfSN6sgskvsF0rHAoBowNQfbyZnnvw==
+  dependencies:
+    vscode-jsonrpc "^5.0.1"
+    vscode-languageserver-types "3.15.1"
+
+vscode-languageserver-types@3.15.1:
+  version "3.15.1"
+  resolved "https://registry.yarnpkg.com/vscode-languageserver-types/-/vscode-languageserver-types-3.15.1.tgz#17be71d78d2f6236d414f0001ce1ef4d23e6b6de"
+  integrity sha512-+a9MPUQrNGRrGU630OGbYVQ+11iOIovjCkqxajPa9w57Sd5ruK8WQNsslzpa0x/QJqC8kRc2DUxWjIFwoNm4ZQ==
 
 vscode-nls@^5.0.0:
   version "5.0.0"
