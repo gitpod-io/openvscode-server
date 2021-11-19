@@ -2,8 +2,9 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference path='../../../src/vs/vscode.d.ts'/>
-/// <reference path='../../../src/vs/vscode.proposed.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.proposed.resolvers.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.proposed.terminalLocation.d.ts'/>
 
 import * as workspaceInstance from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';

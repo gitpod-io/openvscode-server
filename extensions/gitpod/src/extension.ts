@@ -2,7 +2,7 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference path='../../../src/vs/vscode.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.d.ts'/>
 
 import { AutoTunnelRequest, ResolveSSHConnectionRequest, ResolveSSHConnectionResponse } from '@gitpod/local-app-api-grpcweb/lib/localapp_pb';
 import { LocalAppClient } from '@gitpod/local-app-api-grpcweb/lib/localapp_pb_service';

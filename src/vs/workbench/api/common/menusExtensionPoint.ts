@@ -98,30 +98,6 @@ const apiMenus: IAPIMenu[] = [
 		description: localize('menus.opy', "'Copy as' submenu in the top level Edit menu")
 	},
 	{
-		key: 'menuBar/help',
-		id: MenuId.MenubarHelpMenu,
-		description: localize('menus.help', "The top level help menu"),
-		proposed: true
-	},
-	{
-		key: 'menuBar/preferences',
-		id: MenuId.MenubarPreferencesMenu,
-		description: localize('menus.preferences', "The preferences menu"),
-		proposed: true
-	},
-	{
-		key: 'preferences/context',
-		id: MenuId.MenubarPreferencesMenu,
-		description: localize('menus.preferencesContext', "The preferences context menu"),
-		proposed: true
-	},
-	{
-		key: 'accounts/context',
-		id: MenuId.AccountsContext,
-		description: localize('menus.accountsContext', "The accounts context menu"),
-		proposed: true
-	},
-	{
 		key: 'scm/title',
 		id: MenuId.SCMTitle,
 		description: localize('menus.scmTitle', "The Source Control title menu")
@@ -274,6 +250,35 @@ const apiMenus: IAPIMenu[] = [
 		description: localize('inlineCompletions.actions', "The actions shown when hovering on an inline completion"),
 		supportsSubmenus: false,
 		proposed: 'inlineCompletions'
+	},
+
+	// Gitpod specific
+	// Hack:
+	// For now just use 'contribMenuBarHome' to avoid creating a file per extension point.
+	// Seems safe for now as the file will be empty either way
+	{
+		key: 'menuBar/help',
+		id: MenuId.MenubarHelpMenu,
+		description: localize('menus.help', "The top level help menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'menuBar/preferences',
+		id: MenuId.MenubarPreferencesMenu,
+		description: localize('menus.preferences', "The preferences menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'preferences/context',
+		id: MenuId.MenubarPreferencesMenu,
+		description: localize('menus.preferencesContext', "The preferences context menu"),
+		proposed: 'contribMenuBarHome'
+	},
+	{
+		key: 'accounts/context',
+		id: MenuId.AccountsContext,
+		description: localize('menus.accountsContext', "The accounts context menu"),
+		proposed: 'contribMenuBarHome'
 	},
 ];
 

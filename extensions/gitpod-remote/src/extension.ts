@@ -2,7 +2,7 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference path='../../../src/vs/vscode.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.d.ts'/>
 
 import * as cp from 'child_process';
 import { GitpodExtensionContext, registerTasks, setupGitpodContext, registerIpcHookCli } from 'gitpod-shared';
