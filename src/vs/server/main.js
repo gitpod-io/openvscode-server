@@ -24,8 +24,8 @@ async function start() {
 
 	// Do a quick parse to determine if a server or the cli needs to be started
 	const parsedArgs = minimist(process.argv.slice(2), {
-		boolean: ['start-server', 'list-extensions', 'print-ip-address'],
-		string: ['install-extension', 'install-builtin-extension', 'uninstall-extension', 'locate-extension', 'socket-path', 'host', 'port', 'pick-port']
+		boolean: ['start-server', 'list-extensions', 'print-ip-address', 'tls'],
+		string: ['install-extension', 'install-builtin-extension', 'uninstall-extension', 'locate-extension', 'socket-path', 'host', 'port', 'pick-port', 'tls-key', 'tls-cert']
 	});
 
 	const shouldSpawnCli = (
@@ -55,7 +55,9 @@ async function start() {
 		return _remoteExtensionHostAgentServerPromise;
 	};
 
+	const fs = require('fs');
 	const http = require('http');
+	const https = require('https');
 	const os = require('os');
 
 	let firstRequest = true;
@@ -63,7 +65,10 @@ async function start() {
 
 	/** @type {string | import('net').AddressInfo | null} */
 	let address = null;
-	const server = http.createServer(async (req, res) => {
+	const server = (parsedArgs['tls'] ? https : http).createServer(parsedArgs['tls'] ? {
+		key: fs.readFileSync(parsedArgs['tls-key']),
+		cert: fs.readFileSync(parsedArgs['tls-cert']),
+	} : {}, async (req, res) => {
 		if (firstRequest) {
 			firstRequest = false;
 			perf.mark('code/server/firstRequest');
