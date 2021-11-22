@@ -30,14 +30,14 @@ wget https://github.com/gitpod-io/openvscode-server/releases/download/openvscode
 tar -xzf code-server.tar.gz
 rm code-server.tar.gz
 ```
-### Create an inbound rule for port 8000
+### Create an inbound rule for port 3000
 
-To access OpenVSCode Server on port 8000 later, we have to create an inbound rule:
+To access OpenVSCode Server on port 3000 later, we have to create an inbound rule:
 1. Open the instance dashboard
 1. In the left menu pane, under Settings, select Networking.
 1. In the bottom section, for the NSG rules for the network interface, select Add inbound port rule.
 1. Populate the following fields (use default values for everything else):
- 	* Destination port ranges: 8000
+ 	* Destination port ranges: 3000
 	* Protocol: TCP
 1. Click "Add"
 
@@ -55,8 +55,8 @@ cd openvscode-server-v$SERVER_VERSION-linux-x64
 
 1. Navigate to the Overview pane for the VM
 1. Copy the "Public IP address"
-1. Visit the URL printed in your terminal. Just going to port 8000 won't work, because VS Code requires that you provide a uniquely generated security token to prevent unauthorized access.
-1. Replace 'localhost' from the IP address on the terminal to your "Public IP address" in a new browser tab , i.e. ` http://localhost:8000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b` would become `http://52.251.44.195:8000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b`
+1. Visit the URL printed in your terminal. Just going to port 3000 won't work, because VS Code requires that you provide a uniquely generated security token to prevent unauthorized access.
+1. Replace 'localhost' from the IP address on the terminal to your "Public IP address" in a new browser tab , i.e. ` http://localhost:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b` would become `http://52.251.44.195:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b`
 
 
 ## Teardown
