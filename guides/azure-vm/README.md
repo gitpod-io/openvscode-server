@@ -56,7 +56,7 @@ cd openvscode-server-v$SERVER_VERSION-linux-x64
 1. Navigate to the Overview pane for the VM
 1. Copy the "Public IP address"
 1. Visit the URL printed in your terminal. Just going to port 3000 won't work, because VS Code requires that you provide a uniquely generated security token to prevent unauthorized access.
-1. Replace 'localhost' from the IP address on the terminal to your "Public IP address" in a new browser tab , i.e. ` http://localhost:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b` would become `http://52.251.44.195:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b`
+1. Replace 'localhost' from the IP address on the terminal to your "Public IP address" in a new browser tab, i.e. ` http://localhost:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b` would become `http://52.251.44.195:3000/?tkn=f83f27f2-3e75-47a8-be84-6a8396d1491b`
 
 
 ## Teardown
