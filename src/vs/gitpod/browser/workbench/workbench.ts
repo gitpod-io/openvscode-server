@@ -733,13 +733,11 @@ async function doStart(): Promise<IDisposable> {
 		remoteAuthority,
 		webviewEndpoint,
 		webSocketFactory: {
-			create: url => {
+			create: (url, debugLabel) => {
 				if (_state as any === 'terminated') {
 					throw new RemoteAuthorityResolverError('workspace stopped', RemoteAuthorityResolverErrorCode.NotAvailable);
 				}
-				const codeServerUrl = new URL(url);
-				codeServerUrl.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-				const socket = defaultWebSocketFactory.create(codeServerUrl.toString());
+				const socket = defaultWebSocketFactory.create(url, debugLabel);
 				const onError = new Emitter<RemoteAuthorityResolverError>();
 				socket.onError(e => {
 					if (_state as any === 'terminated') {
