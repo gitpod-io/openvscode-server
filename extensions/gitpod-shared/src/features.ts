@@ -267,7 +267,8 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 				super(address, protocols, {
 					headers: {
 						'Origin': new URL(gitpodHost).origin,
-						'Authorization': `Bearer ${serverToken}`
+						'Authorization': `Bearer ${serverToken}`,
+						'User-Agent': `${vscode.env.appName}/${vscode.version} ${context.extension.id}/${context.extension.packageJSON.version}`,
 					}
 				});
 			}
