@@ -74,11 +74,6 @@
         "enablement": "gitpod.inWorkspace == true"
       },
       {
-        "command": "gitpod.open.discourse",
-        "title": "%openDiscourse%",
-        "enablement": "gitpod.inWorkspace == true"
-      },
-      {
         "command": "gitpod.reportIssue",
         "title": "%reportIssue%",
         "enablement": "gitpod.inWorkspace == true"
@@ -164,11 +159,6 @@
         {
           "command": "gitpod.open.discord",
           "group": "remote_00_gitpod_navigation@80",
-          "when": "gitpod.inWorkspace == true"
-        },
-        {
-          "command": "gitpod.open.discourse",
-          "group": "remote_00_gitpod_navigation@81",
           "when": "gitpod.inWorkspace == true"
         },
         {
