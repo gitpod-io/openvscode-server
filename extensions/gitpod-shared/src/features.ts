@@ -386,14 +386,6 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 		});
 		return vscode.env.openExternal(vscode.Uri.parse(url));
 	}));
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.open.discourse', () => {
-		const url = 'https://community.gitpod.io';
-		context.fireAnalyticsEvent({
-			eventName: 'vscode_execute_command_gitpod_open_link',
-			properties: { url }
-		});
-		return vscode.env.openExternal(vscode.Uri.parse(url));
-	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.reportIssue', () => {
 		const url = 'https://github.com/gitpod-io/gitpod/issues/new/choose';
 		context.fireAnalyticsEvent({
@@ -442,14 +434,6 @@ export async function registerWorkspaceCommands(context: GitpodExtensionContext)
 			return vscode.env.openExternal(vscode.Uri.parse(url));
 		}));
 	}
-
-	const communityStatusBarItem = vscode.window.createStatusBarItem('gitpod.community', vscode.StatusBarAlignment.Right, -100);
-	communityStatusBarItem.name = 'Chat with us on Discourse';
-	context.subscriptions.push(communityStatusBarItem);
-	communityStatusBarItem.text = '$(comment-discussion)';
-	communityStatusBarItem.tooltip = 'Chat with us on Discourse';
-	communityStatusBarItem.command = 'gitpod.open.discourse';
-	communityStatusBarItem.show();
 
 	const workspaceOwned = await context.workspaceOwned;
 	if (!workspaceOwned) {
