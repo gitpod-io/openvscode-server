@@ -13,7 +13,6 @@ const nls = {
 	'openContext': 'Gitpod: Open Context',
 	'openDocumentation': 'Gitpod: Documentation',
 	'openDiscord': 'Gitpod: Open Community Chat',
-	'openDiscourse': 'Gitpod: Open Community Forum',
 	'openTwitter': 'Gitpod: Follow us on Twitter',
 	'reportIssue': 'Gitpod: Report Issue',
 	'stopWorkspace': 'Gitpod: Stop Workspace',
@@ -66,11 +65,6 @@ const commands = [
 	{
 		'command': 'gitpod.open.discord',
 		'title': '%openDiscord%',
-		'enablement': 'gitpod.inWorkspace == true'
-	},
-	{
-		'command': 'gitpod.open.discourse',
-		'title': '%openDiscourse%',
 		'enablement': 'gitpod.inWorkspace == true'
 	},
 	{
@@ -159,11 +153,6 @@ const remoteMenus = [
 	{
 		'command': 'gitpod.open.discord',
 		'group': 'remote_00_gitpod_navigation@80',
-		'when': 'gitpod.inWorkspace == true'
-	},
-	{
-		'command': 'gitpod.open.discourse',
-		'group': 'remote_00_gitpod_navigation@81',
 		'when': 'gitpod.inWorkspace == true'
 	},
 	{
