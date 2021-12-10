@@ -25,6 +25,10 @@
 	"licenseFileName": "LICENSE.txt",
 	"reportIssueUrl": "https://github.com/gitpod-io/gitpod/issues/new",
 	"urlProtocol": "gitpod-code",
+	"enableTelemetry": true,
+	"aiConfig": {
+		"asimovKey": "foo"
+	},
 	"extensionAllowedProposedApi": [
 		"GitHub.vscode-pull-request-github-insiders",
 		"GitHub.vscode-pull-request-github",
