@@ -291,7 +291,6 @@ export class GitpodWorkspacePort extends vscode.TreeItem {
 		if (this.status) {
 			await this.context.gitpod.server.openPort(this.context.info.getWorkspaceId(), {
 				port: this.status.localPort,
-				targetPort: this.status.localPort,
 				visibility
 			});
 		}

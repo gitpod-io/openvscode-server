@@ -17,7 +17,7 @@
     "@types/ws": "^7.2.6"
   },
   "dependencies": {
-    "@gitpod/gitpod-protocol": "gpl-5862-snapshot",
+    "@gitpod/gitpod-protocol": "main",
     "@gitpod/supervisor-api-grpc": "port-description-3059-fork",
     "bufferutil": "^4.0.1",
     "reconnecting-websocket": "^4.4.0",
