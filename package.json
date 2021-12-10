@@ -61,6 +61,8 @@
   },
   "dependencies": {
     "@gitpod/local-app-api-grpcweb": "main",
+    "@gitpod/gitpod-protocol": "main",
+    "@gitpod/supervisor-api-grpc": "main",
     "@microsoft/applicationinsights-web": "^2.6.4",
     "@parcel/watcher": "2.0.5",
     "@vscode/sqlite3": "4.0.12",
@@ -98,7 +100,6 @@
   },
   "devDependencies": {
     "7zip": "0.0.6",
-    "@gitpod/gitpod-protocol": "akosyakov-code-new-gitpod-protocol-5717",
     "@types/applicationinsights": "0.20.0",
     "@types/cookie": "^0.3.3",
     "@types/copy-webpack-plugin": "^6.0.3",
@@ -123,6 +124,7 @@
     "@types/windows-mutex": "^0.4.0",
     "@types/windows-process-tree": "^0.2.0",
     "@types/winreg": "^1.2.30",
+    "@types/ws": "^7.2.6",
     "@types/yauzl": "^2.9.1",
     "@types/yazl": "^2.4.2",
     "@typescript-eslint/eslint-plugin": "3.2.0",

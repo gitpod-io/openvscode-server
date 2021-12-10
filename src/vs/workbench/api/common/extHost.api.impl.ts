@@ -303,7 +303,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				return extHostTerminalService.getDefaultShell(false);
 			},
 			get isTelemetryEnabled() {
-				return extHostTelemetry.getTelemetryEnabled();
+				// return extHostTelemetry.getTelemetryEnabled();
+				// return always false to prevent microsoft built-in extension and
+				// third-party like GHPR to send telemetry data
+				return false;
 			},
 			get onDidChangeTelemetryEnabled(): Event<boolean> {
 				return extHostTelemetry.onDidChangeTelemetryEnabled;

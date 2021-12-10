@@ -79,7 +79,10 @@ import { PtyHostService } from 'vs/platform/terminal/node/ptyHostService';
 import { IRemoteTelemetryService, RemoteNullTelemetryService, RemoteTelemetryService } from 'vs/server/remoteTelemetryService';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { UriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentityService';
+// eslint-disable-next-line code-import-patterns
 import { handleGitpodCLIRequest } from 'vs/gitpod/node/customServerIntegration';
+// eslint-disable-next-line code-import-patterns
+import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
 
 const SHUTDOWN_TIMEOUT = 5 * 60 * 1000;
 
@@ -290,10 +293,12 @@ export class RemoteExtensionHostAgentServer extends Disposable {
 
 		let appInsightsAppender: ITelemetryAppender = NullAppender;
 		if (supportsTelemetry(this._productService, this._environmentService)) {
-			if (this._productService.aiConfig && this._productService.aiConfig.asimovKey) {
+			if (this._productService.aiConfig && this._productService.aiConfig.asimovKey !== 'foo') {
 				appInsightsAppender = new AppInsightsAppender(eventPrefix, null, this._productService.aiConfig.asimovKey);
 				this._register(toDisposable(() => appInsightsAppender!.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 			}
+
+			appInsightsAppender = new GitpodInsightsAppender();
 
 			const machineId = await getMachineId();
 			const config: ITelemetryServiceConfig = {
