@@ -278,50 +278,50 @@ ${deprecatedSettingNote}
 	return telemetryDescription;
 }
 
-if (!!product.enableTelemetry) {
-	Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
-		'id': TELEMETRY_SECTION_ID,
-		'order': 110,
-		'type': 'object',
-		'title': localize('telemetryConfigurationTitle', "Telemetry"),
-		'properties': {
-			[TELEMETRY_SETTING_ID]: {
-				'type': 'string',
-				'enum': [TelemetryConfiguration.ON, TelemetryConfiguration.ERROR, TelemetryConfiguration.CRASH, TelemetryConfiguration.OFF],
-				'enumDescriptions': [
-					localize('telemetry.telemetryLevel.default', "Sends usage data, errors, and crash reports."),
-					localize('telemetry.telemetryLevel.error', "Sends general error telemetry and crash reports."),
-					localize('telemetry.telemetryLevel.crash', "Sends OS level crash reports."),
-					localize('telemetry.telemetryLevel.off', "Disables all product telemetry.")
-				],
-				'markdownDescription': getTelemetryLevelSettingDescription(),
-				'default': TelemetryConfiguration.ON,
-				'restricted': true,
-				'scope': ConfigurationScope.APPLICATION,
-				'tags': ['usesOnlineServices', 'telemetry']
-			}
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
+	'id': TELEMETRY_SECTION_ID,
+	'order': 110,
+	'type': 'object',
+	'title': localize('telemetryConfigurationTitle', "Telemetry"),
+	'properties': {
+		[TELEMETRY_SETTING_ID]: {
+			'type': 'string',
+			'enum': [TelemetryConfiguration.ON, TelemetryConfiguration.ERROR, TelemetryConfiguration.CRASH, TelemetryConfiguration.OFF],
+			'enumDescriptions': [
+				localize('telemetry.telemetryLevel.default', "Sends usage data, errors, and crash reports."),
+				localize('telemetry.telemetryLevel.error', "Sends general error telemetry and crash reports."),
+				localize('telemetry.telemetryLevel.crash', "Sends OS level crash reports."),
+				localize('telemetry.telemetryLevel.off', "Disables all product telemetry.")
+			],
+			'markdownDescription': getTelemetryLevelSettingDescription(),
+			'default': TelemetryConfiguration.ON,
+			'restricted': true,
+			'scope': ConfigurationScope.APPLICATION,
+			'tags': ['usesOnlineServices', 'telemetry'],
+			'included': false
 		}
-	});
+	}
+});
 
-	// Deprecated telemetry setting
-	Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
-		'id': TELEMETRY_SECTION_ID,
-		'order': 110,
-		'type': 'object',
-		'title': localize('telemetryConfigurationTitle', "Telemetry"),
-		'properties': {
-			[TELEMETRY_OLD_SETTING_ID]: {
-				'type': 'boolean',
-				'markdownDescription':
-					!product.privacyStatementUrl ?
-						localize('telemetry.enableTelemetry', "Enable diagnostic data to be collected. This helps us to better understand how {0} is performing and where improvements need to be made.", product.nameLong) :
-						localize('telemetry.enableTelemetryMd', "Enable diagnostic data to be collected. This helps us to better understand how {0} is performing and where improvements need to be made. [Read more]({1}) about what we collect and our privacy statement.", product.nameLong, product.privacyStatementUrl),
-				'default': true,
-				'restricted': true,
-				'markdownDeprecationMessage': localize('enableTelemetryDeprecated', "If this setting is false, no telemetry will be sent regardless of the new setting's value. Deprecated in favor of the {0} setting.", `\`#${TELEMETRY_SETTING_ID}#\``),
-				'scope': ConfigurationScope.APPLICATION,
-				'tags': ['usesOnlineServices', 'telemetry']
-			}
+// Deprecated telemetry setting
+Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfiguration({
+	'id': TELEMETRY_SECTION_ID,
+	'order': 110,
+	'type': 'object',
+	'title': localize('telemetryConfigurationTitle', "Telemetry"),
+	'properties': {
+		[TELEMETRY_OLD_SETTING_ID]: {
+			'type': 'boolean',
+			'markdownDescription':
+				!product.privacyStatementUrl ?
+					localize('telemetry.enableTelemetry', "Enable diagnostic data to be collected. This helps us to better understand how {0} is performing and where improvements need to be made.", product.nameLong) :
+					localize('telemetry.enableTelemetryMd', "Enable diagnostic data to be collected. This helps us to better understand how {0} is performing and where improvements need to be made. [Read more]({1}) about what we collect and our privacy statement.", product.nameLong, product.privacyStatementUrl),
+			'default': true,
+			'restricted': true,
+			'markdownDeprecationMessage': localize('enableTelemetryDeprecated', "If this setting is false, no telemetry will be sent regardless of the new setting's value. Deprecated in favor of the {0} setting.", `\`#${TELEMETRY_SETTING_ID}#\``),
+			'scope': ConfigurationScope.APPLICATION,
+			'tags': ['usesOnlineServices', 'telemetry'],
+			'included': false
 		}
-	});
-}
+	}
+});

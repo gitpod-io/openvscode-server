@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@gitpod/local-app-api-grpcweb": "main",
+    "@gitpod/gitpod-protocol": "main",
+    "@gitpod/supervisor-api-grpc": "main",
     "@microsoft/applicationinsights-web": "^2.6.4",
     "@parcel/watcher": "2.0.5",
     "@vscode/iconv-lite-umd": "0.7.0",
