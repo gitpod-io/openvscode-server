@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@gitpod/gitpod-protocol": "gpl-5862-snapshot",
-    "@gitpod/supervisor-api-grpc": "ak-no-code-desktop-in-stable",
+    "@gitpod/supervisor-api-grpc": "port-description-3059-fork",
     "bufferutil": "^4.0.1",
     "reconnecting-websocket": "^4.4.0",
     "utf-8-validate": "^5.0.2",
