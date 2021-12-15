@@ -291,7 +291,7 @@ export class GitpodWorkspacePort extends vscode.TreeItem {
 		if (this.status) {
 			await this.context.gitpod.server.openPort(this.context.info.getWorkspaceId(), {
 				port: this.status.localPort,
-				targetPort: this.status.globalPort,
+				targetPort: this.status.localPort,
 				visibility
 			});
 		}
@@ -405,8 +405,11 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 				const currentStatus = port.status;
 				port.status = portStatus.toObject();
 				port.tunnel = this.tunnels.get(portNumber);
-
-				port.label = '' + portNumber;
+				const labelPrefix = currentStatus?.name ? `${currentStatus.name}: ` : '';
+				port.label = labelPrefix + portNumber;
+				if (currentStatus?.description) {
+					port.tooltip = `${port.label} - ${currentStatus.description}`;
+				}
 				const remotePort = port.remotePort;
 				if (remotePort && remotePort !== portNumber) {
 					port.label += ':' + remotePort;
@@ -539,7 +542,6 @@ export function registerPorts(context: GitpodExtensionContext): void {
 					});
 					const request = new ExposePortRequest();
 					request.setPort(portNumber);
-					request.setTargetPort(portNumber);
 					await util.promisify(context.supervisor.control.exposePort.bind(context.supervisor.control, request, context.supervisor.metadata, {
 						deadline: Date.now() + context.supervisor.deadlines.normal
 					}))();
