@@ -90,7 +90,7 @@ async function getSupervisorData() {
 	};
 }
 
-async function getClient(serverToken: string, gitpodHost: string, gitpodApiEndpoint: string): Promise<GitpodConnection> {
+async function getClient(productName: string, productVersion: string, serverToken: string, gitpodHost: string, gitpodApiEndpoint: string): Promise<GitpodConnection> {
 	const factory = new JsonRpcProxyFactory<GitpodServer>();
 	const gitpodService = new GitpodServiceImpl<GitpodClient, GitpodServer>(factory.createProxy()) as GitpodConnection;
 
@@ -107,7 +107,9 @@ async function getClient(serverToken: string, gitpodHost: string, gitpodApiEndpo
 				super(address, protocols, {
 					headers: {
 						'Origin': new URL(gitpodHost).origin,
-						'Authorization': `Bearer ${serverToken}`
+						'Authorization': `Bearer ${serverToken}`,
+						'User-Agent': productName,
+						'X-Client-Version': productVersion,
 					}
 				});
 			}
@@ -128,7 +130,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	private _asyncAIClient: Promise<GitpodConnection> | null;
 	private _defaultData: { [key: string]: any } = Object.create(null);
 
-	constructor() {
+	constructor(private productName: string, private productVersion: string) {
 		this._asyncAIClient = null;
 	}
 
@@ -139,7 +141,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 					this._defaultData['workspaceId'] = supervisorData.workspaceId;
 					this._defaultData['workspaceInstanceId'] = supervisorData.instanceId;
 
-					return getClient(supervisorData.serverToken, supervisorData.gitpodHost, supervisorData.gitpodApiEndpoint);
+					return getClient(this.productName, this.productVersion, supervisorData.serverToken, supervisorData.gitpodHost, supervisorData.gitpodApiEndpoint);
 				}
 			);
 		}
@@ -171,36 +173,22 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	}
 }
 
-const formatEventName = (str: string) => {
-	return str
-		.replace(/^[A-Z]/g, letter => letter.toLowerCase())
-		.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
-		.replace(/[^\w]/g, '_');
-};
+// const formatEventName = (str: string) => {
+// 	return str
+// 		.replace(/^[A-Z]/g, letter => letter.toLowerCase())
+// 		.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+// 		.replace(/[^\w]/g, '_');
+// };
 
-const filterEvent = new Set<string>();
+let readAccessTracked = false;
+let writeAccessTracked = false;
 function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | undefined {
-	if (filterEvent.has(eventName)) {
-		return undefined;
-	}
-
 	switch (eventName) {
 		case 'editorOpened':
-			if ((<string>data.typeId) !== 'workbench.editors.files.fileEditorInput') {
+			if (readAccessTracked || (<string>data.typeId) !== 'workbench.editors.files.fileEditorInput') {
 				return undefined;
 			}
-			filterEvent.add(eventName);
-			return {
-				event: `vscode_${formatEventName(eventName)}`,
-				properties: {
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'fileGet':
-			filterEvent.add(eventName);
+			readAccessTracked = true;
 			return {
 				event: 'vscode_file_access',
 				properties: {
@@ -212,7 +200,10 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				},
 			};
 		case 'filePUT':
-			filterEvent.add(eventName);
+			if (writeAccessTracked) {
+				return undefined;
+			}
+			writeAccessTracked = true;
 			return {
 				event: 'vscode_file_access',
 				properties: {
