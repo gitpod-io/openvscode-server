@@ -298,7 +298,7 @@ export class RemoteExtensionHostAgentServer extends Disposable {
 				this._register(toDisposable(() => appInsightsAppender!.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 			}
 
-			appInsightsAppender = new GitpodInsightsAppender();
+			appInsightsAppender = new GitpodInsightsAppender(this._productService.nameShort, this._productService.version);
 
 			const machineId = await getMachineId();
 			const config: ITelemetryServiceConfig = {
