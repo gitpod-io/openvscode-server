@@ -214,6 +214,59 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 					timestamp: data.timestamp
 				},
 			};
+		case 'notification:show':
+			return {
+				event: 'vscode_notification',
+				properties: {
+					action: 'show',
+					id: data.id,
+					source: data.source,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'notification:close':
+			return {
+				event: 'vscode_notification',
+				properties: {
+					action: 'close',
+					id: data.id,
+					source: data.source,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'notification:hide':
+			return {
+				event: 'vscode_notification',
+				properties: {
+					action: 'hide',
+					id: data.id,
+					source: data.source,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'notification:actionExecuted':
+			return {
+				event: 'vscode_notification',
+				properties: {
+					action: 'actionExecuted',
+					id: data.id,
+					source: data.source,
+					actionLabel: data.actionLabel,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
 	}
 
 	return undefined;
