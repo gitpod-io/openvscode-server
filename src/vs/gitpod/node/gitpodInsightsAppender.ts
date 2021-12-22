@@ -267,6 +267,67 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 					timestamp: data.timestamp
 				},
 			};
+		case 'settingsEditor.settingModified':
+			return {
+				event: 'vscode_update_configuration',
+				properties: {
+					key: data.key,
+					target: data.target,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'extensionGallery:install':
+			return {
+				event: 'vscode_extension_gallery',
+				properties: {
+					kind: 'install',
+					id: data.id,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'extensionGallery:update':
+			return {
+				event: 'vscode_extension_gallery',
+				properties: {
+					kind: 'update',
+					id: data.id,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'extensionGallery:uninstall':
+			return {
+				event: 'vscode_extension_gallery',
+				properties: {
+					kind: 'uninstall',
+					id: data.id,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'galleryService:query':
+			return {
+				event: 'vscode_extension_gallery',
+				properties: {
+					kind: 'query',
+					statusCode: data.statusCode,
+					count: data.count,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
 	}
 
 	return undefined;
