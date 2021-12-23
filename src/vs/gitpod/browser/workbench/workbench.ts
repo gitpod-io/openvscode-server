@@ -946,6 +946,7 @@ async function doStart(): Promise<IDisposable> {
 		},
 		settingsSyncOptions: {
 			enabled: true,
+			extensionsSyncStateVersion: info.instanceId,
 			enablementHandler: enablement => {
 				// TODO
 			}
