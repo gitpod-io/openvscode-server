@@ -19,7 +19,7 @@ import * as WebSocket from 'ws';
 import { ConsoleLogger, listen as doListen } from 'vscode-ws-jsonrpc';
 import * as grpc from '@grpc/grpc-js';
 import * as util from 'util';
-import { mixin } from 'vs/base/common/objects';
+import { filter, mixin } from 'vs/base/common/objects';
 
 class SupervisorConnection {
 	readonly deadlines = {
@@ -161,9 +161,10 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 		this._withAIClient((aiClient) => {
 			data = mixin(data, this._defaultData);
 			data = validateTelemetryData(data);
-			const gitpodTrackEvent = mapTelemetryData(eventName, data.properties);
-			if (gitpodTrackEvent) {
-				aiClient.trackEvent(gitpodTrackEvent);
+			const mappedEvent = mapTelemetryData(eventName, data.properties);
+			if (mappedEvent) {
+				mappedEvent.properties = filter(mappedEvent.properties, (_, v) => v !== undefined && v !== null);
+				aiClient.trackEvent(mappedEvent);
 			}
 		});
 	}
@@ -322,6 +323,33 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 					kind: 'query',
 					statusCode: data.statusCode,
 					count: data.count,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'gettingStarted.ActionExecuted':
+			return {
+				event: 'vscode_getting_started',
+				properties: {
+					kind: 'action_executed',
+					command: data.command,
+					argument: data.argument,
+					workspaceId: data.workspaceId,
+					workspaceInstanceId: data.workspaceInstanceId,
+					sessionID: data.sessionID,
+					timestamp: data.timestamp
+				},
+			};
+		case 'editorClosed':
+			if ((<string>data.typeId) !== 'workbench.editors.gettingStartedInput') {
+				return undefined;
+			}
+			return {
+				event: 'vscode_getting_started',
+				properties: {
+					kind: 'editor_closed',
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
 					sessionID: data.sessionID,
