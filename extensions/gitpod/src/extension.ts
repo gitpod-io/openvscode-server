@@ -231,7 +231,8 @@ export async function activate(context: vscode.ExtensionContext) {
 					GITPOD_LCA_API_PORT: String(apiPort),
 					GITPOD_LCA_AUTO_TUNNEL: String(false),
 					GITPOD_LCA_AUTH_REDIRECT_URL: `${vscode.env.uriScheme}://${context.extension.id}${authCompletePath}`,
-					GITPOD_LCA_VERBOSE: String(vscode.workspace.getConfiguration('gitpod').get<boolean>('verbose', false))
+					GITPOD_LCA_VERBOSE: String(vscode.workspace.getConfiguration('gitpod').get<boolean>('verbose', false)),
+					GITPOD_LCA_TIMEOUT: String(vscode.workspace.getConfiguration('gitpod').get<string>('timeout', '3h'))
 				}
 			});
 			localAppProcess.unref();
