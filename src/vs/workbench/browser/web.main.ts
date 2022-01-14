@@ -269,7 +269,7 @@ class BrowserMain extends Disposable {
 		// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 		// Credentials Service
-		const credentialsService = environmentService.remoteAuthority
+		const credentialsService = /* environmentService.remoteAuthority */ false
 			// If we have a remote authority, we can use the CredentialsService on the remote side
 			? ProxyChannel.toService<ICredentialsService>(remoteAgentService.getConnection()!.getChannel('credentials'))
 			: new BrowserCredentialsService(environmentService);
