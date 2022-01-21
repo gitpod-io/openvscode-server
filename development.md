@@ -27,12 +27,11 @@ Note that the workbench can be also bundled independently to serve from some CDN
 
 ### Bundling
 
-Run `yarn gulp server-min` to create production-ready distributable from sources. After the build is finished, you will be able to find following folders next to the project directory:
-- `server-pkg-web` contains the web workbench static resources,
-- `server-pkg-server` contains the headless remote server with the remote CLI,
-- `serfver-pkg` contains everything together to be distributed standalone.
+Run `yarn gulp vscode-reh-web-linux-x64-min` to create production-ready distributable from sources. After the build is finished, you will be able to find the `vscode-reh-web-linux-x64` folder next to the repository folder (one level up from where you executed the command). In this folder 
 
-You can find gulp bundling tasks [here](https://github.com/gitpod-io/openvscode-server/blob/main/build/gulpfile.server.js).
+#### Different platforms and CPU architectures
+
+If you want to have distributables for more types of hardware and operating systems, your folder names and the main command for compiling will change. You can find all of the gulp bundling tasks [here](https://github.com/gitpod-io/openvscode-server/blob/main/build/gulpfile.js) and if you execute `yarn gulp --tasks | grep "vscode-reh-web"` you will get all of the different distribution targets available (the options here are also the corresponding commands for bundling, which you need to prefix with `yarn gulp` in the terminal).
 
 ### Updating VS Code
 
