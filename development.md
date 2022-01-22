@@ -27,7 +27,7 @@ Note that the workbench can be also bundled independently to serve from some CDN
 
 ### Bundling
 
-Run `yarn gulp vscode-reh-web-linux-x64-min` to create production-ready distributable from sources. After the build is finished, you will be able to find the `vscode-reh-web-linux-x64` folder next to the repository folder (one level up from where you executed the command). In this folder you will find `server.sh`: your entrypoint to the OpenVSCode server.
+Run `yarn gulp vscode-reh-web-linux-x64-min` to create production-ready distributable from sources. After the build is finished, you will be able to find the `vscode-reh-web-linux-x64` folder next to the repository folder (one level up from where you executed the command). In this folder, under `bin/` you will find a `openvscode-server` script: your entrypoint to the OpenVSCode server.
 
 #### Different platforms and CPU architectures
 
