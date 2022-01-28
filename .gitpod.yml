@@ -17,7 +17,7 @@ tasks:
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
-      ./resources/server/web.sh
+      ./scripts/code-server.sh  --without-connection-token
     name: run app
     openMode: split-right
 github:
