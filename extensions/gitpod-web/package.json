@@ -500,7 +500,7 @@
   },
   "dependencies": {
     "gitpod-shared": "0.0.1",
-    "node-fetch": "^2.6.5",
+    "node-fetch": "2.6.7",
     "uuid": "8.1.0",
     "vscode-jsonrpc": "^5.0.1",
     "vscode-nls": "^5.0.0",
