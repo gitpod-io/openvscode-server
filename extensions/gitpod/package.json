@@ -3,7 +3,7 @@
 	"displayName": "%displayName%",
 	"description": "%description%",
 	"publisher": "gitpod",
-	"version": "0.0.28",
+	"version": "0.0.29",
 	"license": "MIT",
 	"preview": true,
 	"icon": "resources/gitpod.png",
@@ -45,7 +45,7 @@
 	"dependencies": {
 		"@gitpod/local-app-api-grpcweb": "main",
 		"@improbable-eng/grpc-web-node-http-transport": "^0.14.0",
-		"node-fetch": "^2.6.1",
+		"node-fetch": "2.6.7",
 		"tmp": "^0.2.1",
 		"vscode-nls": "^5.0.0"
 	},
