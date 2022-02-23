@@ -37,21 +37,6 @@ export async function setupGitpodContext(context: vscode.ExtensionContext): Prom
 }
 
 function registerUsageAnalytics(context: GitpodExtensionContext): void {
-	context.fireAnalyticsEvent({
-		eventName: 'vscode_session',
-		properties: { phase: 'start', focused: vscode.window.state.focused }
-	});
-	context.subscriptions.push(vscode.window.onDidChangeWindowState(() =>
-		context.fireAnalyticsEvent({
-			eventName: 'vscode_session',
-			properties: { phase: 'running', focused: vscode.window.state.focused }
-		})
-	));
-	context.pendingWillCloseSocket.push(() =>
-		context.fireAnalyticsEvent({
-			eventName: 'vscode_session',
-			properties: { phase: 'end', focused: vscode.window.state.focused },
-		})
-	);
+	context.fireAnalyticsEvent({ eventName: 'vscode_session', properties: {} });
 }
 
