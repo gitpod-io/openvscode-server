@@ -21,10 +21,7 @@ interface GAET<N extends string, P> {
 
 
 export type GitpodAnalyticsEvent =
-	GAET<'vscode_session', {
-		phase: 'start' | 'running' | 'end'
-		focused: boolean
-	}> |
+	GAET<'vscode_session', {}> |
 	GAET<'vscode_execute_command_gitpod_open_link', {
 		url: string
 	}> |
