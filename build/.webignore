@@ -45,3 +45,6 @@ xterm-addon-webgl/out/**
 
 browser-headers/**
 google-protobuf/**
+
+@zip.js/**
+!@zip.js/zip.js/dist/zip-no-worker-deflate.min.js
