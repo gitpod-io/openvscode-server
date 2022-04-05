@@ -3,7 +3,7 @@
 	"displayName": "%displayName%",
 	"description": "%description%",
 	"publisher": "gitpod",
-	"version": "0.0.30",
+	"version": "0.0.32",
 	"license": "MIT",
 	"preview": true,
 	"icon": "resources/gitpod.png",
@@ -29,10 +29,52 @@
 	],
 	"activationEvents": [
 		"*",
-		"onCommand:gitpod.api.autoTunnel"
+		"onCommand:gitpod.api.autoTunnel",
+		"onAuthenticationRequest:gitpod"
 	],
 	"contributes": {
+		"authentication": [
+			{
+				"label": "Gitpod",
+				"id": "gitpod"
+			}
+		],
+		"configuration": [
+			{
+				"title": "Gitpod",
+				"properties": {
+					"gitpod.host": {
+						"type": "string",
+						"description": "Gitpod Service URL. Update this if you are using a Gitpod self-hosted installation.",
+						"default": "https://gitpod.io/",
+						"scope": "application"
+					}
+				}
+			},
+			{
+				"title": "Settings sync",
+				"properties": {
+					"configurationSync.store": {
+						"type": "object",
+						"description": "Settings Sync Provider configuration.",
+						"scope": "application"
+					}
+				}
+			}
+		],
 		"commands": [
+			{
+				"command": "gitpod.syncProvider.remove",
+				"category": "Settings Sync",
+				"enablement": "gitpod.addedSyncProvider",
+				"title": "Disable Sign In with Gitpod"
+			},
+			{
+				"command": "gitpod.syncProvider.add",
+				"category": "Settings Sync",
+				"enablement": "!gitpod.addedSyncProvider",
+				"title": "Enable Sign In with Gitpod"
+			},
 			{
 				"command": "gitpod.exportLogs",
 				"category": "Gitpod",
@@ -47,17 +89,24 @@
 		"vscode:prepublish": "npm run compile"
 	},
 	"devDependencies": {
+		"@types/analytics-node": "^3.1.8",
+		"@types/crypto-js": "4.1.1",
 		"@types/node": "16.x",
 		"@types/node-fetch": "^2.5.12",
 		"@types/tmp": "^0.2.1",
+		"@types/uuid": "8.0.0",
+		"@types/ws": "^7.2.6",
 		"@types/yazl": "^2.4.2"
 	},
 	"dependencies": {
+		"@gitpod/gitpod-protocol": "main",
 		"@gitpod/local-app-api-grpcweb": "main",
 		"@improbable-eng/grpc-web-node-http-transport": "^0.14.0",
+		"analytics-node": "^6.0.0",
 		"node-fetch": "2.6.7",
+		"pkce-challenge": "^3.0.0",
 		"tmp": "^0.2.1",
-		"vscode-nls": "^5.0.0",
+		"uuid": "8.1.0",
 		"yazl": "^2.5.1"
 	},
 	"extensionDependencies": [
