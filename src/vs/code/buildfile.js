@@ -6,6 +6,8 @@
 
 const { createModuleDescription } = require('../base/buildfile');
 
+exports.createModuleDescription = createModuleDescription;
+
 exports.collectModules = function () {
 	return [
 		createModuleDescription('vs/code/electron-main/main'),

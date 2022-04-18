@@ -38,7 +38,7 @@ const enum ShutdownConstants {
 	MaximumShutdownTime = 5000
 }
 
-const enum Constants {
+export const enum Constants {
 	/**
 	 * The minimum duration between kill and spawn calls on Windows/conpty as a mitigation for a
 	 * hang issue. See:
