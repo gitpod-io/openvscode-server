@@ -83,9 +83,7 @@ export class RequestService extends AbstractRequestService implements IRequestSe
 			...process.env,
 			...shellEnv
 		};
-		const agent = options.agent ? options.agent : await getProxyAgent(options.url || '', env, { proxyUrl, strictSSL });
 
-		options.agent = agent;
 		options.strictSSL = strictSSL;
 
 		if (this.authorization) {
@@ -95,7 +93,7 @@ export class RequestService extends AbstractRequestService implements IRequestSe
 			};
 		}
 
-		return this.logAndRequest(options, () => nodeRequest(options, token));
+		return this.logAndRequest(options, () => nodeRequest(options, proxyUrl, env, token));
 	}
 
 	async resolveProxy(url: string): Promise<string | undefined> {
@@ -149,12 +147,14 @@ async function getNodeRequest(options: IRequestOptions): Promise<IRawRequestFunc
 	return module.request;
 }
 
-export async function nodeRequest(options: NodeRequestOptions, token: CancellationToken): Promise<IRequestContext> {
+export async function nodeRequest(options: NodeRequestOptions, proxyUrl: string | undefined, env: { [key: string]: string | undefined }, token: CancellationToken): Promise<IRequestContext> {
 	return Promises.withAsyncBody<IRequestContext>(async (resolve, reject) => {
 		const endpoint = parseUrl(options.url!);
 		const rawRequest = options.getRawRequest
 			? options.getRawRequest(options)
 			: await getNodeRequest(options);
+
+		const proxyAgent = options.agent ? options.agent : await getProxyAgent(options.url || '', env, { proxyUrl, strictSSL: options.strictSSL });
 
 		const opts: https.RequestOptions & { cache?: 'default' | 'no-store' | 'reload' | 'no-cache' | 'force-cache' | 'only-if-cached' } = {
 			hostname: endpoint.hostname,
@@ -163,7 +163,7 @@ export async function nodeRequest(options: NodeRequestOptions, token: Cancellati
 			path: endpoint.path,
 			method: options.type || 'GET',
 			headers: options.headers,
-			agent: options.agent,
+			agent: proxyAgent,
 			rejectUnauthorized: isBoolean(options.strictSSL) ? options.strictSSL : true
 		};
 
@@ -182,7 +182,7 @@ export async function nodeRequest(options: NodeRequestOptions, token: Cancellati
 					...options,
 					url: res.headers['location'],
 					followRedirects: followRedirects - 1
-				}, token).then(resolve, reject);
+				}, proxyUrl, env, token).then(resolve, reject);
 			} else {
 				let stream: streams.ReadableStreamEvents<Uint8Array> = res;
 
