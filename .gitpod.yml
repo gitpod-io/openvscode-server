@@ -1,14 +1,12 @@
 image:
   file: .gitpod.Dockerfile
 ports:
-  - port: 3000
+  - port: 9888
     onOpen: open-browser
 tasks:
   - init: |
-      export VSCODE_INIT_BUILD_DIR=$(leeway describe "//:init" -t "/tmp/build/{{ .Metadata.Name }}.{{ .Metadata.Version }}")
-      leeway build
-      sudo cp -rup "$VSCODE_INIT_BUILD_DIR/install/." . | true
-      yarn gitpod:link
+      yarn
+      yarn server:init
     command: |
       gp sync-done init
       export NODE_ENV=development
@@ -19,13 +17,7 @@ tasks:
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
-      yarn gitpod:watch
-    name: watch extension
-  - command: |
-      export NODE_ENV=development
-      export VSCODE_DEV=1
-      gp sync-await init
-      node out/gitpod.js
+      ./scripts/code-server.sh  --without-connection-token
     name: run app
     openMode: split-right
 github:

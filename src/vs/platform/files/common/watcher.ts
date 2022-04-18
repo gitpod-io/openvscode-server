@@ -25,6 +25,13 @@ interface IWatchRequest {
 	 * A set of glob patterns or paths to exclude from watching.
 	 */
 	excludes: string[];
+
+	/**
+	 * An optional set of glob patterns or paths to include for
+	 * watching. If not provided, all paths are considered for
+	 * events.
+	 */
+	includes?: string[];
 }
 
 export interface INonRecursiveWatchRequest extends IWatchRequest {
@@ -143,8 +150,8 @@ export abstract class AbstractWatcherClient extends Disposable {
 		private readonly onLogMessage: (msg: ILogMessage) => void,
 		private verboseLogging: boolean,
 		private options: {
-			type: string,
-			restartOnError: boolean
+			type: string;
+			restartOnError: boolean;
 		}
 	) {
 		super();
