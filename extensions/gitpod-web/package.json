@@ -505,6 +505,6 @@
     "vscode-jsonrpc": "^5.0.1",
     "vscode-nls": "^5.0.0",
     "yauzl": "^2.9.2",
-    "yazl": "^2.4.3"
+    "yazl": "^2.5.1"
   }
 }

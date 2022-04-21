@@ -35,6 +35,7 @@ import WebSocket = require('ws');
 import { BaseGitpodAnalyticsEventPropeties, GitpodAnalyticsEvent } from './analytics';
 import * as uuid from 'uuid';
 import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
+import Log from './common/logger';
 
 export class SupervisorConnection {
 	readonly deadlines = {
@@ -94,7 +95,7 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 		readonly user: Promise<User>,
 		readonly instanceListener: Promise<WorkspaceInstanceUpdateListener>,
 		readonly workspaceOwned: Promise<boolean>,
-		readonly output: vscode.OutputChannel,
+		readonly logger: Log,
 		readonly ipcHookCli: string | undefined
 	) {
 		this.workspaceContextUrl = vscode.Uri.parse(info.getWorkspaceContextUrl());
@@ -168,7 +169,7 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 				await Promise.allSettled(this.pendingWillCloseSocket.map(f => f()));
 				webSocket.close();
 			} catch (e) {
-				this.output.appendLine('failed to dispose context: ' + e);
+				this.logger.error('failed to dispose context:', e);
 				console.error('failed to dispose context:', e);
 			}
 		})();
@@ -193,20 +194,20 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 			}
 		};
 		if (this.devMode && vscode.env.uiKind === vscode.UIKind.Web) {
-			this.output.appendLine(`ANALYTICS: ${JSON.stringify(msg)} `);
+			this.logger.trace(`ANALYTICS: ${JSON.stringify(msg)} `);
 			return Promise.resolve();
 		}
 		try {
 			await this.gitpod.server.trackEvent(msg);
 		} catch (e) {
-			this.output.appendLine('failed to track event: ' + e);
+			this.logger.error('failed to track event:', e);
 			console.error('failed to track event:', e);
 		}
 	}
 }
 
 export async function createGitpodExtensionContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
-	const output = vscode.window.createOutputChannel('Gitpod Workspace');
+	const logger = new Log('Gitpod Workspace');
 	const devMode = context.extensionMode === vscode.ExtensionMode.Development || !!process.env['VSCODE_DEV'];
 
 	const supervisor = new SupervisorConnection(context);
@@ -222,7 +223,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 			contentAvailable = result.getAvailable();
 		} catch (e) {
 			if (e.code === grpc.status.UNAVAILABLE) {
-				output.appendLine('It does not look like we are running in a Gitpod workspace, supervisor is not available.');
+				logger.info('It does not look like we are running in a Gitpod workspace, supervisor is not available.');
 				return undefined;
 			}
 			console.error('cannot maintain connection to supervisor', e);
@@ -308,7 +309,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 		return workspaceOwned;
 	})();
 
-	const ipcHookCli = installCLIProxy(context, output);
+	const ipcHookCli = installCLIProxy(context, logger);
 
 	const config = await import('./gitpod-plugin-model');
 	return new GitpodExtensionContext(
@@ -324,7 +325,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 		pendingGetUser,
 		pendingInstanceListener,
 		pendingWorkspaceOwned,
-		output,
+		logger,
 		ipcHookCli
 	);
 }
@@ -722,7 +723,7 @@ export function registerDefaultLayout(context: GitpodExtensionContext): void {
 	}
 }
 
-function installCLIProxy(context: vscode.ExtensionContext, output: vscode.OutputChannel): string | undefined {
+function installCLIProxy(context: vscode.ExtensionContext, logger: Log): string | undefined {
 	const vscodeIpcHookCli = process.env['VSCODE_IPC_HOOK_CLI'];
 	if (!vscodeIpcHookCli) {
 		return undefined;
@@ -772,7 +773,7 @@ function installCLIProxy(context: vscode.ExtensionContext, output: vscode.Output
 			fs.promises.unlink(ipcHookCli)
 		));
 	}).catch(e => {
-		output.appendLine('failed to start cli proxy: ' + e);
+		logger.error('failed to start cli proxy: ' + e);
 		console.error('failed to start cli proxy:' + e);
 	});
 
@@ -815,6 +816,7 @@ export async function registerTasks(context: GitpodExtensionContext, createTermi
 			});
 		} catch (err) {
 			if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+				context.logger.error('code server: listening task updates failed:', err);
 				console.error('code server: listening task updates failed:', err);
 			}
 		} finally {
@@ -824,6 +826,11 @@ export async function registerTasks(context: GitpodExtensionContext, createTermi
 			await new Promise(resolve => setTimeout(resolve, 1000));
 		}
 	}
+	context.logger.trace('Task status:', [...tasks.values()].map(status => {
+		const stateMap = { [TaskState.OPENING]: 'CLOSED', [TaskState.RUNNING]: 'RUNNING', [TaskState.CLOSED]: 'CLOSED' };
+		return `\t${status.getTerminal()} => ${stateMap[status.getState()]}`;
+	}).join('\n'));
+
 	if (token.isCancellationRequested) {
 		return;
 	}
@@ -837,6 +844,7 @@ export async function registerTasks(context: GitpodExtensionContext, createTermi
 			taskTerminals.set(term.getAlias(), term);
 		}
 	} catch (e) {
+		context.logger.error('failed to list task terminals:', e);
 		console.error('failed to list task terminals:', e);
 	}
 
@@ -922,6 +930,7 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 				} catch (e) {
 					notFound = 'code' in e && e.code === grpc.status.NOT_FOUND;
 					if (!token.isCancellationRequested && !notFound && !('code' in e && e.code === grpc.status.CANCELLED)) {
+						context.logger.error(`${alias} terminal: listening failed:`, e);
 						console.error(`${alias} terminal: listening failed:`, e);
 					}
 				} finally {
@@ -931,9 +940,16 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 					return;
 				}
 				if (notFound) {
+					context.logger.trace(`${alias} terminal not found`);
 					onDidCloseEmitter.fire();
-				} else if (typeof exitCode === 'number') {
+					tokenSource.cancel();
+					return;
+				}
+				if (typeof exitCode === 'number') {
+					context.logger.trace(`${alias} terminal exited with ${exitCode}`);
 					onDidCloseEmitter.fire(exitCode);
+					tokenSource.cancel();
+					return;
 				}
 				await new Promise(resolve => setTimeout(resolve, 2000));
 			}
@@ -958,10 +974,12 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 					await util.promisify(context.supervisor.terminal.shutdown.bind(context.supervisor.terminal, request, context.supervisor.metadata, {
 						deadline: Date.now() + context.supervisor.deadlines.short
 					}))();
+					context.logger.trace(`${alias} terminal closed`);
 				} catch (e) {
 					if (e && e.code === grpc.status.NOT_FOUND) {
 						// Swallow, the pty has already been killed
 					} else {
+						context.logger.error(`${alias} terminal: shutdown failed:`, e);
 						console.error(`${alias} terminal: shutdown failed:`, e);
 					}
 				}
@@ -985,6 +1003,7 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 					}))();
 				} catch (e) {
 					if (e && e.code !== grpc.status.NOT_FOUND) {
+						context.logger.error(`${alias} terminal: write failed:`, e);
 						console.error(`${alias} terminal: write failed:`, e);
 					}
 				}
@@ -1012,6 +1031,7 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 					}))();
 				} catch (e) {
 					if (e && e.code !== grpc.status.NOT_FOUND) {
+						context.logger.error(`${alias} terminal: resize failed:`, e);
 						console.error(`${alias} terminal: resize failed:`, e);
 					}
 				}
@@ -1066,7 +1086,7 @@ async function updateIpcHookCli(context: GitpodExtensionContext): Promise<void> 
 			req.end();
 		});
 	} catch (e) {
-		context.output.appendLine('Failed to update gitpod ipc hook cli: ' + e);
+		context.logger.error('Failed to update gitpod ipc hook cli:', e);
 		console.error('Failed to update gitpod ipc hook cli:', e);
 	}
 }

@@ -32,8 +32,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		return;
 	}
 
-	logContextInfo(gitpodContext);
-
 	registerDesktop();
 	registerAuth(gitpodContext);
 	registerPorts(gitpodContext);
@@ -65,14 +63,6 @@ export function deactivate() {
 		return;
 	}
 	return gitpodContext.dispose();
-}
-
-function logContextInfo(context: GitpodExtensionContext) {
-	const output = context.output;
-
-	output.appendLine(`GITPOD_WORKSPACE_CONTEXT_URL: ${context.info.getWorkspaceContextUrl()}`);
-	output.appendLine(`GITPOD_INSTANCE_ID: ${context.info.getInstanceId()}`);
-	output.appendLine(`GITPOD_WORKSPACE_URL: ${context.info.getWorkspaceUrl()}`);
 }
 
 export function registerAuth(context: GitpodExtensionContext): void {
@@ -515,6 +505,7 @@ export function registerPorts(context: GitpodExtensionContext): void {
 					});
 				} catch (err) {
 					if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+						context.logger.error('cannot maintain connection to supervisor', err);
 						console.error('cannot maintain connection to supervisor', err);
 					}
 				} finally {
