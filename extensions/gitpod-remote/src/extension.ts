@@ -16,12 +16,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	if (!gitpodContext) {
 		return;
 	}
+
 	if (vscode.extensions.getExtension('gitpod.gitpod')) {
 		try {
 			await util.promisify(cp.exec)('code --uninstall-extension gitpod.gitpod');
 			vscode.commands.executeCommand('workbench.action.reloadWindow');
 		} catch (e) {
-			gitpodContext.output.appendLine('failed to uninstall gitpod.gitpod: ' + e);
+			gitpodContext.logger.error('failed to uninstall gitpod.gitpod:', e);
 		}
 		return;
 	}
@@ -42,6 +43,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	// For port tunneling we rely on Remote SSH capabilities
 	// and gitpod.gitpod to disable auto tunneling from the current local machine.
 	vscode.commands.executeCommand('gitpod.api.autoTunnel', gitpodContext.info.getGitpodHost(), gitpodContext.info.getInstanceId(), false);
+
+	// For collecting logs, will be called by gitpod-desktop extension;
+	context.subscriptions.push(vscode.commands.registerCommand('__gitpod.getGitpodRemoteLogsUri', () => {
+		return context.logUri;
+	}));
 
 	// TODO
 	// - auth?
@@ -87,7 +93,7 @@ export function openWorkspaceLocation(context: GitpodExtensionContext): boolean 
 }
 
 export async function installInitialExtensions(context: GitpodExtensionContext): Promise<void> {
-	context.output.appendLine('installing initial extensions...');
+	context.logger.info('installing initial extensions...');
 	const extensions: (vscode.Uri | string)[] = [];
 	try {
 		const workspaceContextUri = vscode.Uri.parse(context.info.getWorkspaceContextUrl());
@@ -125,10 +131,10 @@ export async function installInitialExtensions(context: GitpodExtensionContext):
 			}
 		}
 	} catch (e) {
-		context.output.appendLine('failed to detect workspace context dependent extensions:' + e);
+		context.logger.error('failed to detect workspace context dependent extensions:', e);
 		console.error('failed to detect workspace context dependent extensions:', e);
 	}
-	context.output.appendLine('initial extensions: ' + extensions);
+	context.logger.info('initial extensions:', extensions);
 	if (extensions.length) {
 		let cause;
 		try {
@@ -138,11 +144,11 @@ export async function installInitialExtensions(context: GitpodExtensionContext):
 			cause = e;
 		}
 		if (cause) {
-			context.output.appendLine('failed to install initial extensions: ' + cause);
+			context.logger.error('failed to install initial extensions:', cause);
 			console.error('failed to install initial extensions: ', cause);
 		}
 	}
-	context.output.appendLine('initial extensions installed');
+	context.logger.info('initial extensions installed');
 }
 
 export function registerHearbeat(context: GitpodExtensionContext): void {
@@ -152,11 +158,13 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 	};
 	const sendHeartBeat = async (wasClosed?: true) => {
 		const suffix = wasClosed ? 'was closed heartbeat' : 'heartbeat';
+		if (wasClosed) {
+			context.logger.trace('sending ' + suffix);
+		}
 		try {
-			context.output.appendLine('sending ' + suffix);
 			await context.gitpod.server.sendHeartBeat({ instanceId: context.info.getInstanceId(), wasClosed });
 		} catch (err) {
-			context.output.appendLine(`failed to send ${suffix}: ` + err);
+			context.logger.error(`failed to send ${suffix}:`, err);
 			console.error(`failed to send ${suffix}`, err);
 		}
 	};

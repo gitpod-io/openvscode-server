@@ -151,7 +151,7 @@ registerAction2(class ExportLogsAction extends Action2 {
 		);
 
 		if (bufferData) {
-			triggerDownload(bufferData, 'vscodeLogs.zip');
+			triggerDownload(bufferData, `vscode-web-logs-${new Date().toISOString().replace(/-|:|\.\d+Z$/g, '')}.zip`);
 		}
 	}
 });
