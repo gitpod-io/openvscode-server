@@ -8,7 +8,6 @@ import { IBrowserWorkbenchEnvironmentService } from 'vs/workbench/services/envir
 import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { IFileService } from 'vs/platform/files/common/files';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { CATEGORIES } from 'vs/workbench/common/actions';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { URI } from 'vs/base/common/uri';
 import * as resources from 'vs/base/common/resources';
@@ -40,7 +39,7 @@ registerAction2(class ExportLogsAction extends Action2 {
 		super({
 			id: 'gitpod.workbench.exportLogs',
 			title: { original: 'Export all logs', value: 'Export all logs' },
-			category: CATEGORIES.Developer,
+			category: { original: 'Gitpod', value: 'Gitpod' },
 			menu: {
 				id: MenuId.CommandPalette
 			}
@@ -151,7 +150,7 @@ registerAction2(class ExportLogsAction extends Action2 {
 		);
 
 		if (bufferData) {
-			triggerDownload(bufferData, 'vscodeLogs.zip');
+			triggerDownload(bufferData, `vscode-web-logs-${new Date().toISOString().replace(/-|:|\.\d+Z$/g, '')}.zip`);
 		}
 	}
 });

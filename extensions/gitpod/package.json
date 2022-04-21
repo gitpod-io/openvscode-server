@@ -3,7 +3,7 @@
 	"displayName": "%displayName%",
 	"description": "%description%",
 	"publisher": "gitpod",
-	"version": "0.0.29",
+	"version": "0.0.30",
 	"license": "MIT",
 	"preview": true,
 	"icon": "resources/gitpod.png",
@@ -31,6 +31,15 @@
 		"*",
 		"onCommand:gitpod.api.autoTunnel"
 	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "gitpod.exportLogs",
+				"category": "Gitpod",
+				"title": "Export all logs"
+			}
+		]
+	},
 	"main": "./out/extension.js",
 	"scripts": {
 		"compile": "gulp compile-extension:gitpod",
@@ -40,14 +49,16 @@
 	"devDependencies": {
 		"@types/node": "16.x",
 		"@types/node-fetch": "^2.5.12",
-		"@types/tmp": "^0.2.1"
+		"@types/tmp": "^0.2.1",
+		"@types/yazl": "^2.4.2"
 	},
 	"dependencies": {
 		"@gitpod/local-app-api-grpcweb": "main",
 		"@improbable-eng/grpc-web-node-http-transport": "^0.14.0",
 		"node-fetch": "2.6.7",
 		"tmp": "^0.2.1",
-		"vscode-nls": "^5.0.0"
+		"vscode-nls": "^5.0.0",
+		"yazl": "^2.5.1"
 	},
 	"extensionDependencies": [
 		"ms-vscode-remote.remote-ssh"

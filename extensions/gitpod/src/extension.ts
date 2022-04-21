@@ -16,6 +16,7 @@ import * as tmp from 'tmp';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { grpc } from '@improbable-eng/grpc-web';
+import { exportLogs } from './exportLogs';
 
 interface SSHConnectionParams {
 	workspaceId: string;
@@ -431,6 +432,17 @@ export async function activate(context: vscode.ExtensionContext) {
 				log(`failed to open uri: ${e}`);
 				throw e;
 			}
+		}
+	}));
+
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.exportLogs', async () => {
+		try {
+			await exportLogs(context);
+		} catch (e) {
+			const outputMessage = `Error exporting logs: ${e}`;
+			vscode.window.showErrorMessage(outputMessage);
+			log(outputMessage);
+			// logger.error(outputMessage);
 		}
 	}));
 
