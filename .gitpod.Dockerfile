@@ -1,4 +1,4 @@
-FROM gitpod/workspace-full:latest
+FROM devfactory/workspace-full:latest
 
 USER gitpod
 
