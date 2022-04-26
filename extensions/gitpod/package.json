@@ -34,9 +34,9 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "gitpod.collectLogs",
+				"command": "gitpod.exportLogs",
 				"category": "Gitpod",
-				"title": "Collect all logs"
+				"title": "Export all logs"
 			}
 		]
 	},

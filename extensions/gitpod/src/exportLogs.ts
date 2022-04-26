@@ -55,7 +55,7 @@ async function traverseFolder(folderUri: vscode.Uri, files: IFile[], token: vsco
 	}
 }
 
-export async function collectLogs(context: vscode.ExtensionContext) {
+export async function exportLogs(context: vscode.ExtensionContext) {
 	const saveUri = await vscode.window.showSaveDialog({
 		title: 'Choose save location ...',
 		defaultUri: vscode.Uri.file(path.posix.join(os.homedir(), `vscode-desktop-logs-${new Date().toISOString().replace(/-|:|\.\d+Z$/g, '')}.zip`)),
