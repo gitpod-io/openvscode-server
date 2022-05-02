@@ -52,14 +52,6 @@ export async function updateSyncContext(): Promise<boolean> {
  * @param enabled - indicates whether to add or remove the configuration
  */
 export async function enableSettingsSync(enabled: boolean, telemetry: TelemetryReporter): Promise<void> {
-	const promptToCloseAll = async () => {
-		const action = 'Close this window';
-		const result = await vscode.window.showInformationMessage('Restart VS Code (close all windows) for the new Settings Sync configuration to take effect.', action);
-		if (result === action) {
-			await vscode.commands.executeCommand('workbench.action.closeWindow');
-		}
-	};
-
 	let newSyncProviderConfig: ConfigurationSyncStore | undefined;
 	let newIgnoredSettingsConfig: string[] | undefined;
 	const config = vscode.workspace.getConfiguration();
@@ -89,5 +81,5 @@ export async function enableSettingsSync(enabled: boolean, telemetry: TelemetryR
 
 	telemetry.sendTelemetryEvent('gitpod_desktop_settings_sync', { enabled: String(enabled) });
 
-	await promptToCloseAll();
+	vscode.window.showInformationMessage('Quit VS Code for the new Settings Sync configuration to take effect.');
 }
