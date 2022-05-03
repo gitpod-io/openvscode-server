@@ -25,7 +25,6 @@ function getGitpodSyncProviderConfig(serviceUrl: string): ConfigurationSyncStore
 				scopes: [
 					'function:accessCodeSyncStorage',
 					'function:getLoggedInUser',
-					'function:getGitpodTokenScopes',
 					'resource:default'
 				]
 			}

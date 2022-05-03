@@ -48,6 +48,12 @@
 						"description": "Gitpod Service URL. Update this if you are using a Gitpod self-hosted installation.",
 						"default": "https://gitpod.io/",
 						"scope": "application"
+					},
+					"gitpod.remote.useLocalApp":{
+						"type":"boolean",
+						"description": "Use the local companion app to connect to a remote workspace.\nWarning: Connecting to a remote workspace using local companion app will be removed in the near future.",
+						"default": false,
+						"scope": "application"
 					}
 				}
 			},
@@ -93,6 +99,7 @@
 		"@types/crypto-js": "4.1.1",
 		"@types/node": "16.x",
 		"@types/node-fetch": "^2.5.12",
+		"@types/ssh2": "^0.5.52",
 		"@types/tmp": "^0.2.1",
 		"@types/uuid": "8.0.0",
 		"@types/ws": "^7.2.6",
@@ -105,11 +112,9 @@
 		"analytics-node": "^6.0.0",
 		"node-fetch": "2.6.7",
 		"pkce-challenge": "^3.0.0",
+		"ssh2": "^1.10.0",
 		"tmp": "^0.2.1",
 		"uuid": "8.1.0",
 		"yazl": "^2.5.1"
-	},
-	"extensionDependencies": [
-		"ms-vscode-remote.remote-ssh"
-	]
+	}
 }
