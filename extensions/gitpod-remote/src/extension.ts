@@ -215,7 +215,6 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 		vscode.workspace.onDidOpenTextDocument(updateLastActivitiy),
 		vscode.workspace.onDidCloseTextDocument(updateLastActivitiy),
 		vscode.workspace.onDidChangeTextDocument(updateLastActivitiy),
-		vscode.workspace.onWillSaveTextDocument(updateLastActivitiy),
 		vscode.workspace.onDidSaveTextDocument(updateLastActivitiy),
 		vscode.workspace.onDidChangeNotebookDocument(updateLastActivitiy),
 		vscode.workspace.onDidSaveNotebookDocument(updateLastActivitiy),
@@ -227,6 +226,12 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 		vscode.workspace.onDidDeleteFiles(updateLastActivitiy),
 		vscode.workspace.onWillRenameFiles(updateLastActivitiy),
 		vscode.workspace.onDidRenameFiles(updateLastActivitiy),
-		vscode.workspace.onDidChangeConfiguration(updateLastActivitiy)
+		vscode.workspace.onDidChangeConfiguration(updateLastActivitiy),
+		vscode.languages.registerHoverProvider('*', {
+			provideHover: () => {
+				updateLastActivitiy();
+				return null;
+			}
+		})
 	);
 }
