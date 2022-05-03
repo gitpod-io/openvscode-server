@@ -7,11 +7,15 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as net from 'net';
 import fetch, { Response } from 'node-fetch';
+import { Client as sshClient, utils as sshUtils } from 'ssh2';
 import * as tmp from 'tmp';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import Log from './common/logger';
 import { Disposable } from './common/dispose';
+import { withServerApi } from './internalApi';
+import TelemetryReporter from './telemetryReporter';
+import { addHostToHostFile, checkNewHostInHostkeys } from './common/hostfile';
 
 interface SSHConnectionParams {
 	workspaceId: string;
@@ -63,12 +67,42 @@ function checkRunning(pid: number): true | Error {
 	}
 }
 
-export default class LocalApp extends Disposable {
+class LocalAppError extends Error {
+	constructor(cause: Error, readonly logPath?: string) {
+		super();
+		this.name = cause.name;
+		this.message = cause.message;
+		this.stack = cause.stack;
+	}
+}
+
+class SSHError extends Error {
+	constructor(cause: Error) {
+		super();
+		this.name = cause.name;
+		this.message = cause.message;
+		this.stack = cause.stack;
+	}
+}
+
+class NoRunningInstanceError extends Error {
+	constructor(readonly workspaceId: string) {
+		super(`Failed to connect to ${workspaceId} Gitpod workspace, workspace not running`);
+	}
+}
+
+class NoSSHGatewayError extends Error {
+	constructor(readonly host: string) {
+		super(`SSH gateway not configured for this Gitpod Host ${host}`);
+	}
+}
+
+export default class RemoteConnector extends Disposable {
 
 	public static AUTH_COMPLETE_PATH = '/auth-complete';
-	private static lockCount = 0;
+	private static LOCK_COUNT = 0;
 
-	constructor(private readonly context: vscode.ExtensionContext, private readonly logger: Log) {
+	constructor(private readonly context: vscode.ExtensionContext, private readonly logger: Log, private readonly telemetry: TelemetryReporter) {
 		super();
 
 		this.releaseStaleLocks();
@@ -100,7 +134,7 @@ export default class LocalApp extends Disposable {
 	private async withLock<T>(lockName: string, op: (token: vscode.CancellationToken) => Promise<T>, timeout: number, token?: vscode.CancellationToken): Promise<T> {
 		this.logger.info(`acquiring lock: ${lockName}`);
 		const lockKey = lockPrefix + lockName;
-		const value = vscode.env.sessionId + '/' + LocalApp.lockCount++;
+		const value = vscode.env.sessionId + '/' + RemoteConnector.LOCK_COUNT++;
 		let currentLock: Lock | undefined;
 		let deadline: number | undefined;
 		const updateTimeout = 150;
@@ -237,7 +271,7 @@ export default class LocalApp extends Disposable {
 					GITPOD_LCA_SSH_CONFIG: configFile,
 					GITPOD_LCA_API_PORT: String(apiPort),
 					GITPOD_LCA_AUTO_TUNNEL: String(false),
-					GITPOD_LCA_AUTH_REDIRECT_URL: `${vscode.env.uriScheme}://${this.context.extension.id}${LocalApp.AUTH_COMPLETE_PATH}`,
+					GITPOD_LCA_AUTH_REDIRECT_URL: `${vscode.env.uriScheme}://${this.context.extension.id}${RemoteConnector.AUTH_COMPLETE_PATH}`,
 					GITPOD_LCA_VERBOSE: String(vscode.workspace.getConfiguration('gitpod').get<boolean>('verbose', false)),
 					GITPOD_LCA_TIMEOUT: String(vscode.workspace.getConfiguration('gitpod').get<string>('timeout', '3h'))
 				}
@@ -379,22 +413,97 @@ export default class LocalApp extends Disposable {
 		}
 	}
 
-	public async handleUri(uri: vscode.Uri) {
-		if (uri.path === LocalApp.AUTH_COMPLETE_PATH) {
-			this.logger.info('auth completed');
-			return;
+	private async getWorkspaceSSHDestination(workspaceId: string, gitpodHost: string): Promise<string> {
+		const session = await vscode.authentication.getSession(
+			'gitpod',
+			['function:getWorkspace', 'function:getOwnerToken', 'function:getLoggedInUser', 'resource:default'],
+			{ createIfNone: true }
+		);
+
+		const serviceUrl = new URL(gitpodHost);
+
+		const workspaceInfo = await withServerApi(session.accessToken, serviceUrl.toString(), service => service.server.getWorkspace(workspaceId), this.logger);
+		if (workspaceInfo.latestInstance?.status?.phase !== 'running') {
+			throw new NoRunningInstanceError(workspaceId);
 		}
-		this.logger.info('open workspace window: ' + uri.toString());
-		const params: SSHConnectionParams = JSON.parse(uri.query);
-		let resolvedConfig: LocalAppConfig | undefined;
+
+		const workspaceUrl = new URL(workspaceInfo.latestInstance.ideUrl);
+
+		const sshHostKeyEndPoint = `https://${workspaceUrl.host}/_ssh/host_keys`;
+		const sshHostKeyResponse = await fetch(sshHostKeyEndPoint);
+		if (!sshHostKeyResponse.ok) {
+			// Gitpod SSH gateway not configured
+			throw new NoSSHGatewayError(gitpodHost);
+		}
+
+		const sshHostKeys: { type: string; host_key: string }[] = await sshHostKeyResponse.json();
+
+		const ownerToken = await withServerApi(session.accessToken, serviceUrl.toString(), service => service.server.getOwnerToken(workspaceId), this.logger);
+
+		const sshDestInfo = {
+			user: `${workspaceId}#${ownerToken}`,
+			// See https://github.com/gitpod-io/gitpod/pull/9786 for reasoning about `.ssh` suffix
+			hostName: workspaceUrl.host.replace(workspaceId, `${workspaceId}.ssh`)
+		};
+
+		let verifiedHostKey: Buffer | undefined;
+		// Test ssh connection first
+		await new Promise<void>((resolve, reject) => {
+			const conn = new sshClient();
+			conn.on('ready', () => {
+				conn.end();
+				resolve();
+			}).on('error', err => {
+				reject(new SSHError(err));
+			}).connect({
+				host: sshDestInfo.hostName,
+				username: sshDestInfo.user,
+				authHandler(_methodsLeft, _partialSuccess, _callback) {
+					return {
+						type: 'password',
+						username: workspaceId,
+						password: ownerToken,
+					};
+				},
+				hostVerifier(hostKey) {
+					// We didn't specify `hostHash` so `hashedKey` is a Buffer object
+					verifiedHostKey = (hostKey as any as Buffer);
+					const encodedKey = verifiedHostKey.toString('base64');
+					return sshHostKeys.some(keyData => keyData.host_key === encodedKey);
+				}
+			});
+		});
+		this.logger.info(`SSH test connection to '${sshDestInfo.hostName}' host successful`);
+
+		// SSH connection successful, write host to known_hosts
 		try {
-			await vscode.window.withProgress({
-				location: vscode.ProgressLocation.Notification,
-				cancellable: true,
-				title: `Connecting to Gitpod workspace: ${params.workspaceId}`
-			}, async (_, token) => {
+			const result = sshUtils.parseKey(verifiedHostKey!);
+			if (result instanceof Error) {
+				throw result;
+			}
+			const parseKey = Array.isArray(result) ? result[0] : result;
+			if (parseKey && await checkNewHostInHostkeys(sshDestInfo.hostName)) {
+				await addHostToHostFile(sshDestInfo.hostName, verifiedHostKey!, parseKey.type);
+				this.logger.info(`'${sshDestInfo.hostName}' host added to known_hosts file`);
+			}
+		} catch (e) {
+			this.logger.error(`Couldn't write '${sshDestInfo.hostName}' host to known_hosts file`, e);
+		}
+
+		return Buffer.from(JSON.stringify(sshDestInfo), 'utf8').toString('hex');
+	}
+
+	private async getWorkspaceLocalAppSSHDestination(params: SSHConnectionParams): Promise<{ localAppSSHDest: string; localAppSSHConfigPath: string }> {
+		return vscode.window.withProgress({
+			location: vscode.ProgressLocation.Notification,
+			cancellable: true,
+			title: `Connecting to ${params.workspaceId} Gitpod workspace`
+		}, async (_, token) => {
+			let localAppLogPath: string | undefined;
+			try {
 				const connection = await this.withLocalApp(params.gitpodHost, (client, config) => {
-					resolvedConfig = config;
+					localAppLogPath = config.logPath;
+
 					const request = new ResolveSSHConnectionRequest();
 					request.setInstanceId(params.instanceId);
 					request.setWorkspaceId(params.workspaceId);
@@ -403,40 +512,173 @@ export default class LocalApp extends Disposable {
 					);
 				}, token);
 
-				const config = vscode.workspace.getConfiguration('remote.SSH');
-				const defaultExtensions = config.get<string[]>('defaultExtensions') || [];
-				if (defaultExtensions.indexOf('gitpod.gitpod-remote-ssh') === -1) {
-					defaultExtensions.unshift('gitpod.gitpod-remote-ssh');
-					await config.update('defaultExtensions', defaultExtensions, vscode.ConfigurationTarget.Global);
+				return {
+					localAppSSHDest: connection.getHost(),
+					localAppSSHConfigPath: connection.getConfigFile()
+				};
+			} catch (e) {
+				if (e instanceof Error && e.message === 'cancelled') {
+					throw e;
 				}
-				// TODO(ak) notify a user about config file changes?
-				const gitpodConfigFile = connection.getConfigFile();
-				const currentConfigFile = config.get<string>('configFile');
-				if (currentConfigFile === gitpodConfigFile) {
-					// invalidate cached SSH targets from the current config file
-					await config.update('configFile', undefined, vscode.ConfigurationTarget.Global);
-				}
-				await config.update('configFile', gitpodConfigFile, vscode.ConfigurationTarget.Global);
-				// TODO(ak) ensure that vscode.ssh-remote is installed
-				await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.parse(`vscode-remote://ssh-remote+${connection.getHost()}${uri.path || '/'}`), {
-					forceNewWindow: true
-				});
-			});
-		} catch (e) {
-			const seeLogs = 'See Logs';
-			vscode.window.showErrorMessage(`Failed to connect to Gitpod workspace ${params.workspaceId}: ${e}`, seeLogs).then(async result => {
-				if (result !== seeLogs) {
+
+				throw new LocalAppError(e, localAppLogPath);
+			}
+		});
+	}
+
+	private async updateRemoteSSHConfig(usingSSHGateway: boolean, localAppSSHConfigPath: string | undefined) {
+		const remoteSSHconfig = vscode.workspace.getConfiguration('remote.SSH');
+		const defaultExtConfigInfo = remoteSSHconfig.inspect<string[]>('defaultExtensions');
+		const defaultExtensions = defaultExtConfigInfo?.globalValue ?? [];
+		if (!defaultExtensions.includes('gitpod.gitpod-remote-ssh')) {
+			defaultExtensions.unshift('gitpod.gitpod-remote-ssh');
+			await remoteSSHconfig.update('defaultExtensions', defaultExtensions, vscode.ConfigurationTarget.Global);
+		}
+
+		const currentConfigFile = remoteSSHconfig.get<string>('configFile');
+		if (usingSSHGateway) {
+			if (currentConfigFile?.includes('gitpod_ssh_config')) {
+				await remoteSSHconfig.update('configFile', undefined, vscode.ConfigurationTarget.Global);
+			}
+		} else {
+			// TODO(ak) notify a user about config file changes?
+			if (currentConfigFile === localAppSSHConfigPath) {
+				// invalidate cached SSH targets from the current config file
+				await remoteSSHconfig.update('configFile', undefined, vscode.ConfigurationTarget.Global);
+			}
+			await remoteSSHconfig.update('configFile', localAppSSHConfigPath, vscode.ConfigurationTarget.Global);
+		}
+	}
+
+	private async ensureRemoteSSHExtInstalled(): Promise<boolean> {
+		const msVscodeRemoteExt = vscode.extensions.getExtension('ms-vscode-remote.remote-ssh');
+		if (msVscodeRemoteExt) {
+			return true;
+		}
+
+		const install = 'Install';
+		const cancel = 'Cancel';
+		const action = await vscode.window.showInformationMessage('Please install "Remote - SSH" extension to connect to a Gitpod workspace.', install, cancel);
+		if (action === cancel) {
+			return false;
+		}
+
+		this.logger.info('Installing "ms-vscode-remote.remote-ssh" extension');
+
+		await vscode.commands.executeCommand('extension.open', 'ms-vscode-remote.remote-ssh');
+		await vscode.commands.executeCommand('workbench.extensions.installExtension', 'ms-vscode-remote.remote-ssh');
+
+		return true;
+	}
+
+	public async handleUri(uri: vscode.Uri) {
+		if (uri.path === RemoteConnector.AUTH_COMPLETE_PATH) {
+			this.logger.info('auth completed');
+			return;
+		}
+
+		const isRemoteSSHExtInstalled = this.ensureRemoteSSHExtInstalled();
+		if (!isRemoteSSHExtInstalled) {
+			return;
+		}
+
+		const gitpodHost = vscode.workspace.getConfiguration('gitpod').get<string>('host')!;
+		const forceUseLocalApp = vscode.workspace.getConfiguration('gitpod').get<boolean>('remote.useLocalApp')!;
+
+		const params: SSHConnectionParams = JSON.parse(uri.query);
+		if (new URL(params.gitpodHost).host !== new URL(gitpodHost).host) {
+			const yes = 'Yes';
+			const cancel = 'Cancel';
+			const action = await vscode.window.showInformationMessage(`Connecting to a Gitpod workspace in '${params.gitpodHost}'. Would you like to switch from '${gitpodHost}' and continue?`, yes, cancel);
+			if (action === cancel) {
+				return;
+			}
+
+			await vscode.workspace.getConfiguration('gitpod').update('host', params.gitpodHost, vscode.ConfigurationTarget.Global);
+			this.logger.info(`Updated 'gitpod.host' setting to '${params.gitpodHost}' while trying to connect to a Gitpod workspace`);
+		}
+
+		this.logger.info('Opening Gitpod workspace', uri.toString());
+
+		let sshDestination: string | undefined;
+		if (!forceUseLocalApp) {
+			try {
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connecting' });
+
+				sshDestination = await this.getWorkspaceSSHDestination(params.workspaceId, params.gitpodHost);
+
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connected' });
+			} catch (e) {
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'failed', reason: e.toString() });
+				if (e instanceof NoSSHGatewayError) {
+					this.logger.error('No SSH gateway', e);
+					vscode.window.showWarningMessage(`${e.host} does not support [direct SSH access](https://github.com/gitpod-io/gitpod/blob/main/install/installer/docs/workspace-ssh-access.md), connecting via the deprecated SSH tunnel over WebSocket.`);
+					// Do nothing and continue execution
+				} else if (e instanceof NoRunningInstanceError) {
+					this.logger.error('No Running instance', e);
+					vscode.window.showErrorMessage(`Failed to connect to ${e.workspaceId} Gitpod workspace: workspace not running`);
+					return;
+				} else {
+					if (e instanceof SSHError) {
+						this.logger.error('SSH test connection error', e);
+					} else {
+						this.logger.error(`Failed to connect to ${params.workspaceId} Gitpod workspace`, e);
+					}
+					const seeLogs = 'See Logs';
+					const showTroubleshooting = 'Show Troubleshooting';
+					const action = await vscode.window.showErrorMessage(`Failed to connect to ${params.workspaceId} Gitpod workspace`, seeLogs, showTroubleshooting);
+					if (action === seeLogs) {
+						this.logger.show();
+					} else if (action === showTroubleshooting) {
+						vscode.env.openExternal(vscode.Uri.parse('https://www.gitpod.io/docs/ides-and-editors/vscode#vs-code-desktop-ssh-access'));
+					}
 					return;
 				}
-				this.logger.show();
-				if (resolvedConfig) {
-					const document = await vscode.workspace.openTextDocument(vscode.Uri.file(resolvedConfig.logPath));
-					vscode.window.showTextDocument(document);
-				}
-			});
-			this.logger.error(`failed to open uri: ${e}`);
-			throw e;
+			}
 		}
+
+		const usingSSHGateway = !!sshDestination;
+		let localAppSSHConfigPath: string | undefined;
+		if (!usingSSHGateway) {
+			try {
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connecting' });
+
+				const localAppDestData = await this.getWorkspaceLocalAppSSHDestination(params);
+				sshDestination = localAppDestData.localAppSSHDest;
+				localAppSSHConfigPath = localAppDestData.localAppSSHConfigPath;
+
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connected' });
+			} catch (e) {
+				this.logger.error(`Failed to connect ${params.workspaceId} Gitpod workspace`, e);
+				if (e instanceof LocalAppError) {
+					this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'failed', reason: e.toString() });
+					const seeLogs = 'See Logs';
+					const showTroubleshooting = 'Show Troubleshooting';
+					const action = await vscode.window.showErrorMessage(`Failed to connect to ${params.workspaceId} Gitpod workspace`, seeLogs, showTroubleshooting);
+					if (action === seeLogs) {
+						this.logger.show();
+						if (e.logPath) {
+							const document = await vscode.workspace.openTextDocument(vscode.Uri.file(e.logPath));
+							vscode.window.showTextDocument(document);
+						}
+					} else if (action === showTroubleshooting) {
+						vscode.env.openExternal(vscode.Uri.parse('https://www.gitpod.io/docs/ides-and-editors/vscode#vs-code-desktop-ssh-access'));
+					}
+				} else {
+					// Do nothing, user cancelled the operation
+					this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'failed', reason: 'cancelled' });
+				}
+				return;
+			}
+		}
+
+		await this.updateRemoteSSHConfig(usingSSHGateway, localAppSSHConfigPath);
+
+		vscode.commands.executeCommand(
+			'vscode.openFolder',
+			vscode.Uri.parse(`vscode-remote://ssh-remote+${sshDestination}${uri.path || '/'}`),
+			{ forceNewWindow: true }
+		);
 	}
 
 	public async autoTunnelCommand(gitpodHost: string, instanceId: string, enabled: boolean) {
