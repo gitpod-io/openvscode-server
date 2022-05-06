@@ -964,10 +964,6 @@ async function doStart(): Promise<IDisposable> {
 		urlCallbackProvider: new LocalStorageURLCallbackProvider(),
 		credentialsProvider,
 		productConfiguration: {
-			nameShort: product.nameShort + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
-			nameLong: product.nameLong + (info.ideAlias === 'code-latest' ? ' - Insiders' : ''),
-			version: product.version + (info.ideAlias === 'code-latest' ? '-insider' : ''),
-			quality: (info.ideAlias === 'code-latest' ? 'insider' : 'stable'),
 			linkProtectionTrustedDomains: [
 				...(product.linkProtectionTrustedDomains || []),
 				gitpodDomain
