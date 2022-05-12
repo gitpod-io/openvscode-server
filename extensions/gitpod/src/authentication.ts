@@ -208,6 +208,8 @@ export default class GitpodAuthenticationProvider extends Disposable implements 
 
 			this._logger.info('Login success!');
 
+			this._telemetry.sendTelemetryEvent('gitpod_desktop_auth', { kind: 'login_successful' });
+
 			return session;
 		} catch (e) {
 			// If login was cancelled, do not notify user.
