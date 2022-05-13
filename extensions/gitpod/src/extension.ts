@@ -82,8 +82,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}));
 
-	if (!context.globalState.get(FIRST_INSTALL_KEY, false)) {
-		context.globalState.update(FIRST_INSTALL_KEY, true);
+	if (!context.globalState.get<boolean>(FIRST_INSTALL_KEY, false)) {
+		await context.globalState.update(FIRST_INSTALL_KEY, true);
 		telemetry.sendTelemetryEvent('gitpod_desktop_installation', { kind: 'install' });
 	}
 }
