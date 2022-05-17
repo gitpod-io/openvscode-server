@@ -10,6 +10,10 @@ Tightly integrated with GitLab, GitHub, and Bitbucket, Gitpod automatically and 
 
 [Start a new Gitpod workspace](https://www.gitpod.io/docs/getting-started) and use F1 -> `Open in VS Code` command to connect to it from VS Code Desktop.
 
+## Settings Sync
+
+Sync your local VS Code settings across all your Gitpod workspaces. Checkout the documentation for [how to enable it](https://www.gitpod.io/docs/ides-and-editors/settings-sync#enabling-settings-sync-in-vs-code-desktop).
+
 ## Documentation
 
 All documentation can be found on https://www.gitpod.io/docs.
