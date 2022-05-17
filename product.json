@@ -738,6 +738,21 @@
 				},
 				"publisherDisplayName": "Red Hat"
 			}
+		},
+		{
+			"name": "gitpod.gitpod-theme",
+			"version": "0.0.2",
+			"repo": "https://github.com/gitpod-io/gitpod-vscode-theme",
+			"metadata": {
+				"id": "985c019b-4620-45a7-92c5-b721d8c11bc0",
+				"publisherId": {
+					"publisherId": "452246e5-9ce6-485c-b35f-5a50d93f81df",
+					"publisherName": "gitpod",
+					"displayName": "Gitpod",
+					"flags": "verified"
+				},
+				"publisherDisplayName": "Gitpod"
+			}
 		}
 	],
 	"extensionsGallery": {
