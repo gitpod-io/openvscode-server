@@ -31,8 +31,10 @@
 	"aiConfig": {
 		"asimovKey": "foo"
 	},
-	"extensionAllowedProposedApi": [],
 	"extensionEnabledApiProposals": {
+		"ms-vscode.vscode-selfhost-test-provider": [
+			"testObserver"
+		],
 		"ms-vscode.js-debug": [
 			"portsAttributes",
 			"findTextInFiles",
@@ -45,7 +47,6 @@
 			"notebookEditor"
 		],
 		"ms-dotnettools.dotnet-interactive-vscode": [
-			"notebookConcatTextDocument",
 			"notebookContentProvider",
 			"notebookCellExecutionState",
 			"notebookControllerKind",
@@ -58,9 +59,6 @@
 			"notebookMessaging",
 			"notebookMime",
 			"textDocumentNotebook"
-		],
-		"ms-vscode.vscode-github-issue-notebooks": [
-			"notebookEditor"
 		],
 		"tanhakabir.rest-book": [
 			"notebookEditor"
@@ -75,14 +73,14 @@
 			"documentFiltersExclusive"
 		],
 		"GitHub.vscode-pull-request-github": [
-			"tokenInformation"
+			"tokenInformation",
+			"commentsResolvedState"
 		],
 		"ms-python.gather": [
 			"notebookEditor",
 			"notebookCellExecutionState"
 		],
 		"ms-toolsai.jupyter": [
-			"notebookConcatTextDocument",
 			"notebookControllerKind",
 			"notebookDebugOptions",
 			"notebookDeprecated",
@@ -93,13 +91,25 @@
 			"notebookMime",
 			"notebookCellExecutionState",
 			"portsAttributes",
-			"textDocumentNotebook",
 			"quickPickSortByLabel"
 		],
+		"ms-toolsai.vscode-jupyter-powertoys": [
+			"notebookControllerKind",
+			"notebookDebugOptions",
+			"notebookDeprecated",
+			"notebookEditor",
+			"notebookEditorDecorationType",
+			"notebookEditorEdit",
+			"notebookMessaging",
+			"notebookMime",
+			"notebookCellExecutionState"
+		],
 		"dbaeumer.vscode-eslint": [
-			"tabs",
 			"notebookEditor",
 			"notebookCellExecutionState"
+		],
+		"ms-vscode.anycode": [
+			"extensionsAny"
 		]
 	},
 	"extensionTips": {
@@ -108,35 +118,31 @@
 		"ms-edgedevtools.vscode-edge-devtools": "{**/*.ts,**/*.tsx,**/*.js,**/*.css,**/*.html}",
 		"golang.Go": "**/*.go",
 		"ms-vscode.PowerShell": "{**/*.ps1,**/*.psd1,**/*.psm1,**/*.ps.config,**/*.ps1.config}",
-		"austin.code-gnu-global": "{**/*.c,**/*.cpp,**/*.h}",
 		"Ionide.Ionide-fsharp": "{**/*.fsx,**/*.fsi,**/*.fs,**/*.ml,**/*.mli}",
 		"dbaeumer.vscode-eslint": "{**/*.js,**/*.jsx,**/*.es6,**/.eslintrc.*,**/.eslintrc,**/.babelrc,**/jsconfig.json}",
-		"dbaeumer.jshint": "{**/*.js,**/*.jsx,**/*.es6,**/.babelrc,**/jsconfig.json,**/.jshintrc,**/.jshintignore}",
 		"ms-vscode.vscode-typescript-tslint-plugin": "{**/tslint.json}",
 		"bmewburn.vscode-intelephense-client": "{**/*.php,**/php.ini}",
 		"xdebug.php-debug": "{**/*.php,**/php.ini}",
-		"ikappas.phpcs": "{**/*.php,**/php.ini}",
-		"rust-lang.rust": "{**/*.rs,**/*.rslib}",
+		"matklad.rust-analyzer": "{**/*.rs,**/*.rslib}",
 		"ms-vscode.cpptools-extension-pack": "{**/*.c,**/*.cpp,**/*.cc,**/.cxx,**/*.hh,**/*.hpp,**/*.hxx,**/*.h}",
 		"DavidAnson.vscode-markdownlint": "{**/*.md}",
 		"ms-azuretools.vscode-docker": "{**/dockerfile,**/Dockerfile,**/docker-compose.yml,**/docker-compose.*.yml,**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json,**/*.py,**/*.ipynb,**/*.js,**/*.ts,**/package.json}",
 		"EditorConfig.EditorConfig": "{**/.editorconfig}",
-		"HookyQR.beautify": "{**/.jsbeautifyrc,**/*.js,**/*.jsx,**/*.es6,**/.eslintrc.*,**/.babelrc,**/jsconfig.json}",
+		"HookyQR.beautify": "{**/.jsbeautifyrc}",
 		"donjayamanne.githistory": "{**/.gitignore,**/.git}",
 		"felipecaputo.git-project-manager": "{**/.gitignore,**/.git}",
 		"eamodio.gitlens": "{**/.gitignore,**/.git}",
 		"rebornix.Ruby": "{**/*.rb,**/*.erb,**/*.reek,**/.fasterer.yml,**/ruby-lint.yml,**/.rubocop.yml}",
 		"DotJoshJohnson.xml": "{**/*.xml}",
-		"shinnn.stylelint": "{**/.stylelintrc,**/stylelint.config.js}",
+		"stylelint.vscode-stylelint": "{**/.stylelintrc,**/stylelint.config.js}",
 		"eg2.vscode-npm-script": "{**/package.json}",
 		"ms-mssql.mssql": "{**/*.sql}",
-		"bajdzis.vscode-database": "{**/*.sql}",
 		"mtxr.sqltools": "{**/*.sql}",
 		"usqlextpublisher.usql-vscode-ext": "{**/*.usql}",
 		"ms-vscode.sublime-keybindings": "{**/.sublime-project,**/.sublime-workspace}",
 		"k--kato.intellij-idea-keybindings": "{**/.idea}",
 		"christian-kohler.npm-intellisense": "{**/package.json}",
-		"octref.vetur": "{**/*.vue}",
+		"vue.volar": "{**/*.vue}",
 		"ms-python.python": "{**/*.py,**/*.ipynb}",
 		"ms-toolsai.jupyter": "{**/*.ipynb}",
 		"cake-build.cake-vscode": "{**/build.cake}",
@@ -148,7 +154,8 @@
 		"ms-kubernetes-tools.vscode-kubernetes-tools": "{**/Chart.yaml}",
 		"GoogleCloudTools.cloudcode": "{**/skaffold.yaml}",
 		"Oracle.oracledevtools": "{**/*.sql}",
-		"ms-vscode.vscode-github-issue-notebooks": "{**/*.github-issues}"
+		"ms-vscode.vscode-github-issue-notebooks": "{**/*.github-issues}",
+		"REditorSupport.r": "**/*.r"
 	},
 	"extensionImportantTips": {
 		"ms-dotnettools.csharp": {
@@ -209,24 +216,23 @@
 			],
 			"pattern": "{**/dockerfile,**/Dockerfile,**/docker-compose.yml,**/docker-compose.*.yml}"
 		},
-		"octref.vetur": {
+		"vue.volar": {
 			"name": "Vetur",
 			"languages": [
 				"vue"
 			],
 			"pattern": "{**/*.vue}"
 		},
+		"ms-vscode.makefile-tools": {
+			"name": "Makefile Tools",
+			"languages": [
+				"makefile"
+			],
+			"pattern": "{**/makefile,**/Makefile}"
+		},
 		"ms-vscode.cmake-tools": {
 			"name": "CMake Tools",
 			"pattern": "{**/CMakeLists.txt}"
-		},
-		"msazurermtools.azurerm-vscode-tools": {
-			"name": "Azure Resource Manager",
-			"pattern": "{**/azuredeploy.json}"
-		},
-		"ms-azuretools.vscode-bicep": {
-			"name": "Bicep",
-			"pattern": "{**/*.bicep}"
 		},
 		"svelte.svelte-vscode": {
 			"name": "Svelte",
@@ -235,6 +241,17 @@
 		"ms-vscode.vscode-github-issue-notebooks": {
 			"name": "GitHub Issue Notebooks",
 			"pattern": "{**/*.github-issues}"
+		},
+		"ms-playwright.playwright": {
+			"name": "Playwright",
+			"pattern": "{**/*playwright*.config.ts,**/*playwright*.config.js,**/*playwright*.config.mjs}"
+		},
+		"REditorSupport.r": {
+			"name": "R",
+			"languages": [
+				"r"
+			],
+			"pattern": "{**/*.r}"
 		}
 	},
 	"keymapExtensionTips": [
@@ -245,7 +262,7 @@
 		"ms-vscode.vs-keybindings",
 		"ms-vscode.notepadplusplus-keybindings",
 		"k--kato.intellij-idea-keybindings",
-		"hiro-sun.vscode-emacs",
+		"lfs.vscode-emacs-friendly",
 		"alphabotsec.vscode-eclipse-keybindings",
 		"alefragnani.delphi-keybindings"
 	],
@@ -254,13 +271,13 @@
 		"ms-toolsai.jupyter",
 		"vscjava.vscode-java-pack",
 		"ecmel.vscode-html-css",
-		"octref.vetur",
+		"vue.volar",
 		"bmewburn.vscode-intelephense-client",
 		"dsznajder.es7-react-js-snippets",
 		"golang.go",
 		"ms-vscode.powershell",
 		"dart-code.dart-code",
-		"rust-lang.rust",
+		"matklad.rust-analyzer",
 		"rebornix.ruby"
 	],
 	"configBasedExtensionTips": {
@@ -631,7 +648,7 @@
 		"www.versioneye.com"
 	],
 	"extensionAllowedBadgeProvidersRegex": [
-		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/workflows\\/.*badge\\.svg"
+		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
 	],
 	"extensionKind": {
 		"Shan.code-settings-sync": [
