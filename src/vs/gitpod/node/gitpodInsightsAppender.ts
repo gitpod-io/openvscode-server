@@ -1,3 +1,4 @@
+/* eslint-disable code-import-patterns */
 /* eslint-disable header/header */
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Gitpod. All rights reserved.
@@ -41,7 +42,7 @@ class SupervisorConnection {
 }
 
 type GitpodConnection = Omit<GitpodServiceImpl<GitpodClient, GitpodServer>, 'server'> & {
-	server: Pick<GitpodServer, 'trackEvent'>
+	server: Pick<GitpodServer, 'trackEvent'>;
 };
 
 async function getSupervisorData() {
@@ -220,7 +221,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_notification',
 				properties: {
 					action: 'show',
-					id: data.id,
+					notificationId: data.id,
 					source: data.source,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
@@ -233,7 +234,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_notification',
 				properties: {
 					action: 'close',
-					id: data.id,
+					notificationId: data.id,
 					source: data.source,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
@@ -246,7 +247,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_notification',
 				properties: {
 					action: 'hide',
-					id: data.id,
+					notificationId: data.id,
 					source: data.source,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
@@ -259,7 +260,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_notification',
 				properties: {
 					action: 'actionExecuted',
-					id: data.id,
+					notificationId: data.id,
 					source: data.source,
 					actionLabel: data.actionLabel,
 					workspaceId: data.workspaceId,
@@ -285,7 +286,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_extension_gallery',
 				properties: {
 					kind: 'install',
-					id: data.id,
+					extensionId: data.id,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
 					sessionID: data.sessionID,
@@ -297,7 +298,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_extension_gallery',
 				properties: {
 					kind: 'update',
-					id: data.id,
+					extensionId: data.id,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
 					sessionID: data.sessionID,
@@ -309,7 +310,7 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 				event: 'vscode_extension_gallery',
 				properties: {
 					kind: 'uninstall',
-					id: data.id,
+					extensionId: data.id,
 					workspaceId: data.workspaceId,
 					workspaceInstanceId: data.workspaceInstanceId,
 					sessionID: data.sessionID,
