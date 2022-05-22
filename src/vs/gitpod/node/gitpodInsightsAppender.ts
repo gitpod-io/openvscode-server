@@ -317,19 +317,6 @@ function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | un
 					timestamp: data.timestamp
 				},
 			};
-		case 'galleryService:query':
-			return {
-				event: 'vscode_extension_gallery',
-				properties: {
-					kind: 'query',
-					statusCode: data.statusCode,
-					count: data.count,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
 		case 'gettingStarted.ActionExecuted':
 			return {
 				event: 'vscode_getting_started',
