@@ -3,7 +3,7 @@
 	"displayName": "%displayName%",
 	"description": "%description%",
 	"publisher": "gitpod",
-	"version": "0.0.36",
+	"version": "0.0.37",
 	"license": "MIT",
 	"preview": true,
 	"icon": "resources/gitpod.png",
@@ -52,7 +52,7 @@
 					"gitpod.remote.useLocalApp": {
 						"type": "boolean",
 						"description": "Use the local companion app to connect to a remote workspace.\nWarning: Connecting to a remote workspace using local companion app will be removed in the near future.",
-						"default": false,
+						"default": true,
 						"scope": "application"
 					}
 				}
