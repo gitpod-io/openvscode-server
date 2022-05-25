@@ -603,13 +603,13 @@ export default class RemoteConnector extends Disposable {
 		let sshDestination: string | undefined;
 		if (!forceUseLocalApp) {
 			try {
-				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connecting' });
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connecting', ...params });
 
 				sshDestination = await this.getWorkspaceSSHDestination(params.workspaceId, params.gitpodHost);
 
-				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connected' });
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'connected', ...params });
 			} catch (e) {
-				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'failed', reason: e.toString() });
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'gateway', status: 'failed', reason: e.toString(), ...params });
 				if (e instanceof NoSSHGatewayError) {
 					this.logger.error('No SSH gateway', e);
 					vscode.window.showWarningMessage(`${e.host} does not support [direct SSH access](https://github.com/gitpod-io/gitpod/blob/main/install/installer/docs/workspace-ssh-access.md), connecting via the deprecated SSH tunnel over WebSocket.`);
@@ -641,17 +641,17 @@ export default class RemoteConnector extends Disposable {
 		let localAppSSHConfigPath: string | undefined;
 		if (!usingSSHGateway) {
 			try {
-				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connecting' });
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connecting', ...params });
 
 				const localAppDestData = await this.getWorkspaceLocalAppSSHDestination(params);
 				sshDestination = localAppDestData.localAppSSHDest;
 				localAppSSHConfigPath = localAppDestData.localAppSSHConfigPath;
 
-				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connected' });
+				this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'connected', ...params });
 			} catch (e) {
 				this.logger.error(`Failed to connect ${params.workspaceId} Gitpod workspace`, e);
 				if (e instanceof LocalAppError) {
-					this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'failed', reason: e.toString() });
+					this.telemetry.sendTelemetryEvent('vscode_desktop_ssh', { kind: 'local-app', status: 'failed', reason: e.toString(), ...params });
 					const seeLogs = 'See Logs';
 					const showTroubleshooting = 'Show Troubleshooting';
 					const action = await vscode.window.showErrorMessage(`Failed to connect to ${params.workspaceId} Gitpod workspace`, seeLogs, showTroubleshooting);
