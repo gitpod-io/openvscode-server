@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as net from 'net';
 import fetch, { Response } from 'node-fetch';
-import { Client as sshClient, utils as sshUtils } from 'ssh2';
+import { Client as sshClient, ClientErrorExtensions, utils as sshUtils } from 'ssh2';
 import * as tmp from 'tmp';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -76,12 +76,16 @@ class LocalAppError extends Error {
 	}
 }
 
-class SSHError extends Error {
-	constructor(cause: Error) {
+class SSHError extends Error implements ClientErrorExtensions {
+	level?: string | undefined;
+	description?: string | undefined;
+	constructor(cause: Error & ClientErrorExtensions) {
 		super();
 		this.name = cause.name;
 		this.message = cause.message;
 		this.stack = cause.stack;
+		this.level = cause.level;
+		this.description = cause.description;
 	}
 }
 
@@ -458,11 +462,13 @@ export default class RemoteConnector extends Disposable {
 			}).connect({
 				host: sshDestInfo.hostName,
 				username: sshDestInfo.user,
-				authHandler(_methodsLeft, _partialSuccess, _callback) {
+				authHandler(methodsLeft, _partialSuccess, _callback) {
+					if (methodsLeft !== null) {
+						return false;
+					}
 					return {
-						type: 'password',
-						username: workspaceId,
-						password: ownerToken,
+						type: 'none',
+						username: sshDestInfo.user,
 					};
 				},
 				hostVerifier(hostKey) {
@@ -624,6 +630,13 @@ export default class RemoteConnector extends Disposable {
 					} else {
 						this.logger.error(`Failed to connect to ${params.workspaceId} Gitpod workspace`, e);
 					}
+
+					// Check if auth fail, in this case it's most probably caused by missing SSH private key
+					if (e instanceof SSHError && e.level === 'client-authentication' && e.message === 'All configured authentication methods failed') {
+						vscode.window.showErrorMessage(`A SSH private key is required to connect to a Gitpod workspace, check the docs for how to generate it.`);
+						return;
+					}
+
 					const seeLogs = 'See Logs';
 					const showTroubleshooting = 'Show Troubleshooting';
 					const action = await vscode.window.showErrorMessage(`Failed to connect to ${params.workspaceId} Gitpod workspace`, seeLogs, showTroubleshooting);
