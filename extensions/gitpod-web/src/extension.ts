@@ -397,27 +397,31 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 				return;
 			}
 			const toClean = new Set<number>(this.ports.ports.keys());
-			for (const portStatus of this.portStatus.getPortsList()) {
-				const portNumber = portStatus.getLocalPort();
-				toClean?.delete(portNumber);
-				const port = this.ports.ports.get(portNumber) || new GitpodWorkspacePort(portNumber, this.context);
-				this.ports.ports.set(portNumber, port);
-				const currentStatus = port.status;
-				port.status = portStatus.toObject();
-				port.tunnel = this.tunnels.get(portNumber);
-				const labelPrefix = currentStatus?.name ? `${currentStatus.name}: ` : '';
-				port.label = labelPrefix + portNumber;
-				if (currentStatus?.description) {
-					port.tooltip = `${port.label} - ${currentStatus.description}`;
+			const portsList = this.portStatus.getPortsList();
+			for (const portStatus of portsList) {
+				const currentStatus = portStatus.toObject();
+				const { name, localPort, description, exposed, served } = currentStatus;
+				toClean?.delete(localPort);
+
+				const port = this.ports.ports.get(localPort) || new GitpodWorkspacePort(localPort, this.context);
+				const prevStatus = port.status;
+				this.ports.ports.set(localPort, port);
+
+				port.status = currentStatus;
+				port.tunnel = this.tunnels.get(localPort);
+				port.label = name ? `${name}: ${localPort}` : `${localPort}`;
+				if (description) {
+					port.tooltip = name ? `${name} - ${description}` : description;
 				}
-				const remotePort = port.remotePort;
-				if (remotePort && remotePort !== portNumber) {
-					port.label += ':' + remotePort;
+				if (port.remotePort && port.remotePort !== localPort) {
+					port.label += ':' + port.remotePort;
 				}
 
-				const exposed = portStatus.getExposed();
 				const accessible = exposed || port.tunnel;
-				if (!portStatus.getServed()) {
+
+				// We use .public here because https://github.com/gitpod-io/openvscode-server/pull/360#discussion_r882953586
+				const isPortTunnelPublic = !!port.tunnel?.public;
+				if (!served) {
 					port.description = 'not served';
 					port.iconPath = new vscode.ThemeIcon('circle-outline');
 				} else if (!accessible) {
@@ -431,44 +435,35 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 				} else {
 					port.description = 'open';
 					if (port.tunnel) {
-						port.description += ` on ${!!port.tunnel.public ? 'all interfaces' : 'localhost'}`;
+						port.description += ` on ${isPortTunnelPublic ? 'all interfaces' : 'localhost'}`;
 					}
 					if (exposed) {
-						port.description += ` ${exposed.getVisibility() === PortVisibility.PUBLIC ? '(public)' : '(private)'}`;
+						port.description += ` ${exposed.visibility === PortVisibility.PUBLIC ? '(public)' : '(private)'}`;
 					}
 					port.iconPath = new vscode.ThemeIcon('circle-filled', new vscode.ThemeColor('ports.iconRunningProcessForeground'));
 				}
 
 				port.contextValue = 'port';
-				if (portStatus.getServed()) {
+				if (served) {
 					port.contextValue = 'served-' + port.contextValue;
 				}
 				if (exposed) {
 					port.contextValue = 'exposed-' + port.contextValue;
-					if (exposed.getVisibility() === PortVisibility.PUBLIC) {
-						port.contextValue = 'public-' + port.contextValue;
-					} else {
-						port.contextValue = 'private-' + port.contextValue;
-					}
+					port.contextValue = (exposed.visibility === PortVisibility.PUBLIC ? 'public-' : 'private-') + port.contextValue;
 				}
 				if (port.tunnel) {
-					port.contextValue = 'tunneled-' + port.contextValue;
-					if (!!port.tunnel.public) {
-						port.contextValue = 'network-' + port.contextValue;
-					} else {
-						port.contextValue = 'host-' + port.contextValue;
-					}
+					port.contextValue = (isPortTunnelPublic ? 'network-' : 'host-') + port.contextValue;
 				}
 				if (!accessible && portStatus.getAutoExposure() === PortAutoExposure.FAILED) {
 					port.contextValue = 'failed-' + port.contextValue;
 				}
-				if (isExposedServedGitpodWorkspacePort(port) && !isExposedServedPort(currentStatus)) {
+				if (isExposedServedGitpodWorkspacePort(port) && !isExposedServedPort(prevStatus)) {
 					this.onDidExposeServedPortEmitter.fire(port);
 				}
 			}
 
-			for (const portNumber of toClean) {
-				this.ports.ports.delete(portNumber);
+			for (const port of toClean) {
+				this.ports.ports.delete(port);
 			}
 
 			this.onDidChangeTreeDataEmitter.fire(this.ports);
