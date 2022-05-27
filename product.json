@@ -777,7 +777,8 @@
 		"itemUrl": "https://open-vsx.org/vscode/item",
 		"resourceUrlTemplate": "https://open-vsx.org/vscode/asset/{publisher}/{name}/{version}/Microsoft.VisualStudio.Code.WebResources/{path}",
 		"controlUrl": "",
-		"recommendationsUrl": ""
+		"recommendationsUrl": "",
+		"nlsBaseUrl": ""
 	},
 	"linkProtectionTrustedDomains": [
 		"https://open-vsx.org"
