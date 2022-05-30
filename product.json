@@ -778,7 +778,8 @@
 		"resourceUrlTemplate": "https://open-vsx.org/vscode/asset/{publisher}/{name}/{version}/Microsoft.VisualStudio.Code.WebResources/{path}",
 		"controlUrl": "",
 		"recommendationsUrl": "",
-		"nlsBaseUrl": ""
+		"nlsBaseUrl": "",
+		"publisherUrl": ""
 	},
 	"linkProtectionTrustedDomains": [
 		"https://open-vsx.org"
