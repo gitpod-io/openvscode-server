@@ -21,8 +21,7 @@
     "packages": [
       "gitpod-shared",
       "gitpod-remote",
-      "gitpod-web",
-      "gitpod"
+      "gitpod-web"
     ]
   }
 }

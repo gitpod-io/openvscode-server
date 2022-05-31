@@ -19,7 +19,7 @@ const ext = require('./lib/extensions');
 gulp.task(task.define('watch-init', require('./lib/compilation').watchTask('out', false)));
 
 const extensionsPath = path.join(path.dirname(__dirname), 'extensions');
-const marketplaceExtensions = ['gitpod', 'gitpod-remote'];
+const marketplaceExtensions = ['gitpod-remote'];
 const outMarketplaceExtensions = 'out-gitpod-marketplace';
 const cleanMarketplaceExtensions = task.define('clean-gitpod-marketplace-extensions', util.rimraf(outMarketplaceExtensions));
 const bumpMarketplaceExtensions = task.define('bump-marketplace-extensions', () => {
