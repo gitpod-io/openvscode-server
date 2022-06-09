@@ -47,18 +47,15 @@
 			"notebookEditor"
 		],
 		"ms-dotnettools.dotnet-interactive-vscode": [
-			"notebookContentProvider",
 			"notebookCellExecutionState",
 			"notebookControllerKind",
 			"notebookDebugOptions",
-			"notebookDeprecated",
 			"notebookEditor",
-			"notebookEditorDecorationType",
 			"notebookEditorEdit",
 			"notebookLiveShare",
 			"notebookMessaging",
 			"notebookMime",
-			"textDocumentNotebook"
+			"notebookWorkspaceEdit"
 		],
 		"tanhakabir.rest-book": [
 			"notebookEditor"
@@ -86,7 +83,7 @@
 			"notebookDeprecated",
 			"notebookEditor",
 			"notebookEditorDecorationType",
-			"notebookEditorEdit",
+			"notebookWorkspaceEdit",
 			"notebookMessaging",
 			"notebookMime",
 			"notebookCellExecutionState",
@@ -94,15 +91,9 @@
 			"quickPickSortByLabel"
 		],
 		"ms-toolsai.vscode-jupyter-powertoys": [
-			"notebookControllerKind",
-			"notebookDebugOptions",
-			"notebookDeprecated",
 			"notebookEditor",
-			"notebookEditorDecorationType",
 			"notebookEditorEdit",
-			"notebookMessaging",
-			"notebookMime",
-			"notebookCellExecutionState"
+			"notebookWorkspaceEdit"
 		],
 		"dbaeumer.vscode-eslint": [
 			"notebookEditor",
@@ -113,7 +104,7 @@
 		]
 	},
 	"extensionTips": {
-		"ms-dotnettools.csharp": "{**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json}",
+		"muhammad-sammy.csharp": "{**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json}",
 		"firefox-devtools.vscode-firefox-debug": "{**/*.ts,**/*.tsx,**/*.js,**/*.jsx,**/*.es6,**/.babelrc}",
 		"ms-edgedevtools.vscode-edge-devtools": "{**/*.ts,**/*.tsx,**/*.js,**/*.css,**/*.html}",
 		"golang.Go": "**/*.go",
@@ -123,8 +114,7 @@
 		"ms-vscode.vscode-typescript-tslint-plugin": "{**/tslint.json}",
 		"bmewburn.vscode-intelephense-client": "{**/*.php,**/php.ini}",
 		"xdebug.php-debug": "{**/*.php,**/php.ini}",
-		"matklad.rust-analyzer": "{**/*.rs,**/*.rslib}",
-		"ms-vscode.cpptools-extension-pack": "{**/*.c,**/*.cpp,**/*.cc,**/.cxx,**/*.hh,**/*.hpp,**/*.hxx,**/*.h}",
+		"rust-lang.rust-analyzer": "{**/*.rs,**/*.rslib}",
 		"DavidAnson.vscode-markdownlint": "{**/*.md}",
 		"ms-azuretools.vscode-docker": "{**/dockerfile,**/Dockerfile,**/docker-compose.yml,**/docker-compose.*.yml,**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json,**/*.py,**/*.ipynb,**/*.js,**/*.ts,**/package.json}",
 		"EditorConfig.EditorConfig": "{**/.editorconfig}",
@@ -138,7 +128,6 @@
 		"eg2.vscode-npm-script": "{**/package.json}",
 		"ms-mssql.mssql": "{**/*.sql}",
 		"mtxr.sqltools": "{**/*.sql}",
-		"usqlextpublisher.usql-vscode-ext": "{**/*.usql}",
 		"ms-vscode.sublime-keybindings": "{**/.sublime-project,**/.sublime-workspace}",
 		"k--kato.intellij-idea-keybindings": "{**/.idea}",
 		"christian-kohler.npm-intellisense": "{**/package.json}",
@@ -148,7 +137,6 @@
 		"cake-build.cake-vscode": "{**/build.cake}",
 		"Angular.ng-template": "{**/.angular-cli.json,**/angular.json,**/*.ng.html,**/*.ng,**/*.ngml}",
 		"vscjava.vscode-maven": "**/pom.xml",
-		"ms-azuretools.vscode-azureterraform": "**/*.tf",
 		"HashiCorp.terraform": "**/*.tf",
 		"vsciot-vscode.vscode-arduino": "**/*.ino",
 		"ms-kubernetes-tools.vscode-kubernetes-tools": "{**/Chart.yaml}",
@@ -158,7 +146,7 @@
 		"REditorSupport.r": "**/*.r"
 	},
 	"extensionImportantTips": {
-		"ms-dotnettools.csharp": {
+		"muhammad-sammy.csharp": {
 			"name": "C#",
 			"languages": [
 				"csharp"
@@ -200,14 +188,6 @@
 				"powershell"
 			],
 			"pattern": "{**/*.ps1,**/*.psd1,**/*.psm1}"
-		},
-		"ms-vscode.cpptools-extension-pack": {
-			"name": "C/C++",
-			"languages": [
-				"c",
-				"cpp"
-			],
-			"pattern": "{**/*.c,**/*.cpp,**/*.cc,**/.cxx,**/*.hh,**/*.hpp,**/*.hxx,**/*.h}"
 		},
 		"ms-azuretools.vscode-docker": {
 			"name": "Docker",
@@ -268,6 +248,7 @@
 	],
 	"languageExtensionTips": [
 		"ms-python.python",
+		"muhammad-sammy.csharp",
 		"ms-toolsai.jupyter",
 		"vscjava.vscode-java-pack",
 		"ecmel.vscode-html-css",
@@ -277,7 +258,7 @@
 		"golang.go",
 		"ms-vscode.powershell",
 		"dart-code.dart-code",
-		"matklad.rust-analyzer",
+		"rust-lang.rust-analyzer",
 		"rebornix.ruby"
 	],
 	"configBasedExtensionTips": {
@@ -743,7 +724,7 @@
 		},
 		{
 			"name": "redhat.vscode-yaml",
-			"version": "1.7.0",
+			"version": "1.8.0",
 			"repo": "https://github.com/redhat-developer/vscode-yaml",
 			"metadata": {
 				"id": "2061917f-f76a-458a-8da9-f162de22b97e",
