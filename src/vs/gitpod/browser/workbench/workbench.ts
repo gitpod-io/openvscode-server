@@ -575,7 +575,7 @@ async function doStart(): Promise<IDisposable> {
 	// To make webviews work in development, go to file src/vs/workbench/contrib/webview/browser/pre/main.js
 	// and update `signalReady` method to bypass hostname check
 	const baseUri = FileAccess.asBrowserUri('', require);
-	const uuidUri = `${baseUri.scheme}://${baseUri.authority.replace(/^blobserve/, '{{uuid}}')}${baseUri.path.replace(/\/out\/$/, '')}`;
+	const uuidUri = `${baseUri.scheme}://{{uuid}}.${info.workspaceClusterHost}${baseUri.path.replace(/^\/blobserve/, '').replace(/\/out\/$/, '')}`;
 	const webEndpointUrlTemplate = uuidUri;
 	const webviewEndpoint = `${uuidUri}/out/vs/workbench/contrib/webview/browser/pre/`;
 
