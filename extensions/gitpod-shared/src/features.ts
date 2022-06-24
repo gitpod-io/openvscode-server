@@ -782,7 +782,7 @@ function installCLIProxy(context: vscode.ExtensionContext, logger: Log): string 
 
 type TerminalOpenMode = 'tab-before' | 'tab-after' | 'split-left' | 'split-right' | 'split-top' | 'split-bottom';
 
-export async function registerTasks(context: GitpodExtensionContext, createTerminal: (options: vscode.ExtensionTerminalOptions, parent: vscode.Terminal | undefined) => vscode.Terminal): Promise<void> {
+export async function registerTasks(context: GitpodExtensionContext): Promise<void> {
 	const tokenSource = new vscode.CancellationTokenSource();
 	const token = tokenSource.token;
 	context.subscriptions.push({
@@ -856,16 +856,12 @@ export async function registerTasks(context: GitpodExtensionContext, createTermi
 			const parentTerminal = (openMode && openMode !== 'tab-before' && openMode !== 'tab-after') ? prevTerminal : undefined;
 			const pty = createTaskPty(alias, context, token);
 
-			// Delegate creation of the terminal to the extension caller
-			// if proposed API usage is required.
-			const terminal = createTerminal(
-				{
-					name: taskTerminal.getTitle(),
-					pty,
-					iconPath: new vscode.ThemeIcon('terminal')
-				},
-				parentTerminal
-			);
+			const terminal = vscode.window.createTerminal({
+				name: taskTerminal.getTitle(),
+				pty,
+				iconPath: new vscode.ThemeIcon('terminal'),
+				location: parentTerminal ? { parentTerminal } : vscode.TerminalLocation.Panel
+			});
 			terminal.show();
 			prevTerminal = terminal;
 		}

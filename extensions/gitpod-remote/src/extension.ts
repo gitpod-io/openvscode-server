@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		return;
 	}
 
-	registerTasks(gitpodContext, (options) => vscode.window.createTerminal(options));
+	registerTasks(gitpodContext);
 	installInitialExtensions(gitpodContext);
 	registerHearbeat(gitpodContext);
 
@@ -173,7 +173,7 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 		context.pendingWillCloseSocket.push(() => sendHeartBeat(true));
 	}
 
-	let activityInterval = 10000;
+	const activityInterval = 10000;
 	const heartBeatHandle = setInterval(() => {
 		if (lastActivity + activityInterval < new Date().getTime()) {
 			// no activity, no heartbeat
