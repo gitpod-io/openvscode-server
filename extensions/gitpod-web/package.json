@@ -499,10 +499,11 @@
     "@types/yazl": "^2.4.2"
   },
   "dependencies": {
+    "@gitpod/gitpod-protocol": "main",
+    "@gitpod/supervisor-api-grpc": "main",
     "gitpod-shared": "0.0.1",
     "node-fetch": "2.6.7",
     "uuid": "8.1.0",
-    "vscode-jsonrpc": "^5.0.1",
     "vscode-nls": "^5.0.0",
     "yauzl": "^2.9.2",
     "yazl": "^2.5.1"

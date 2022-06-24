@@ -22,6 +22,9 @@
       "gitpod-shared",
       "gitpod-remote",
       "gitpod-web"
+    ],
+    "nohoist": [
+      "**/!(gitpod-protocol|supervisor-api-grpc|grpc-js|proto-loader)"
     ]
   }
 }
