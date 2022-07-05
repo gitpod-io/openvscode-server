@@ -6,7 +6,6 @@
 
 import { GitpodClient, GitpodServer, GitpodServiceImpl } from '@gitpod/gitpod-protocol/lib/gitpod-service';
 import { JsonRpcProxyFactory } from '@gitpod/gitpod-protocol/lib/messaging/proxy-factory';
-import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 import { onUnexpectedError } from 'vs/base/common/errors';
 import { ITelemetryAppender, validateTelemetryData } from 'vs/platform/telemetry/common/telemetryUtils';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
@@ -21,6 +20,7 @@ import { ConsoleLogger, listen as doListen } from 'vscode-ws-jsonrpc';
 import * as grpc from '@grpc/grpc-js';
 import * as util from 'util';
 import { filter, mixin } from 'vs/base/common/objects';
+import { mapTelemetryData, SenderKind } from 'vs/gitpod/common/insightsHelper';
 
 class SupervisorConnection {
 	readonly deadlines = {
@@ -130,9 +130,15 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 
 	private _asyncAIClient: Promise<GitpodConnection> | null;
 	private _defaultData: { [key: string]: any } = Object.create(null);
+	private _baseProperties: { appName: string; uiKind: 'web'; version: string };
 
 	constructor(private productName: string, private productVersion: string) {
 		this._asyncAIClient = null;
+		this._baseProperties = {
+			appName: productName,
+			uiKind: 'web',
+			version: productVersion,
+		};
 	}
 
 	private _withAIClient(callback: (aiClient: Pick<GitpodServer, 'trackEvent'>) => void): void {
@@ -162,9 +168,13 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 		this._withAIClient((aiClient) => {
 			data = mixin(data, this._defaultData);
 			data = validateTelemetryData(data);
-			const mappedEvent = mapTelemetryData(eventName, data.properties);
+			const mappedEvent = mapTelemetryData(SenderKind.Node, eventName, data.properties);
 			if (mappedEvent) {
 				mappedEvent.properties = filter(mappedEvent.properties, (_, v) => v !== undefined && v !== null);
+				mappedEvent.properties = {
+					...mappedEvent.properties,
+					...this._baseProperties,
+				};
 				aiClient.trackEvent(mappedEvent);
 			}
 		});
@@ -173,178 +183,4 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	flush(): Promise<any> {
 		return Promise.resolve(undefined);
 	}
-}
-
-// const formatEventName = (str: string) => {
-// 	return str
-// 		.replace(/^[A-Z]/g, letter => letter.toLowerCase())
-// 		.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
-// 		.replace(/[^\w]/g, '_');
-// };
-
-let readAccessTracked = false;
-let writeAccessTracked = false;
-function mapTelemetryData(eventName: string, data: any): RemoteTrackMessage | undefined {
-	switch (eventName) {
-		case 'editorOpened':
-			if (readAccessTracked || (<string>data.typeId) !== 'workbench.editors.files.fileEditorInput') {
-				return undefined;
-			}
-			readAccessTracked = true;
-			return {
-				event: 'vscode_file_access',
-				properties: {
-					kind: 'read',
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'filePUT':
-			if (writeAccessTracked) {
-				return undefined;
-			}
-			writeAccessTracked = true;
-			return {
-				event: 'vscode_file_access',
-				properties: {
-					kind: 'write',
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'notification:show':
-			return {
-				event: 'vscode_notification',
-				properties: {
-					action: 'show',
-					notificationId: data.id,
-					source: data.source,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'notification:close':
-			return {
-				event: 'vscode_notification',
-				properties: {
-					action: 'close',
-					notificationId: data.id,
-					source: data.source,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'notification:hide':
-			return {
-				event: 'vscode_notification',
-				properties: {
-					action: 'hide',
-					notificationId: data.id,
-					source: data.source,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'notification:actionExecuted':
-			return {
-				event: 'vscode_notification',
-				properties: {
-					action: 'actionExecuted',
-					notificationId: data.id,
-					source: data.source,
-					actionLabel: data.actionLabel,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'settingsEditor.settingModified':
-			return {
-				event: 'vscode_update_configuration',
-				properties: {
-					key: data.key,
-					target: data.target,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'extensionGallery:install':
-			return {
-				event: 'vscode_extension_gallery',
-				properties: {
-					kind: 'install',
-					extensionId: data.id,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'extensionGallery:update':
-			return {
-				event: 'vscode_extension_gallery',
-				properties: {
-					kind: 'update',
-					extensionId: data.id,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'extensionGallery:uninstall':
-			return {
-				event: 'vscode_extension_gallery',
-				properties: {
-					kind: 'uninstall',
-					extensionId: data.id,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'gettingStarted.ActionExecuted':
-			return {
-				event: 'vscode_getting_started',
-				properties: {
-					kind: 'action_executed',
-					command: data.command,
-					argument: data.argument,
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-		case 'editorClosed':
-			if ((<string>data.typeId) !== 'workbench.editors.gettingStartedInput') {
-				return undefined;
-			}
-			return {
-				event: 'vscode_getting_started',
-				properties: {
-					kind: 'editor_closed',
-					workspaceId: data.workspaceId,
-					workspaceInstanceId: data.workspaceInstanceId,
-					sessionID: data.sessionID,
-					timestamp: data.timestamp
-				},
-			};
-	}
-
-	return undefined;
 }
