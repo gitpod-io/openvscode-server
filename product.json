@@ -59,14 +59,10 @@
 			"notebookControllerKind",
 			"notebookDebugOptions",
 			"notebookEditor",
-			"notebookEditorEdit",
 			"notebookLiveShare",
 			"notebookMessaging",
 			"notebookMime",
 			"notebookWorkspaceEdit"
-		],
-		"tanhakabir.rest-book": [
-			"notebookEditor"
 		],
 		"ms-vscode.js-debug-nightly": [
 			"portsAttributes",
@@ -90,13 +86,13 @@
 			"notebookDebugOptions",
 			"notebookDeprecated",
 			"notebookEditor",
-			"notebookEditorDecorationType",
 			"notebookWorkspaceEdit",
 			"notebookMessaging",
 			"notebookMime",
 			"notebookCellExecutionState",
 			"portsAttributes",
-			"quickPickSortByLabel"
+			"quickPickSortByLabel",
+			"notebookKernelSource"
 		],
 		"ms-toolsai.vscode-jupyter-powertoys": [
 			"notebookEditor",
