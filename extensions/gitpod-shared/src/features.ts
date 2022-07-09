@@ -185,6 +185,8 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 			devMode: this.devMode,
 			version: vscode.version,
 			timestamp: Date.now(),
+			'common.extname': this.extension.id,
+			'common.extversion': this.extension.packageJSON.version
 		};
 		const msg: RemoteTrackMessage = {
 			event: eventName,
