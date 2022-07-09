@@ -26,13 +26,20 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 		return;
 	}
-	if (openWorkspaceLocation(gitpodContext)) {
-		return;
-	}
 
 	registerTasks(gitpodContext);
 	installInitialExtensions(gitpodContext);
-	registerHearbeat(gitpodContext);
+
+	// We are moving the heartbeat to gitpod-desktop extension,
+	// so we register a command to cancel the heartbeat on the gitpod-remote extension
+	// and then gitpod-desktop will take care of it.
+	const toDispose = registerHearbeat(gitpodContext);
+	context.subscriptions.push(toDispose);
+	context.subscriptions.push(vscode.commands.registerCommand('__gitpod.cancelGitpodRemoteHeartbeat', () => {
+		toDispose.dispose();
+		gitpodContext?.logger.info('__gitpod.cancelGitpodRemoteHeartbeat command executed');
+		return true;
+	}));
 
 	registerCLI(gitpodContext);
 	// configure task terminals if Gitpod Code Server is running
@@ -81,15 +88,6 @@ export function registerCLI(context: GitpodExtensionContext): void {
 		return;
 	}
 	context.environmentVariableCollection.replace('GITPOD_REMOTE_CLI_IPC', ipcHookCli);
-}
-
-export function openWorkspaceLocation(context: GitpodExtensionContext): boolean {
-	if (vscode.workspace.workspaceFolders) {
-		return false;
-	}
-	const workspaceUri = vscode.Uri.file(context.info.getWorkspaceLocationFile() || context.info.getWorkspaceLocationFolder());
-	vscode.commands.executeCommand('vscode.openFolder', workspaceUri, { forceReuseWindow: true });
-	return true;
 }
 
 export async function installInitialExtensions(context: GitpodExtensionContext): Promise<void> {
@@ -151,7 +149,9 @@ export async function installInitialExtensions(context: GitpodExtensionContext):
 	context.logger.info('initial extensions installed');
 }
 
-export function registerHearbeat(context: GitpodExtensionContext): void {
+export function registerHearbeat(context: GitpodExtensionContext): vscode.Disposable {
+	const disposables: vscode.Disposable[] = [];
+
 	let lastActivity = 0;
 	const updateLastActivitiy = () => {
 		lastActivity = new Date().getTime();
@@ -173,7 +173,16 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 	};
 	sendHeartBeat();
 	if (!context.devMode) {
-		context.pendingWillCloseSocket.push(() => sendHeartBeat(true));
+		const sendCloseHeartbeat = () => sendHeartBeat(true);
+		context.pendingWillCloseSocket.push(sendCloseHeartbeat);
+		disposables.push({
+			dispose() {
+				const idx = context.pendingWillCloseSocket.indexOf(sendCloseHeartbeat);
+				if (idx >= 0) {
+					context.pendingWillCloseSocket.splice(idx, 1);
+				}
+			}
+		});
 	}
 
 	const activityInterval = 10000;
@@ -184,9 +193,10 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 		}
 		sendHeartBeat();
 	}, activityInterval);
-	context.subscriptions.push(
+
+	disposables.push(
 		{
-			dispose: () => {
+			dispose() {
 				clearInterval(heartBeatHandle);
 			}
 		},
@@ -237,4 +247,6 @@ export function registerHearbeat(context: GitpodExtensionContext): void {
 			}
 		})
 	);
+
+	return vscode.Disposable.from(...disposables);
 }
