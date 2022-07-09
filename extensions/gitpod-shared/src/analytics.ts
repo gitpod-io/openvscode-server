@@ -16,6 +16,8 @@ export interface BaseGitpodAnalyticsEventPropeties {
 	devMode: boolean;
 	version: string;
 	timestamp: number;
+	'common.extname': string;
+	'common.extversion': string;
 }
 
 interface GAET<N extends string, P> {
