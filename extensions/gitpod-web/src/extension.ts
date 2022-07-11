@@ -354,8 +354,11 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 				const localPort = portStatus.getLocalPort();
 				const tunnel = this.tunnelMap.get(localPort);
 				toClean?.delete(localPort);
-				const port = this.ports.ports.get(localPort) || new PortTreeItem(new GitpodWorkspacePort(localPort, this.context, portStatus, tunnel));
-				const prevStatus = port.port.status;
+				let port = this.ports.ports.get(localPort);
+				const prevStatus = port?.port.status;
+				if (!port) {
+					port = new PortTreeItem(new GitpodWorkspacePort(localPort, this.context, portStatus, tunnel));
+				}
 				this.ports.ports.set(localPort, port);
 
 				port.port.update(portStatus, tunnel);
@@ -435,18 +438,18 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 		//         content="default-src 'none'; img-src data: ${webview.cspSource}; font-src ${webview.cspSource}; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';"
 		//         />
 		return `<!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8" />
-                <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <link nonce="${nonce}" href="${styleUri}" rel="stylesheet" />
-                <title>Gitpod Port View</title>
-            </head>
-            <body></body>
-            <script nonce="${nonce}" src="${scriptUri}"></script>
-            </html>`;
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link nonce="${nonce}" href="${styleUri}" rel="stylesheet" />
+		<title>Gitpod Port View</title>
+	</head>
+	<body></body>
+	<script nonce="${nonce}" src="${scriptUri}"></script>
+	</html>`;
 	}
 
 	private tunnelsMap = new Map<number, vscode.TunnelDescription>();
@@ -469,14 +472,15 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 			if (!this.portStatus) { return; }
 			this.portStatus.getPortsList().forEach(e => {
 				const localPort = e.getLocalPort();
-				const gitpodPort = this.portMap.get(localPort);
 				const tunnel = this.tunnelsMap.get(localPort);
+				let gitpodPort = this.portMap.get(localPort);
+				const prevStatus = gitpodPort?.status;
 				if (!gitpodPort) {
-					this.portMap.set(localPort, new GitpodWorkspacePort(localPort, this.context, e, tunnel));
-					return;
+					gitpodPort = new GitpodWorkspacePort(localPort, this.context, e, tunnel);
+					this.portMap.set(localPort, gitpodPort);
+				} else {
+					gitpodPort.update(e, tunnel);
 				}
-				const prevStatus = gitpodPort.status;
-				gitpodPort.update(e, tunnel);
 				if (isExposedServedGitpodWorkspacePort(gitpodPort) && !isExposedServedPort(prevStatus)) {
 					this.onDidExposeServedPortEmitter.fire(gitpodPort);
 				}
