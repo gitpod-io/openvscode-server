@@ -27,6 +27,11 @@
   "extensionKind": [
     "workspace"
   ],
+  "capabilities": {
+		"untrustedWorkspaces": {
+			"supported": true
+		}
+	},
   "activationEvents": [
     "*"
   ],
