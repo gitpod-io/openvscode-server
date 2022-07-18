@@ -415,7 +415,8 @@
       "remote": [
         {
           "id": "gitpod.workspace",
-          "name": "Gitpod Workspace"
+          "name": "Gitpod Workspace",
+          "when": "!gitpod.portsView.visible"
         }
       ],
       "portsView": [
@@ -425,7 +426,6 @@
           "type": "webview",
           "contextualTitle": "",
           "icon": "$(plug)",
-          "visibility": "visible",
           "when": "gitpod.portsView.visible"
         }
       ]
@@ -517,7 +517,7 @@
         {
           "id": "portsView",
           "title": "Ports",
-          "icon": ""
+          "icon": "$(plug)"
         }
       ]
     }
