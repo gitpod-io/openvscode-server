@@ -11,11 +11,7 @@
 
 	window.addEventListener("message", (event) => {
 		if (event.data.command === "updatePorts") {
-			// TODO: sort with status first, then port number?
-			ports = event.data.ports.sort(
-				(a: GitpodPortObject, b: GitpodPortObject) =>
-					a.status.localPort - b.status.localPort
-			);
+			ports = event.data.ports;
 		}
 	});
 	vscode.postMessage({ command: "queryPortData" });
