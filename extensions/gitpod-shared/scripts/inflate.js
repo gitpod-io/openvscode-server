@@ -12,6 +12,7 @@ const nls = {
 	'openSettings': 'Gitpod: Open Settings',
 	'openContext': 'Gitpod: Open Context',
 	'openDocumentation': 'Gitpod: Documentation',
+	'showReleaseNotes': 'Gitpod: Show Release Notes',
 	'openDiscord': 'Gitpod: Open Community Chat',
 	'openTwitter': 'Gitpod: Follow us on Twitter',
 	'reportIssue': 'Gitpod: Report Issue',
@@ -70,6 +71,11 @@ const commands = [
 	{
 		'command': 'gitpod.reportIssue',
 		'title': '%reportIssue%',
+		'enablement': 'gitpod.inWorkspace == true'
+	},
+	{
+		'command': 'gitpod.showReleaseNotes',
+		'title': '%showReleaseNotes%',
 		'enablement': 'gitpod.inWorkspace == true'
 	},
 	{
@@ -158,6 +164,11 @@ const remoteMenus = [
 	{
 		'command': 'gitpod.reportIssue',
 		'group': 'remote_00_gitpod_navigation@90',
+		'when': 'gitpod.inWorkspace == true'
+	},
+	{
+		'command': 'gitpod.showReleaseNotes',
+		'group': 'remote_00_gitpod_navigation@70',
 		'when': 'gitpod.inWorkspace == true'
 	},
 	{

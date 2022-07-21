@@ -41,6 +41,11 @@
         "title": "%stopWorkspace%",
         "enablement": "gitpod.inWorkspace == true && gitpod.workspaceOwned == true"
       },
+	  {
+		"command": "gitpod.showReleaseNotes",
+		"title": "%showReleaseNotes%",
+		"enablement": "gitpod.inWorkspace == true && gitpod.workspaceOwned == true"
+	  },
       {
         "command": "gitpod.open.settings",
         "title": "%openSettings%",
@@ -79,6 +84,11 @@
       {
         "command": "gitpod.reportIssue",
         "title": "%reportIssue%",
+        "enablement": "gitpod.inWorkspace == true"
+      },
+      {
+        "command": "gitpod.showReleaseNotes",
+        "title": "%showReleaseNotes%",
         "enablement": "gitpod.inWorkspace == true"
       },
       {
@@ -244,6 +254,10 @@
         {
           "command": "gitpod.reportIssue",
           "group": "z_about2@40"
+        },
+        {
+          "command": "gitpod.showReleaseNotes",
+          "group": "z_about2@50"
         }
       ],
       "extension/context": [
@@ -393,6 +407,11 @@
           "command": "gitpod.stopSharingWorkspace",
           "group": "remote_00_gitpod_navigation@130",
           "when": "gitpod.inWorkspace == true && gitpod.workspaceOwned == true && gitpod.workspaceShared == true"
+        },
+        {
+          "command": "gitpod.showReleaseNotes",
+          "group": "remote_00_gitpod_navigation@140",
+          "when": "gitpod.inWorkspace == true"
         },
         {
           "command": "gitpod.openInStable",
