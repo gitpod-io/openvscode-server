@@ -9,7 +9,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as uuid from 'uuid';
-import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli } from 'gitpod-shared';
+import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli, registerReleaseNotesView } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
@@ -49,6 +49,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	registerIpcHookCli(gitpodContext);
 	registerExtensionManagement(gitpodContext);
+	registerReleaseNotesView(gitpodContext);
 	await gitpodContext.active;
 }
 

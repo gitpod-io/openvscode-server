@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 import { registerActiveLanguageAnalytics, registerUsageAnalytics } from './analytics';
 import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
 
+export { registerReleaseNotesView } from './releaseNote';
 export { GitpodExtensionContext, registerTasks, SupervisorConnection, registerIpcHookCli } from './features';
 export * from './gitpod-plugin-model';
 
