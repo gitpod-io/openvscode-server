@@ -49,8 +49,7 @@
 		],
 		"ms-python.python": [
 			"quickPickSortByLabel",
-			"testObserver",
-			"notebookEditor"
+			"testObserver"
 		],
 		"ms-dotnettools.dotnet-interactive-vscode": [
 			"notebookCellExecutionState",
@@ -73,32 +72,30 @@
 		],
 		"GitHub.vscode-pull-request-github": [
 			"tokenInformation",
-			"commentsResolvedState"
+			"commentsResolvedState",
+			"badges",
+			"contribViewSize"
 		],
 		"ms-python.gather": [
-			"notebookEditor",
 			"notebookCellExecutionState"
 		],
 		"ms-toolsai.jupyter": [
 			"notebookControllerKind",
 			"notebookDebugOptions",
 			"notebookDeprecated",
-			"notebookEditor",
 			"notebookWorkspaceEdit",
 			"notebookMessaging",
 			"notebookMime",
 			"notebookCellExecutionState",
 			"portsAttributes",
 			"quickPickSortByLabel",
-			"notebookKernelSource"
+			"notebookKernelSource",
+			"interactiveWindow"
 		],
 		"ms-toolsai.vscode-jupyter-powertoys": [
-			"notebookEditor",
-			"notebookEditorEdit",
 			"notebookWorkspaceEdit"
 		],
 		"dbaeumer.vscode-eslint": [
-			"notebookEditor",
 			"notebookCellExecutionState"
 		],
 		"ms-vscode.anycode": [
@@ -127,7 +124,6 @@
 		"rebornix.Ruby": "{**/*.rb,**/*.erb,**/*.reek,**/.fasterer.yml,**/ruby-lint.yml,**/.rubocop.yml}",
 		"DotJoshJohnson.xml": "{**/*.xml}",
 		"stylelint.vscode-stylelint": "{**/.stylelintrc,**/stylelint.config.js}",
-		"eg2.vscode-npm-script": "{**/package.json}",
 		"ms-mssql.mssql": "{**/*.sql}",
 		"mtxr.sqltools": "{**/*.sql}",
 		"ms-vscode.sublime-keybindings": "{**/.sublime-project,**/.sublime-workspace}",
@@ -161,10 +157,6 @@
 				"python"
 			],
 			"pattern": "{**/*.py}"
-		},
-		"ms-toolsai.jupyter": {
-			"name": "Jupyter",
-			"pattern": "{**/*.ipynb}"
 		},
 		"golang.Go": {
 			"name": "Go",
