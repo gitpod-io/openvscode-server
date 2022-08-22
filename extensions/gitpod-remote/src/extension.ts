@@ -4,26 +4,15 @@
 
 /// <reference path='../../../src/vscode-dts/vscode.d.ts'/>
 
-import * as cp from 'child_process';
 import { GitpodExtensionContext, registerTasks, setupGitpodContext, registerIpcHookCli } from 'gitpod-shared';
 import * as path from 'path';
-import * as util from 'util';
 import * as vscode from 'vscode';
+import { initializeRemoteExtensions, installInitialExtensions, ISyncExtension } from './remoteExtensionInit';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
 	gitpodContext = await setupGitpodContext(context);
 	if (!gitpodContext) {
-		return;
-	}
-
-	if (vscode.extensions.getExtension('gitpod.gitpod')) {
-		try {
-			await util.promisify(cp.exec)('code --uninstall-extension gitpod.gitpod');
-			vscode.commands.executeCommand('workbench.action.reloadWindow');
-		} catch (e) {
-			gitpodContext.logger.error('failed to uninstall gitpod.gitpod:', e);
-		}
 		return;
 	}
 
@@ -55,6 +44,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('__gitpod.getGitpodRemoteLogsUri', () => {
 		return context.logUri;
 	}));
+
+	// Initialize remote extensions
+	context.subscriptions.push(vscode.commands.registerCommand('__gitpod.initializeRemoteExtensions', (extensions: ISyncExtension[]) => initializeRemoteExtensions(extensions, gitpodContext!)));
 
 	// TODO
 	// - auth?
@@ -88,65 +80,6 @@ export function registerCLI(context: GitpodExtensionContext): void {
 		return;
 	}
 	context.environmentVariableCollection.replace('GITPOD_REMOTE_CLI_IPC', ipcHookCli);
-}
-
-export async function installInitialExtensions(context: GitpodExtensionContext): Promise<void> {
-	context.logger.info('installing initial extensions...');
-	const extensions: (vscode.Uri | string)[] = [];
-	try {
-		const workspaceContextUri = vscode.Uri.parse(context.info.getWorkspaceContextUrl());
-		extensions.push('redhat.vscode-yaml');
-		if (/github\.com/i.test(workspaceContextUri.authority)) {
-			extensions.push('github.vscode-pull-request-github');
-		}
-
-		let config: { vscode?: { extensions?: string[] } } | undefined;
-		try {
-			const configUri = vscode.Uri.file(path.join(context.info.getCheckoutLocation(), '.gitpod.yml'));
-			const buffer = await vscode.workspace.fs.readFile(configUri);
-			const content = new util.TextDecoder('utf8').decode(buffer);
-			const model = new context.config.GitpodPluginModel(content);
-			config = model.document.toJSON();
-		} catch { }
-		if (config?.vscode?.extensions) {
-			const extensionIdRegex = /^([^.]+\.[^@]+)(@(\d+\.\d+\.\d+(-.*)?))?$/;
-			for (const extension of config.vscode.extensions) {
-				let link: vscode.Uri | undefined;
-				try {
-					link = vscode.Uri.parse(extension.trim(), true);
-					if (link.scheme !== 'http' && link.scheme !== 'https') {
-						link = undefined;
-					}
-				} catch { }
-				if (link) {
-					extensions.push(link);
-				} else {
-					const normalizedExtension = extension.toLocaleLowerCase();
-					if (extensionIdRegex.exec(normalizedExtension)) {
-						extensions.push(normalizedExtension);
-					}
-				}
-			}
-		}
-	} catch (e) {
-		context.logger.error('failed to detect workspace context dependent extensions:', e);
-		console.error('failed to detect workspace context dependent extensions:', e);
-	}
-	context.logger.info('initial extensions:', extensions);
-	if (extensions.length) {
-		let cause;
-		try {
-			const { stderr } = await util.promisify(cp.exec)('code ' + extensions.map(extension => '--install-extension ' + extension).join(' '));
-			cause = stderr;
-		} catch (e) {
-			cause = e;
-		}
-		if (cause) {
-			context.logger.error('failed to install initial extensions:', cause);
-			console.error('failed to install initial extensions: ', cause);
-		}
-	}
-	context.logger.info('initial extensions installed');
 }
 
 export function registerHearbeat(context: GitpodExtensionContext): vscode.Disposable {
