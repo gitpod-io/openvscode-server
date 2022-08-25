@@ -9,7 +9,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as uuid from 'uuid';
-import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli, registerReleaseNotesView } from 'gitpod-shared';
+import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, ExposedPortInfo, PortsStatusRequest, PortsStatusResponse, PortVisibility, OnPortExposedAction } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
@@ -23,6 +23,8 @@ import { ThrottledDelayer } from './util/async';
 import { download } from './util/download';
 import { getManifest } from './util/extensionManagmentUtill';
 import { GitpodWorkspacePort, PortInfo, iconStatusMap } from './util/port';
+import { registerReleaseNotesView, RELEASE_NOTES_LAST_READ_KEY } from './releaseNote';
+import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
@@ -30,6 +32,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	if (!gitpodContext) {
 		return;
 	}
+
+	context.globalState.setKeysForSync([WELCOME_WALKTROUGH_KEY, RELEASE_NOTES_LAST_READ_KEY]);
 
 	registerDesktop();
 	registerAuth(gitpodContext);
@@ -41,15 +45,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	const versionKey = 'walkthrough.version';
-	context.globalState.setKeysForSync([versionKey]);
-
-	registerWelcomeWalkthroughCommands(gitpodContext);
-	startWelcomeWalkthrough(context, versionKey);
-
 	registerIpcHookCli(gitpodContext);
 	registerExtensionManagement(gitpodContext);
+	registerWelcomeWalkthroughContribution(gitpodContext);
 	registerReleaseNotesView(gitpodContext);
+
 	await gitpodContext.active;
 }
 
@@ -60,7 +60,7 @@ export function deactivate() {
 	return gitpodContext.dispose();
 }
 
-export function registerAuth(context: GitpodExtensionContext): void {
+function registerAuth(context: GitpodExtensionContext): void {
 	type Keytar = {
 		getPassword: typeof keytarType['getPassword'];
 		setPassword: typeof keytarType['setPassword'];
@@ -282,7 +282,7 @@ class PortsTreeItem extends vscode.TreeItem {
 
 type GitpodWorkspaceElement = PortsTreeItem | PortTreeItem;
 
-export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<GitpodWorkspaceElement> {
+class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<GitpodWorkspaceElement> {
 
 	readonly ports = new PortsTreeItem('Ports', vscode.TreeItemCollapsibleState.Expanded);
 
@@ -386,11 +386,11 @@ export class GitpodWorkspaceTreeDataProvider implements vscode.TreeDataProvider<
 	}
 }
 
-export const PortCommands = <const>['tunnelNetwork', 'tunnelHost', 'makePublic', 'makePrivate', 'preview', 'openBrowser', 'retryAutoExpose', 'urlCopy', 'queryPortData'];
+const PortCommands = <const>['tunnelNetwork', 'tunnelHost', 'makePublic', 'makePrivate', 'preview', 'openBrowser', 'retryAutoExpose', 'urlCopy', 'queryPortData'];
 
-export type PortCommand = typeof PortCommands[number];
+type PortCommand = typeof PortCommands[number];
 
-export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
+class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'gitpod.portsView';
 
 	private _view?: vscode.WebviewView;
@@ -504,7 +504,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	}
 }
 
-export function getNonce() {
+function getNonce() {
 	let text = '';
 	const possible =
 		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -516,7 +516,7 @@ export function getNonce() {
 
 interface PortItem { port: GitpodWorkspacePort; isWebview?: boolean }
 
-export function registerPorts(context: GitpodExtensionContext): void {
+function registerPorts(context: GitpodExtensionContext): void {
 	const isPortsViewExperimentEnable = vscode.workspace.getConfiguration('gitpod.experimental.portsView').get<boolean>('enabled');
 
 	const portMap = new Map<number, GitpodWorkspacePort>();
@@ -832,26 +832,6 @@ export function registerPorts(context: GitpodExtensionContext): void {
 	vscode.commands.executeCommand('setContext', 'gitpod.portsView.visible', isPortsViewExperimentEnable);
 }
 
-export function registerWelcomeWalkthroughCommands(context: GitpodExtensionContext): void {
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.welcome.createTerminalAndRunDockerCommand', () => {
-		const terminal = vscode.window.createTerminal('Welcome');
-		terminal.show();
-		terminal.sendText('docker run hello-world');
-	}));
-}
-
-export function startWelcomeWalkthrough(context: vscode.ExtensionContext, versionKey: string): void {
-	type WalkthroughVersion = number;
-	const currentVersion: WalkthroughVersion = 0.1;
-	const lastVersionShown = context.globalState.get<number>(versionKey);
-
-	if (typeof lastVersionShown === 'number' || vscode.window.visibleTextEditors.length !== 0) {
-		return;
-	}
-
-	context.globalState.update(versionKey, currentVersion);
-	vscode.commands.executeCommand('workbench.action.openWalkthrough', 'gitpod.gitpod-web#gitpod-getstarted', false);
-}
 interface IOpenVSXExtensionsMetadata {
 	name: string;
 	namespace: string;
@@ -964,7 +944,7 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 	};
 }
 
-export function registerExtensionManagement(context: GitpodExtensionContext): void {
+function registerExtensionManagement(context: GitpodExtensionContext): void {
 	const { GitpodPluginModel, isYamlSeq, isYamlScalar } = context.config;
 	const gitpodFileUri = vscode.Uri.file(path.join(context.info.getCheckoutLocation(), '.gitpod.yml'));
 	async function modifyGipodPluginModel(unitOfWork: (model: GitpodPluginModel) => void): Promise<void> {

@@ -6,9 +6,9 @@
 import fetch, { Response } from 'node-fetch';
 import * as vscode from 'vscode';
 import { load } from 'js-yaml';
-import { CacheHelper } from './common/cache';
+import { CacheHelper } from './util/cache';
 
-const LAST_READ_RELEASE_NOTES_ID = 'gitpod.lastReadReleaseNotesId';
+export const RELEASE_NOTES_LAST_READ_KEY = 'gitpod.lastReadReleaseNotesId';
 
 export function registerReleaseNotesView(context: vscode.ExtensionContext) {
 	const cacheHelper = new CacheHelper(context);
@@ -26,9 +26,9 @@ export function registerReleaseNotesView(context: vscode.ExtensionContext) {
 	);
 
 	// sync between machines
-	context.globalState.setKeysForSync([LAST_READ_RELEASE_NOTES_ID]);
+	context.globalState.setKeysForSync([RELEASE_NOTES_LAST_READ_KEY]);
 
-	const lastReadId = context.globalState.get<string>(LAST_READ_RELEASE_NOTES_ID);
+	const lastReadId = context.globalState.get<string>(RELEASE_NOTES_LAST_READ_KEY);
 	shouldShowReleaseNotes(lastReadId).then(shouldShow => {
 		if (shouldShow) {
 			ReleaseNotesPanel.createOrShow(context, cacheHelper);
@@ -144,25 +144,21 @@ class ReleaseNotesPanel {
 	</body>
 </html>`;
 		if (!this.lastReadId || releaseId > this.lastReadId) {
-			await this.context.globalState.update(LAST_READ_RELEASE_NOTES_ID, releaseId);
+			await this.context.globalState.update(RELEASE_NOTES_LAST_READ_KEY, releaseId);
 			this.lastReadId = releaseId;
 		}
 	}
 
 	public static createOrShow(context: vscode.ExtensionContext, cacheHelper: CacheHelper) {
-		const column = vscode.window.activeTextEditor
-			? vscode.window.activeTextEditor.viewColumn
-			: undefined;
-
 		if (ReleaseNotesPanel.currentPanel) {
-			ReleaseNotesPanel.currentPanel.panel.reveal(column);
+			ReleaseNotesPanel.currentPanel.panel.reveal();
 			return;
 		}
 
 		const panel = vscode.window.createWebviewPanel(
 			ReleaseNotesPanel.viewType,
 			'Gitpod Release Notes',
-			column || vscode.ViewColumn.One,
+			vscode.ViewColumn.Beside,
 			{ enableScripts: true },
 		);
 
@@ -178,7 +174,7 @@ class ReleaseNotesPanel {
 		private readonly cacheHelper: CacheHelper,
 		panel: vscode.WebviewPanel
 	) {
-		this.lastReadId = this.context.globalState.get<string>(LAST_READ_RELEASE_NOTES_ID);
+		this.lastReadId = this.context.globalState.get<string>(RELEASE_NOTES_LAST_READ_KEY);
 		this.panel = panel;
 
 		this.updateHtml();
@@ -208,7 +204,7 @@ class ReleaseNotesPanel {
 }
 
 // Align with https://github.com/gitpod-io/openvscode-server/blob/494f7eba3615344ee634e6bec0b20a1903e5881d/src/vs/workbench/contrib/markdown/browser/markdownDocumentRenderer.ts#L14
-export const DEFAULT_MARKDOWN_STYLES = `
+const DEFAULT_MARKDOWN_STYLES = `
 body {
 	padding: 10px 20px;
 	line-height: 22px;
