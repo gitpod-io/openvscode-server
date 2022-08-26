@@ -50,10 +50,6 @@
       }
     ],
     "continueEditSession": [
-      {
-        "command": "github.openOnVscodeDev",
-        "when": "github.hasGitHubRepo"
-      }
     ],
     "menus": {
       "commandPalette": [
