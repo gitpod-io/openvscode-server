@@ -3,6 +3,103 @@
 <html>
 	<head>
 		<script>
+			function getMetricsUrl() {
+				const gitpodHost = "{{GITPOD_HOST}}";
+				if (!gitpodHost) {
+					return '';
+				}
+				return `https://ide.${gitpodHost}/metrics-api`;
+			}
+			const workspaceId = 'fake-workspace-id'
+			const ideMetricsUrl = getMetricsUrl()
+			async function gitpodMetricsAddCounter(metricsName, labels, value) {
+				try {
+					if (!ideMetricsUrl) {
+						return false;
+					}
+					const url = `${ideMetricsUrl}/metrics/counter/add/${metricsName}`;
+					const params = { value, labels };
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json(); // { code: number; message: string; }
+						console.error(`Cannot report metrics with addCounter: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error('Cannot report metrics with addCounter, error:', err);
+					return false;
+				}
+			}
+
+			async function gitpodMetricsReportError(error, properties) {
+				try {
+					if (!ideMetricsUrl) {
+						return false;
+					}
+					const p = Object.assign({}, properties)
+					p.error_name = error.name
+					p.error_message = error.message
+					const url = `${ideMetricsUrl}/reportError`;
+					const params = {
+						errorStack: error.stack ?? String(error),
+						component: "vscode-workbench",
+						version: "{{VERSION}}",
+						workspaceId: workspaceId,
+						properties: p,
+					};
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json();
+						console.error(`Cannot report error: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error("Cannot report error, error:", err);
+					return false;
+				}
+			}
+
+			// sum(rate(gitpod_vscode_web_load_total{status='failed'}[2m]))/sum(rate(gitpod_vscode_web_load_total{status='loading'}[2m]))
+			const gitpodVSCodeWebLoadTotal = 'gitpod_vscode_web_load_total';
+			gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'loading' });
+			let hasVscodeWebLoadFailed = false;
+			const onVsCodeWorkbenchError = (event) => {
+				if (!hasVscodeWebLoadFailed) {
+					gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'failed' });
+					hasVscodeWebLoadFailed = true;
+				}
+
+				if (typeof event?.target?.getAttribute !== 'function') {
+					gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total');
+					return;
+				}
+				const labels = {};
+
+				// We take a look at what is the resource that was attempted to load;
+				const resourceSource = event.target.getAttribute('src') || event.target.getAttribute('href');
+
+				// If the event has a `target`, it means that it wasn't a script error
+				if (resourceSource) {
+					labels['resource'] = 'vscode-web-workbench';
+					labels['error'] = 'LoadError';
+					gitpodMetricsReportError(new Error("LoadError"), { resource: labels['resource'], url: resourceSource })
+				} else {
+					labels['error'] = 'Unknown';
+				}
+				gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total', labels);
+			};
+		</script>
+		<script>
 			performance.mark('code/didStartRenderer')
 		</script>
 		<meta charset="utf-8" />
@@ -34,8 +131,8 @@
 	</body>
 
 	<!-- Startup (do not modify order of script tags!) -->
-	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js"></script>
-	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js"></script>
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/loader.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/webPackagePaths.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
 	<script>
 		const baseUrl = new URL('{{WORKBENCH_WEB_BASE_URL}}', window.location.origin).toString();
 		Object.keys(self.webPackagePaths).map(function (key, index) {
@@ -65,6 +162,6 @@
 		performance.mark('code/willLoadWorkbenchMain');
 	</script>
 	<script>
-		require(['vs/gitpod/browser/workbench/workbench'], function() {});
+		require(['vs/gitpod/browser/workbench/workbench'], () => {});
 	</script>
 </html>

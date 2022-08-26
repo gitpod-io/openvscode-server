@@ -51,6 +51,7 @@ xterm-addon-webgl/out/**
 
 @gitpod/**
 !@gitpod/local-app-api-grpcweb/lib/localapp.js
+!@gitpod/ide-metrics-api-grpcweb/lib/index.js
 
 browser-headers/**
 google-protobuf/**

@@ -323,6 +323,8 @@ export class WebClientServer {
 
 		const nlsBaseUrl = this._productService.extensionsGallery?.nlsBaseUrl;
 		const values: { [key: string]: string } = {
+			VERSION: this._productService.version,
+			GITPOD_HOST: this._productService.gitpodPreview?.host || '',
 			WORKBENCH_WEB_CONFIGURATION: asJSON(workbenchWebConfiguration),
 			WORKBENCH_AUTH_SESSION: authSessionInfo ? asJSON(authSessionInfo) : '',
 			WORKBENCH_WEB_BASE_URL: this._staticRoute,
@@ -353,9 +355,11 @@ export class WebClientServer {
 			'manifest-src \'self\';'
 		].join(' ');
 
+		const allowAllCSP = `default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline';`;
+
 		const headers: http.OutgoingHttpHeaders = {
 			'Content-Type': 'text/html',
-			'Content-Security-Policy': cspDirectives
+			'Content-Security-Policy': this._environmentService.isBuilt ? cspDirectives : allowAllCSP
 		};
 		if (this._connectionToken.type !== ServerConnectionTokenType.None) {
 			// At this point we know the client has a valid cookie

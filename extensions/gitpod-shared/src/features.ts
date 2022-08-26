@@ -18,7 +18,7 @@ import { NotificationServiceClient } from '@gitpod/supervisor-api-grpc/lib/notif
 import { NotifyRequest, NotifyResponse, RespondRequest, SubscribeRequest, SubscribeResponse } from '@gitpod/supervisor-api-grpc/lib/notification_pb';
 import { PortServiceClient } from '@gitpod/supervisor-api-grpc/lib/port_grpc_pb';
 import { StatusServiceClient } from '@gitpod/supervisor-api-grpc/lib/status_grpc_pb';
-import { ContentStatusRequest, TasksStatusRequest, TasksStatusResponse, TaskState, TaskStatus } from '@gitpod/supervisor-api-grpc/lib/status_pb';
+import { TasksStatusRequest, TasksStatusResponse, TaskState, TaskStatus } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TerminalServiceClient } from '@gitpod/supervisor-api-grpc/lib/terminal_grpc_pb';
 import { ListenTerminalRequest, ListenTerminalResponse, ListTerminalsRequest, SetTerminalSizeRequest, ShutdownTerminalRequest, Terminal as SupervisorTerminal, TerminalSize as SupervisorTerminalSize, WriteTerminalRequest } from '@gitpod/supervisor-api-grpc/lib/terminal_pb';
 import { TokenServiceClient } from '@gitpod/supervisor-api-grpc/lib/token_grpc_pb';
@@ -235,24 +235,6 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 	const devMode = context.extensionMode === vscode.ExtensionMode.Development || !!process.env['VSCODE_DEV'];
 
 	const supervisor = new SupervisorConnection(context);
-
-	let contentAvailable = false;
-	while (!contentAvailable) {
-		try {
-			const contentStatusRequest = new ContentStatusRequest();
-			contentStatusRequest.setWait(true);
-			const result = await util.promisify(supervisor.status.contentStatus.bind(supervisor.status, contentStatusRequest, supervisor.metadata, {
-				deadline: Date.now() + supervisor.deadlines.long
-			}))();
-			contentAvailable = result.getAvailable();
-		} catch (e) {
-			if (e.code === grpc.status.UNAVAILABLE) {
-				logger.info('It does not look like we are running in a Gitpod workspace, supervisor is not available.');
-				return undefined;
-			}
-			console.error('cannot maintain connection to supervisor', e);
-		}
-	}
 
 	const workspaceInfo = await util.promisify(supervisor.info.workspaceInfo.bind(supervisor.info, new WorkspaceInfoRequest(), supervisor.metadata, {
 		deadline: Date.now() + supervisor.deadlines.long
