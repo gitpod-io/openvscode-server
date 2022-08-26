@@ -986,6 +986,15 @@ async function doStart(): Promise<IDisposable> {
 					}
 				}
 			},
+			'editSessions.store': {
+				url: syncStoreURL,
+				canSwitch: false,
+				authenticationProviders: {
+					gitpod: {
+						scopes: ['function:accessCodeSyncStorage']
+					}
+				}
+			},
 			webEndpointUrlTemplate
 		},
 		settingsSyncOptions: {
