@@ -382,6 +382,14 @@
     vscode-ws-jsonrpc "^0.2.0"
     ws "^7.4.6"
 
+"@gitpod/ide-metrics-api-grpcweb@^0.0.1-main.4780":
+  version "0.0.1-main.4780"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-main.4780.tgz#2131c4d0634f243c58cc1958d403b640ee08d727"
+  integrity sha512-OknhowSlzKT6a+PWwdZ/Ot7gOgp60EkIT4yoyQ/0GUJSlEy+d8gDwZObLGMY/KzJC4Qrv8FN4/vLMYShh0jTpA==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+    google-protobuf "^3.19.1"
+
 "@gitpod/local-app-api-grpcweb@main":
   version "0.1.5-main.943"
   resolved "https://registry.yarnpkg.com/@gitpod/local-app-api-grpcweb/-/local-app-api-grpcweb-0.1.5-main.943.tgz#37d08d3d4336f86f816f2c1fc5503a5a4142e1e2"
@@ -465,6 +473,13 @@
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.0.tgz#a71c5af471dcef6a2810798f71f93ed8d6ac3817"
   integrity sha512-ag1PTMWpBZKGi6GrEcZ4lkU5Qag23Xjo10BmnK9qyx4TMmSVcWmQ3rECirfQzm2uogrM9n1M6xfOpFsJP62ivA==
+  dependencies:
+    browser-headers "^0.4.1"
+
+"@improbable-eng/grpc-web@^0.14.0":
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.1.tgz#f4662f64dc89c0f956a94bb8a3b576556c74589c"
+  integrity sha512-XaIYuunepPxoiGVLLHmlnVminUGzBTnXr8Wv7khzmLWbNw4TCwJKX09GSMJlKhu/TRk6gms0ySFxewaETSBqgw==
   dependencies:
     browser-headers "^0.4.1"
 

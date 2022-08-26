@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@gitpod/ide-metrics-api-grpcweb@^0.0.1-main.4783":
+  version "0.0.1-main.4783"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-main.4783.tgz#d618c0d37713b66eec3a58ae9fc76c91ace222c9"
+  integrity sha512-QxQT/chiDd7qRFUWNhsTHPBi6dgX9n1nuqHpUmqaiXq8KSWHGss4XY2jUfY+V64zmIQmKp/B/M+1H7VWIOQcUg==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+    google-protobuf "^3.19.1"
+
 "@gitpod/local-app-api-grpcweb@main":
   version "0.1.5-main.1701"
   resolved "https://registry.yarnpkg.com/@gitpod/local-app-api-grpcweb/-/local-app-api-grpcweb-0.1.5-main.1701.tgz#3f4f4203c4532b098d697c65799095c3d4add9d4"
@@ -92,6 +100,11 @@ google-protobuf@^3.17.0:
   version "3.19.0"
   resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.19.0.tgz#97f474323c92f19fd6737af1bb792e396991e0b8"
   integrity sha512-qXGAiv3OOlaJXJNeKOBKxbBAwjsxzhx+12ZdKOkZTsqsRkyiQRmr/nBkAkqnuQ8cmA9X5NVXvObQTpHVnXE2DQ==
+
+google-protobuf@^3.19.1:
+  version "3.21.0"
+  resolved "https://registry.yarnpkg.com/google-protobuf/-/google-protobuf-3.21.0.tgz#8dfa3fca16218618d373d414d3c1139e28034d6e"
+  integrity sha512-byR7MBTK4tZ5PZEb+u5ZTzpt4SfrTxv5682MjPlHN16XeqgZE2/8HOIWeiXe8JKnT9OVbtBGhbq8mtvkK8cd5g==
 
 jschardet@3.0.0:
   version "3.0.0"

@@ -62,6 +62,7 @@
   },
   "dependencies": {
     "@gitpod/gitpod-protocol": "main",
+    "@gitpod/ide-metrics-api-grpcweb": "^0.0.1-main.4780",
     "@gitpod/local-app-api-grpcweb": "main",
     "@gitpod/supervisor-api-grpc": "jp-on-open",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
