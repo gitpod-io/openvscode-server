@@ -163,6 +163,15 @@ export interface IProductConfiguration {
 
 	// experimental
 	readonly enableSyncingProfiles?: boolean;
+	readonly gitpodPreview?: IGitpodPreviewConfiguration;
+}
+
+export interface IGitpodPreviewConfiguration {
+	host: string;
+	log?: {
+		analytics?: boolean;
+		metrics?: boolean;
+	};
 }
 
 export type ImportantExtensionTip = { name: string; languages?: string[]; pattern?: string; isExtensionPack?: boolean; whenNotInstalled?: string[] };

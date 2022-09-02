@@ -146,7 +146,7 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 			disposables.add(toDisposable(() => oneDsAppender?.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 		}
 
-		oneDsAppender = new GitpodInsightsAppender(productService.nameShort, productService.version);
+		oneDsAppender = new GitpodInsightsAppender(productService.nameShort, productService.version, productService.gitpodPreview);
 
 		const config: ITelemetryServiceConfig = {
 			appenders: [oneDsAppender],
