@@ -36,6 +36,14 @@
     vscode-ws-jsonrpc "^0.2.0"
     ws "^7.4.6"
 
+"@gitpod/ide-metrics-api-grpcweb@ak-ext-metrics":
+  version "0.0.1-ak-ext-metrics.4"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-ak-ext-metrics.4.tgz#9dacee7f13181e132fba9e4a5b97cb7f4b1739d2"
+  integrity sha512-s1C4W5Q7nlgyaQGCKqG8gI1ZdzwsaFZW2k8VX5hJKIcpD5S60I7AJbP1wVxYhRqR93YW3++DHydSpbjBUVnQFA==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+    google-protobuf "^3.19.1"
+
 "@gitpod/supervisor-api-grpc@main":
   version "0.1.5-main.2046"
   resolved "https://registry.yarnpkg.com/@gitpod/supervisor-api-grpc/-/supervisor-api-grpc-0.1.5-main.2046.tgz#47b450cda80b3b655a76e2829a8eca66d70084bc"
@@ -62,6 +70,18 @@
     long "^4.0.0"
     protobufjs "^6.10.0"
     yargs "^16.1.1"
+
+"@improbable-eng/grpc-web-node-http-transport@^0.15.0":
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web-node-http-transport/-/grpc-web-node-http-transport-0.15.0.tgz#5a064472ef43489cbd075a91fb831c2abeb09d68"
+  integrity sha512-HLgJfVolGGpjc9DWPhmMmXJx8YGzkek7jcCFO1YYkSOoO81MWRZentPOd/JiKiZuU08wtc4BG+WNuGzsQB5jZA==
+
+"@improbable-eng/grpc-web@^0.14.0":
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.1.tgz#f4662f64dc89c0f956a94bb8a3b576556c74589c"
+  integrity sha512-XaIYuunepPxoiGVLLHmlnVminUGzBTnXr8Wv7khzmLWbNw4TCwJKX09GSMJlKhu/TRk6gms0ySFxewaETSBqgw==
+  dependencies:
+    browser-headers "^0.4.1"
 
 "@microsoft/1ds-core-js@3.2.3", "@microsoft/1ds-core-js@^3.2.2":
   version "3.2.3"
@@ -357,6 +377,11 @@ bluebird@^3.3.3:
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.7.2.tgz#9f229c15be272454ffa973ace0dbee79a1b0c36f"
   integrity sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
+
+browser-headers@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/browser-headers/-/browser-headers-0.4.1.tgz#4308a7ad3b240f4203dbb45acedb38dc2d65dd02"
+  integrity sha512-CA9hsySZVo9371qEHjHZtYxV2cFtVj5Wj/ZHi8ooEsrtm4vOnl9Y9HmyYWk9q+05d7K3rdoAE0j3MVEFVvtQtg==
 
 buffer-crc32@~0.2.3:
   version "0.2.13"
