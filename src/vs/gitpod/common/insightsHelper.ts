@@ -5,6 +5,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
+import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb/lib/index';
 
 
 function getEventName(name: string) {
@@ -27,10 +28,79 @@ export enum SenderKind {
 	Node = 2
 }
 
-// Please don't send same event for both Browser and Node
+export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | undefined {
+	const maybeMetrics = doMapMetrics(source, eventName, data);
+	return maybeMetrics instanceof Array ? maybeMetrics : typeof maybeMetrics === 'object' ? [maybeMetrics] : undefined;
+}
+function doMapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | IDEMetric | undefined {
+	if (source === 'remote-server') {
+		if (eventName.startsWith('extensionGallery:')) {
+			const operation = eventName.split(':')[1];
+			if (operation === 'install' || operation === 'update' || operation === 'uninstall') {
+				const metrics: IDEMetric[] = [{
+					kind: 'counter',
+					name: 'gitpod_vscode_extension_gallery_operation_total',
+					labels: {
+						operation,
+						status: data.success ? 'success' : 'failure',
+						// TODO errorCode
+					}
+				}];
+				if (typeof data.duration === 'number') {
+					metrics.push({
+						kind: 'histogram',
+						name: 'gitpod_vscode_extension_gallery_operation_duration_seconds',
+						labels: {
+							operation
+						},
+						value: data.duration / 1000
+					});
+				}
+				return metrics;
+			}
+		}
+		if (eventName === 'galleryService:query') {
+			const metrics: IDEMetric[] = [{
+				kind: 'counter',
+				name: 'gitpod_vscode_extension_gallery_query_total',
+				labels: {
+					status: data.success ? 'success' : 'failure',
+					statusCode: data.statusCode,
+					errorCode: data.errorCode,
+				}
+			}, {
+				kind: 'histogram',
+				name: 'gitpod_vscode_extension_gallery_query_duration_seconds',
+				labels: {},
+				value: data.duration / 1000
+			}];
+			return metrics;
+		}
+	}
+	return undefined;
+}
 
-export function mapTelemetryData(kind: SenderKind, eventName: string, data: any): RemoteTrackMessage | undefined {
-	if (kind === SenderKind.Node) {
+// please don't send same metrics from browser window and remote server
+export function mapTelemetryData(source: 'window' | 'remote-server', eventName: string, data: any): RemoteTrackMessage | undefined {
+	if (source === 'remote-server') {
+		if (eventName.startsWith('extensionGallery:')) {
+			const operation = eventName.split(':')[1];
+			if (operation === 'install' || operation === 'update' || operation === 'uninstall') {
+				return {
+					event: 'vscode_extension_gallery',
+					properties: {
+						kind: operation,
+						extensionId: data.id,
+						workspaceId: data.workspaceId,
+						workspaceInstanceId: data.workspaceInstanceId,
+						sessionID: data.sessionID,
+						timestamp: data.timestamp,
+						success: data.success,
+						errorCode: data.errorcode,
+					},
+				};
+			}
+		}
 		switch (eventName) {
 			case 'editorOpened':
 				if (readAccessTracked || (<string>data.typeId) !== 'workbench.editors.files.fileEditorInput') {
@@ -127,42 +197,6 @@ export function mapTelemetryData(kind: SenderKind, eventName: string, data: any)
 						timestamp: data.timestamp
 					},
 				};
-			case 'extensionGallery:install':
-				return {
-					event: 'vscode_extension_gallery',
-					properties: {
-						kind: 'install',
-						extensionId: data.id,
-						workspaceId: data.workspaceId,
-						workspaceInstanceId: data.workspaceInstanceId,
-						sessionID: data.sessionID,
-						timestamp: data.timestamp
-					},
-				};
-			case 'extensionGallery:update':
-				return {
-					event: 'vscode_extension_gallery',
-					properties: {
-						kind: 'update',
-						extensionId: data.id,
-						workspaceId: data.workspaceId,
-						workspaceInstanceId: data.workspaceInstanceId,
-						sessionID: data.sessionID,
-						timestamp: data.timestamp
-					},
-				};
-			case 'extensionGallery:uninstall':
-				return {
-					event: 'vscode_extension_gallery',
-					properties: {
-						kind: 'uninstall',
-						extensionId: data.id,
-						workspaceId: data.workspaceId,
-						workspaceInstanceId: data.workspaceInstanceId,
-						sessionID: data.sessionID,
-						timestamp: data.timestamp
-					},
-				};
 			case 'gettingStarted.ActionExecuted':
 				return {
 					event: 'vscode_getting_started',
@@ -191,7 +225,7 @@ export function mapTelemetryData(kind: SenderKind, eventName: string, data: any)
 					},
 				};
 		}
-	} else if (kind === SenderKind.Browser) {
+	} else if (source === 'window') {
 		switch (eventName) {
 			case 'remoteConnectionSuccess':
 			case 'remoteConnectionFailure':

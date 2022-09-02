@@ -382,6 +382,14 @@
     vscode-ws-jsonrpc "^0.2.0"
     ws "^7.4.6"
 
+"@gitpod/ide-metrics-api-grpcweb@ak-ext-metrics":
+  version "0.0.1-ak-ext-metrics.4"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-ak-ext-metrics.4.tgz#9dacee7f13181e132fba9e4a5b97cb7f4b1739d2"
+  integrity sha512-s1C4W5Q7nlgyaQGCKqG8gI1ZdzwsaFZW2k8VX5hJKIcpD5S60I7AJbP1wVxYhRqR93YW3++DHydSpbjBUVnQFA==
+  dependencies:
+    "@improbable-eng/grpc-web" "^0.14.0"
+    google-protobuf "^3.19.1"
+
 "@gitpod/local-app-api-grpcweb@main":
   version "0.1.5-main.943"
   resolved "https://registry.yarnpkg.com/@gitpod/local-app-api-grpcweb/-/local-app-api-grpcweb-0.1.5-main.943.tgz#37d08d3d4336f86f816f2c1fc5503a5a4142e1e2"
@@ -456,10 +464,22 @@
   resolved "https://registry.yarnpkg.com/@humanwhocodes/object-schema/-/object-schema-1.2.1.tgz#b520529ec21d8e5945a1851dfd1c32e94e39ff45"
   integrity sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==
 
+"@improbable-eng/grpc-web-node-http-transport@^0.15.0":
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web-node-http-transport/-/grpc-web-node-http-transport-0.15.0.tgz#5a064472ef43489cbd075a91fb831c2abeb09d68"
+  integrity sha512-HLgJfVolGGpjc9DWPhmMmXJx8YGzkek7jcCFO1YYkSOoO81MWRZentPOd/JiKiZuU08wtc4BG+WNuGzsQB5jZA==
+
 "@improbable-eng/grpc-web@0.14.0":
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.0.tgz#a71c5af471dcef6a2810798f71f93ed8d6ac3817"
   integrity sha512-ag1PTMWpBZKGi6GrEcZ4lkU5Qag23Xjo10BmnK9qyx4TMmSVcWmQ3rECirfQzm2uogrM9n1M6xfOpFsJP62ivA==
+  dependencies:
+    browser-headers "^0.4.1"
+
+"@improbable-eng/grpc-web@^0.14.0":
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/@improbable-eng/grpc-web/-/grpc-web-0.14.1.tgz#f4662f64dc89c0f956a94bb8a3b576556c74589c"
+  integrity sha512-XaIYuunepPxoiGVLLHmlnVminUGzBTnXr8Wv7khzmLWbNw4TCwJKX09GSMJlKhu/TRk6gms0ySFxewaETSBqgw==
   dependencies:
     browser-headers "^0.4.1"
 
