@@ -23,7 +23,7 @@ import { ThrottledDelayer } from './util/async';
 import { download } from './util/download';
 import { getManifest } from './util/extensionManagmentUtill';
 import { GitpodWorkspacePort, PortInfo, iconStatusMap } from './util/port';
-import { registerReleaseNotesView, RELEASE_NOTES_LAST_READ_KEY } from './releaseNote';
+import { ReleaseNotes } from './releaseNotes';
 import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
 
 let gitpodContext: GitpodExtensionContext | undefined;
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		return;
 	}
 
-	context.globalState.setKeysForSync([WELCOME_WALKTROUGH_KEY, RELEASE_NOTES_LAST_READ_KEY]);
+	context.globalState.setKeysForSync([WELCOME_WALKTROUGH_KEY, ReleaseNotes.RELEASE_NOTES_LAST_READ_KEY]);
 
 	registerDesktop();
 	registerAuth(gitpodContext);
@@ -48,7 +48,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerIpcHookCli(gitpodContext);
 	registerExtensionManagement(gitpodContext);
 	registerWelcomeWalkthroughContribution(gitpodContext);
-	registerReleaseNotesView(gitpodContext);
+	context.subscriptions.push(new ReleaseNotes(context));
 
 	await gitpodContext.active;
 }

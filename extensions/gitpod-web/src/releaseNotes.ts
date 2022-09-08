@@ -7,74 +7,59 @@ import fetch, { Response } from 'node-fetch';
 import * as vscode from 'vscode';
 import { load } from 'js-yaml';
 import { CacheHelper } from './util/cache';
+import { Disposable, disposeAll } from './util/dispose';
 
-export const RELEASE_NOTES_LAST_READ_KEY = 'gitpod.lastReadReleaseNotesId';
-
-export function registerReleaseNotesView(context: vscode.ExtensionContext) {
-	const cacheHelper = new CacheHelper(context);
-
-	async function shouldShowReleaseNotes(lastReadId: string | undefined) {
-		const releaseId = await getLastPublish(cacheHelper);
-		console.log(`gitpod release notes lastReadId: ${lastReadId}, latestReleaseId: ${releaseId}`);
-		return releaseId !== lastReadId;
-	}
-
-	context.subscriptions.push(
-		vscode.commands.registerCommand('gitpod.showReleaseNotes', () => {
-			ReleaseNotesPanel.createOrShow(context, cacheHelper);
-		})
-	);
-
-	// sync between machines
-	context.globalState.setKeysForSync([RELEASE_NOTES_LAST_READ_KEY]);
-
-	const lastReadId = context.globalState.get<string>(RELEASE_NOTES_LAST_READ_KEY);
-	shouldShowReleaseNotes(lastReadId).then(shouldShow => {
-		if (shouldShow) {
-			ReleaseNotesPanel.createOrShow(context, cacheHelper);
-		}
-	});
-}
-
-function getResponseCacheTime(resp: Response) {
-	const v = resp.headers.get('Cache-Control');
-	if (!v) {
-		return undefined;
-	}
-	const t = /max-age=(\d+)/.exec(v);
-	if (!t) {
-		return undefined;
-	}
-	return Number(t[1]);
-}
-
-async function getLastPublish(cacheHelper: CacheHelper) {
-	const url = `${websiteHost}/changelog/latest`;
-	return cacheHelper.getOrRefresh(url, async () => {
-		const resp = await fetch(url);
-		if (!resp.ok) {
-			throw new Error(`Getting latest releaseId failed: ${resp.statusText}`);
-		}
-		const { releaseId } = JSON.parse(await resp.text());
-		return {
-			value: releaseId as string,
-			ttl: getResponseCacheTime(resp),
-		};
-	});
-
-}
-
-const websiteHost = 'https://www.gitpod.io';
-
-class ReleaseNotesPanel {
-	public static currentPanel: ReleaseNotesPanel | undefined;
+export class ReleaseNotes extends Disposable {
 	public static readonly viewType = 'gitpodReleaseNotes';
-	private readonly panel: vscode.WebviewPanel;
+	public static readonly websiteHost = 'https://www.gitpod.io';
+	public static readonly RELEASE_NOTES_LAST_READ_KEY = 'gitpod.lastReadReleaseNotesId';
+
+	private panel: vscode.WebviewPanel | undefined;
+	private panelDisposables: vscode.Disposable[] = [];
 	private lastReadId: string | undefined;
-	private _disposables: vscode.Disposable[] = [];
+	private cacheHelper = new CacheHelper(this.context);
+
+	constructor(
+		private readonly context: vscode.ExtensionContext,
+	) {
+		super();
+
+		this.lastReadId = this.context.globalState.get<string>(ReleaseNotes.RELEASE_NOTES_LAST_READ_KEY);
+
+		this._register(vscode.commands.registerCommand('gitpod.showReleaseNotes', () => this.createOrShow()));
+
+		this.showIfNewRelease(this.lastReadId);
+	}
+
+	private async getLastPublish() {
+		const url = `${ReleaseNotes.websiteHost}/changelog/latest`;
+		return this.cacheHelper.getOrRefresh(url, async () => {
+			const resp = await fetch(url);
+			if (!resp.ok) {
+				throw new Error(`Getting latest releaseId failed: ${resp.statusText}`);
+			}
+			const { releaseId } = JSON.parse(await resp.text());
+			return {
+				value: releaseId as string,
+				ttl: this.getResponseCacheTime(resp),
+			};
+		});
+	}
+
+	private getResponseCacheTime(resp: Response) {
+		const cacheControlHeader = resp.headers.get('Cache-Control');
+		if (!cacheControlHeader) {
+			return undefined;
+		}
+		const match = /max-age=(\d+)/.exec(cacheControlHeader);
+		if (!match) {
+			return undefined;
+		}
+		return parseInt(match[1], 10);
+	}
 
 	private async loadChangelog(releaseId: string) {
-		const url = `${websiteHost}/changelog/raw-markdown?releaseId=${releaseId}`;
+		const url = `${ReleaseNotes.websiteHost}/changelog/raw-markdown?releaseId=${releaseId}`;
 		const md = await this.cacheHelper.getOrRefresh(url, async () => {
 			const resp = await fetch(url);
 			if (!resp.ok) {
@@ -83,7 +68,7 @@ class ReleaseNotesPanel {
 			const md = await resp.text();
 			return {
 				value: md,
-				ttl: getResponseCacheTime(resp),
+				ttl: this.getResponseCacheTime(resp),
 			};
 		});
 
@@ -122,12 +107,14 @@ class ReleaseNotesPanel {
 		].join('\n\n');
 	}
 
-	public async updateHtml(releaseId?: string) {
-		if (!releaseId) {
-			releaseId = await getLastPublish(this.cacheHelper);
+	public async updateHtml() {
+		if (!this.panel?.visible) {
+			return;
 		}
+
+		const releaseId = await this.getLastPublish();
 		const mdContent = await this.loadChangelog(releaseId);
-		const html = await vscode.commands.executeCommand('markdown.api.render', mdContent) as string;
+		const html = await vscode.commands.executeCommand<string>('markdown.api.render', mdContent);
 		this.panel.webview.html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -143,63 +130,49 @@ class ReleaseNotesPanel {
 		${html}
 	</body>
 </html>`;
-		if (!this.lastReadId || releaseId > this.lastReadId) {
-			await this.context.globalState.update(RELEASE_NOTES_LAST_READ_KEY, releaseId);
+		if (releaseId !== this.lastReadId) {
+			await this.context.globalState.update(ReleaseNotes.RELEASE_NOTES_LAST_READ_KEY, releaseId);
 			this.lastReadId = releaseId;
 		}
 	}
 
-	public static createOrShow(context: vscode.ExtensionContext, cacheHelper: CacheHelper) {
-		if (ReleaseNotesPanel.currentPanel) {
-			ReleaseNotesPanel.currentPanel.panel.reveal();
+	private async showIfNewRelease(lastReadId: string | undefined) {
+		const releaseId = await this.getLastPublish();
+		console.log(`gitpod release notes lastReadId: ${lastReadId}, latestReleaseId: ${releaseId}`);
+		if (releaseId !== lastReadId) {
+			this.createOrShow();
+		}
+	}
+
+	public createOrShow() {
+		if (this.panel) {
+			this.panel.reveal();
 			return;
 		}
 
-		const panel = vscode.window.createWebviewPanel(
-			ReleaseNotesPanel.viewType,
+		this.panel = vscode.window.createWebviewPanel(
+			ReleaseNotes.viewType,
 			'Gitpod Release Notes',
 			vscode.ViewColumn.Beside,
 			{ enableScripts: true },
 		);
-
-		ReleaseNotesPanel.currentPanel = new ReleaseNotesPanel(context, cacheHelper, panel);
-	}
-
-	public static revive(context: vscode.ExtensionContext, cacheHelper: CacheHelper, panel: vscode.WebviewPanel) {
-		ReleaseNotesPanel.currentPanel = new ReleaseNotesPanel(context, cacheHelper, panel);
-	}
-
-	private constructor(
-		private readonly context: vscode.ExtensionContext,
-		private readonly cacheHelper: CacheHelper,
-		panel: vscode.WebviewPanel
-	) {
-		this.lastReadId = this.context.globalState.get<string>(RELEASE_NOTES_LAST_READ_KEY);
-		this.panel = panel;
-
-		this.updateHtml();
-
-		this.panel.onDidDispose(() => this.dispose(), null, this._disposables);
+		this.panel.onDidDispose(() => {
+			disposeAll(this.panelDisposables);
+			this.panel = undefined;
+			this.panelDisposables = [];
+		}, null, this.panelDisposables);
 		this.panel.onDidChangeViewState(
-			() => {
-				if (this.panel.visible) {
-					this.updateHtml();
-				}
-			},
+			() => this.updateHtml(),
 			null,
-			this._disposables
+			this.panelDisposables
 		);
+		this.updateHtml();
 	}
 
-	public dispose() {
-		ReleaseNotesPanel.currentPanel = undefined;
-		this.panel.dispose();
-		while (this._disposables.length) {
-			const x = this._disposables.pop();
-			if (x) {
-				x.dispose();
-			}
-		}
+	override dispose() {
+		super.dispose();
+		disposeAll(this.panelDisposables);
+		this.panel?.dispose();
 	}
 }
 
