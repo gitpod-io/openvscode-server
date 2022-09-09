@@ -498,6 +498,10 @@ class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 			if (!port) { return; }
 			if (message.command === 'urlCopy' && port.status.exposed) {
 				await vscode.env.clipboard.writeText(port.status.exposed.url);
+				this.context.fireAnalyticsEvent({
+					eventName: 'vscode_execute_command_gitpod_ports',
+					properties: { action: 'urlCopy', isWebview: true, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
+				});
 				return;
 			}
 			vscode.commands.executeCommand('gitpod.ports.' + message.command, { port, isWebview: true });

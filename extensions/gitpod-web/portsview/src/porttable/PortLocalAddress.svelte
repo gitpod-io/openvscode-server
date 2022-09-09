@@ -36,6 +36,12 @@
 	function onHoverCommand(command: string) {
 		dispatch("command", { command: command as PortCommand, port });
 	}
+	function openAddr(e: Event) {
+		e.preventDefault();
+		if (port.status.exposed.url) {
+			dispatch("command", { command: "openBrowser" as PortCommand, port });
+		}
+	}
 </script>
 
 <HoverOptions
@@ -45,7 +51,7 @@
 		onHoverCommand(e.detail);
 	}}
 >
-	<a href={port.status.exposed.url}>{port.status.exposed.url}</a>
+	<a on:click={(e) => { openAddr(e) }} href={port.status.exposed.url}>{port.status.exposed.url}</a>
 </HoverOptions>
 
 <style>
