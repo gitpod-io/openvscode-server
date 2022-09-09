@@ -25,6 +25,7 @@ import { getManifest } from './util/extensionManagmentUtill';
 import { GitpodWorkspacePort, PortInfo, iconStatusMap } from './util/port';
 import { ReleaseNotes } from './releaseNotes';
 import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
+import { ExperimentalSettings, isUserOverrideSetting } from './experiments';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
@@ -516,8 +517,16 @@ function getNonce() {
 
 interface PortItem { port: GitpodWorkspacePort; isWebview?: boolean }
 
-function registerPorts(context: GitpodExtensionContext): void {
-	const isPortsViewExperimentEnable = vscode.workspace.getConfiguration('gitpod.experimental.portsView').get<boolean>('enabled');
+async function registerPorts(context: GitpodExtensionContext): Promise<void> {
+
+	const packageJSON = context.extension.packageJSON;
+	const experiments = new ExperimentalSettings('gitpod', packageJSON.version, context.logger, context.info.getGitpodHost());
+	context.subscriptions.push(experiments);
+	async function getPortsViewExperimentEnable(): Promise<boolean> {
+		return (await experiments.get<boolean>('gitpod.experimental.portsView.enabled', (await context.user).id, { team_ids: (await context.userTeams).map(e => e.id).join(','), }))!;
+	}
+
+	const isPortsViewExperimentEnable = await getPortsViewExperimentEnable();
 
 	const portMap = new Map<number, GitpodWorkspacePort>();
 	const tunnelMap = new Map<number, vscode.TunnelDescription>();
@@ -577,6 +586,7 @@ function registerPorts(context: GitpodExtensionContext): void {
 			}
 		});
 	}
+
 	context.subscriptions.push(observePortsStatus());
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.resolveExternalPort', (portNumber: number) => {
 		// eslint-disable-next-line no-async-promise-executor
@@ -616,14 +626,14 @@ function registerPorts(context: GitpodExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.makePrivate', ({ port, isWebview }: PortItem) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			properties: { action: 'private', isWebview: !!isWebview }
+			properties: { action: 'private', isWebview: !!isWebview, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
 		});
 		return port.setPortVisibility('private');
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.makePublic', ({ port, isWebview }: PortItem) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			properties: { action: 'public', isWebview: !!isWebview }
+			properties: { action: 'public', isWebview: !!isWebview, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
 		});
 		return port.setPortVisibility('public');
 	}));
@@ -636,14 +646,14 @@ function registerPorts(context: GitpodExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.preview', ({ port, isWebview }: PortItem) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			properties: { action: 'preview', isWebview: !!isWebview }
+			properties: { action: 'preview', isWebview: !!isWebview, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
 		});
 		return openPreview(port);
 	}));
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.ports.openBrowser', ({ port, isWebview }: PortItem) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_ports',
-			properties: { action: 'openBrowser', isWebview: !!isWebview }
+			properties: { action: 'openBrowser', isWebview: !!isWebview, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
 		});
 		return openExternal(port);
 	}));
@@ -657,7 +667,7 @@ function registerPorts(context: GitpodExtensionContext): void {
 
 	const portsStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
 	context.subscriptions.push(portsStatusBarItem);
-	function updateStatusBar(): void {
+	async function updateStatusBar(): Promise<void> {
 		const exposedPorts: number[] = [];
 
 		for (const port of portMap.values()) {
@@ -679,8 +689,8 @@ function registerPorts(context: GitpodExtensionContext): void {
 
 		portsStatusBarItem.text = text;
 		portsStatusBarItem.tooltip = tooltip;
-		const isPortsViewExperimentEnable = vscode.workspace.getConfiguration('gitpod.experimental.portsView').get<boolean>('enabled');
-		portsStatusBarItem.command = isPortsViewExperimentEnable ? 'gitpod.portsView.focus' : 'gitpod.ports.reveal';
+
+		portsStatusBarItem.command = (await getPortsViewExperimentEnable()) ? 'gitpod.portsView.focus' : 'gitpod.ports.reveal';
 		portsStatusBarItem.show();
 	}
 	updateStatusBar();
@@ -820,11 +830,11 @@ function registerPorts(context: GitpodExtensionContext): void {
 			vscode.commands.executeCommand('gitpod.api.connectLocalApp', apiPort);
 		}
 	}));
-	vscode.workspace.onDidChangeConfiguration((e: vscode.ConfigurationChangeEvent) => {
+	vscode.workspace.onDidChangeConfiguration(async (e: vscode.ConfigurationChangeEvent) => {
 		if (!e.affectsConfiguration('gitpod.experimental.portsView.enabled')) {
 			return;
 		}
-		const isPortsViewExperimentEnable = vscode.workspace.getConfiguration('gitpod.experimental.portsView').get<boolean>('enabled');
+		const isPortsViewExperimentEnable = await getPortsViewExperimentEnable();
 		vscode.commands.executeCommand('setContext', 'gitpod.portsView.visible', isPortsViewExperimentEnable);
 		gitpodWorkspaceTreeDataProvider.updateIsPortsViewExperimentEnable(isPortsViewExperimentEnable ?? false);
 		updateStatusBar();
