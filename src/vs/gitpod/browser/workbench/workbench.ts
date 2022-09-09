@@ -1,4 +1,4 @@
-/* eslint-disable code-import-patterns */
+/* eslint-disable local/code-import-patterns */
 /* eslint-disable header/header */
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Gitpod. All rights reserved.
@@ -719,7 +719,7 @@ async function doStart(): Promise<IDisposable> {
 							for (const status of response.getTunnelsList()) {
 								toDispose.delete(status.getRemotePort());
 								const tunnel = new Tunnel(status.toObject());
-								let existing = tunnels.get(status.getRemotePort());
+								const existing = tunnels.get(status.getRemotePort());
 								if (!existing || existing.public !== tunnel.public) {
 									existing?.dispose(false);
 									tunnels.set(status.getRemotePort(), tunnel);
@@ -968,7 +968,7 @@ async function doStart(): Promise<IDisposable> {
 			'workbench.preferredLightColorTheme': 'Gitpod Light',
 			'workbench.preferredDarkColorTheme': 'Gitpod Dark',
 		},
-		urlCallbackProvider: new LocalStorageURLCallbackProvider('/callback'),
+		urlCallbackProvider: new LocalStorageURLCallbackProvider('/vscode-extension-auth-callback'),
 		credentialsProvider,
 		productConfiguration: {
 			linkProtectionTrustedDomains: [
