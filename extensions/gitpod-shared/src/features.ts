@@ -8,6 +8,7 @@ require('reflect-metadata');
 import { GitpodClient, GitpodServer, GitpodServiceImpl, WorkspaceInstanceUpdateListener } from '@gitpod/gitpod-protocol/lib/gitpod-service';
 import { JsonRpcProxyFactory } from '@gitpod/gitpod-protocol/lib/messaging/proxy-factory';
 import { NavigatorContext, User } from '@gitpod/gitpod-protocol/lib/protocol';
+import { Team } from '@gitpod/gitpod-protocol/lib/teams-projects-protocol';
 import { ErrorCodes } from '@gitpod/gitpod-protocol/lib/messaging/error';
 import { GitpodHostUrl } from '@gitpod/gitpod-protocol/lib/util/gitpod-host-url';
 import { ControlServiceClient } from '@gitpod/supervisor-api-grpc/lib/control_grpc_pb';
@@ -70,7 +71,7 @@ export class SupervisorConnection {
 	}
 }
 
-type UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
+type UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent', 'getTeams'];
 type Union<Tuple extends any[], Union = never> = Tuple[number] | Union;
 export type GitpodConnection = Omit<GitpodServiceImpl<GitpodClient, GitpodServer>, 'server'> & {
 	server: Pick<GitpodServer, Union<UsedGitpodFunction>>;
@@ -93,6 +94,7 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 		readonly info: WorkspaceInfoResponse,
 		readonly owner: Promise<User>,
 		readonly user: Promise<User>,
+		readonly userTeams: Promise<Team[]>,
 		readonly instanceListener: Promise<WorkspaceInstanceUpdateListener>,
 		readonly workspaceOwned: Promise<boolean>,
 		readonly logger: Log,
@@ -241,7 +243,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 	const gitpodApi = workspaceInfo.getGitpodApi()!;
 
 	const factory = new JsonRpcProxyFactory<GitpodServer>();
-	const gitpodFunctions: UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent'];
+	const gitpodFunctions: UsedGitpodFunction = ['getWorkspace', 'openPort', 'stopWorkspace', 'setWorkspaceTimeout', 'getWorkspaceTimeout', 'getLoggedInUser', 'takeSnapshot', 'waitForSnapshot', 'controlAdmission', 'sendHeartBeat', 'trackEvent', 'getTeams'];
 	const gitpodService: GitpodConnection = new GitpodServiceImpl<GitpodClient, GitpodServer>(factory.createProxy()) as any;
 	const gitpodScopes = new Set<string>([
 		'resource:workspace::' + workspaceId + '::get/update',
@@ -302,6 +304,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 		}
 		return vscode.commands.executeCommand('gitpod.api.getLoggedInUser') as typeof pendingGetOwner;
 	})();
+	const pendingGetUserTeams = gitpodService.server.getTeams();
 	const pendingInstanceListener = gitpodService.listenToInstance(workspaceId);
 	const pendingWorkspaceOwned = (async () => {
 		const owner = await pendingGetOwner;
@@ -325,6 +328,7 @@ export async function createGitpodExtensionContext(context: vscode.ExtensionCont
 		workspaceInfo,
 		pendingGetOwner,
 		pendingGetUser,
+		pendingGetUserTeams,
 		pendingInstanceListener,
 		pendingWorkspaceOwned,
 		logger,

@@ -562,6 +562,7 @@
   "dependencies": {
     "@gitpod/gitpod-protocol": "main",
     "@gitpod/supervisor-api-grpc": "main",
+    "configcat-node": "^8.0.0",
     "gitpod-shared": "0.0.1",
     "node-fetch": "2.6.7",
     "uuid": "8.1.0",
