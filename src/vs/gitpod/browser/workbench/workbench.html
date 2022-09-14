@@ -3,33 +3,37 @@
 <html>
 	<head>
 		<script>
-			async function gitpodMetricsAddCounter(metricsName, labels, value) {
-				function getMetricsUrl() {
-					const baseWorkspaceIDRegex = '(([a-f][0-9a-f]{7}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|([0-9a-z]{2,16}-[0-9a-z]{2,16}-[0-9a-z]{8,11}))';
-					// this pattern matches URL prefixes of workspaces
-					const workspaceUrlPrefixRegex = RegExp(`^([0-9]{4,6}-)?${baseWorkspaceIDRegex}\\.`);
-					const url = new URL(window.location.href);
-					url.search = '';
-					url.hash = '';
-					url.pathname = '';
-					if (url.host.match(workspaceUrlPrefixRegex)) {
-						url.host = url.host.split('.').splice(2).join('.');
-					} else {
-						return;
-					}
-					const hostSegments = url.host.split('.');
-					if (hostSegments[0] !== 'ide') {
-						url.host = 'ide.' + url.host;
-					}
-					url.pathname = '/metrics-api';
-					return url.toString();
+			let workspaceId = null;
+			let ideMetricsUrl = null;
+			(() => {
+				const baseWorkspaceIDRegex = '(([a-f][0-9a-f]{7}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|([0-9a-z]{2,16}-[0-9a-z]{2,16}-[0-9a-z]{8,11}))';
+				// this pattern matches URL prefixes of workspaces
+				const workspaceUrlPrefixRegex = RegExp(`^([0-9]{4,6}-)?${baseWorkspaceIDRegex}\\.`);
+				const url = new URL(window.location.href);
+				url.search = '';
+				url.hash = '';
+				url.pathname = '';
+				const result = url.host.match(workspaceUrlPrefixRegex);
+				if (result) {
+					workspaceId = result[4]
+					url.host = url.host.split('.').splice(2).join('.');
+				} else {
+					return;
 				}
+				const hostSegments = url.host.split('.');
+				if (hostSegments[0] !== 'ide') {
+					url.host = 'ide.' + url.host;
+				}
+				url.pathname = '/metrics-api';
+				ideMetricsUrl = url.toString()
+			})();
+
+			async function gitpodMetricsAddCounter(metricsName, labels, value) {
 				try {
-					const metricsUrl = getMetricsUrl();
-					if (!metricsUrl) {
+					if (!ideMetricsUrl) {
 						return false;
 					}
-					const url = `${metricsUrl}/metrics/counter/add/${metricsName}`;
+					const url = `${ideMetricsUrl}/metrics/counter/add/${metricsName}`;
 					const params = { value, labels };
 					const response = await fetch(url, {
 						method: 'POST',
@@ -48,7 +52,50 @@
 				}
 			}
 
+			async function gitpodMetricsReportError(error, properties) {
+				try {
+					if (!ideMetricsUrl) {
+						return false;
+					}
+					const p = Object.assign({}, properties)
+					p.error_name = error.name
+					p.error_message = error.message
+					const url = `${ideMetricsUrl}/reportError`;
+					// TODO: Add quality as a params
+					const params = {
+						errorStack: error.stack ?? String(error),
+						component: "vscode-workbench",
+						version: "{{VERSION}}",
+						workspaceId: workspaceId,
+						properties: p,
+					};
+					const response = await fetch(url, {
+						method: 'POST',
+						body: JSON.stringify(params),
+						credentials: 'omit',
+					});
+					if (!response.ok) {
+						const data = await response.json();
+						console.error(`Cannot report error: ${response.status} ${response.statusText}`, data);
+						return false;
+					}
+					return true;
+				} catch (err) {
+					console.error("Cannot report error, error:", err);
+					return false;
+				}
+			}
+
+			// sum(rate(gitpod_vscode_web_load_total{status='failed'}[2m]))/sum(rate(gitpod_vscode_web_load_total{status='loading'}[2m]))
+			const gitpodVSCodeWebLoadTotal = 'gitpod_vscode_web_load_total';
+			gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'loading' });
+			let hasVscodeWebLoadFailed = false;
 			const onVsCodeWorkbenchError = (event) => {
+				if (!hasVscodeWebLoadFailed) {
+					gitpodMetricsAddCounter(gitpodVSCodeWebLoadTotal, { status: 'failed' });
+					hasVscodeWebLoadFailed = true;
+				}
+
 				if (typeof event?.target?.getAttribute !== 'function') {
 					gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total');
 					return;
@@ -62,12 +109,16 @@
 				if (resourceSource) {
 					labels['resource'] = 'vscode-web-workbench';
 					labels['error'] = 'LoadError';
+					gitpodMetricsReportError(new Error("LoadError"), { resource: labels['resource'], url: resourceSource })
 				} else {
 					labels['error'] = 'Unknown';
 				}
 				gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total', labels);
-			};
 
+				// TODO collect errors, we can capture resourceSource, error if possible with stack, message, name, and window URL
+			};
+		</script>
+		<script>
 			performance.mark('code/didStartRenderer');
 		</script>
 		<meta charset="utf-8" />
@@ -101,9 +152,9 @@
 	</body>
 
 	<!-- Startup (do not modify order of script tags!) -->
-	<script type="text/javascript" src="/_supervisor/frontend/main.js" onerror="onVsCodeWorkbenchError(event)" charset="utf-8"></script>
-	<script src="./static/out/vs/loader.js" onerror="onVsCodeWorkbenchError(event)" ></script>
-	<script src="./static/out/vs/webPackagePaths.js" onerror="onVsCodeWorkbenchError(event)" ></script>
+	<script type="text/javascript" src="/_supervisor/frontend/main.js" onerror="onVsCodeWorkbenchError(event)" charset="utf-8" crossorigin="anonymous"></script>
+	<script src="./static/out/vs/loader.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script src="./static/out/vs/webPackagePaths.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
 	<script>
 		Object.keys(self.webPackagePaths).map(function (key, index) {
 			self.webPackagePaths[key] = `${window.location.origin}/static/node_modules/${key}/${self.webPackagePaths[key]}`;
@@ -127,7 +178,7 @@
 	<script>
 		performance.mark('code/willLoadWorkbenchMain');
 	</script>
-	<script src="./static/out/vs/workbench/workbench.web.main.nls.js" onerror="onVsCodeWorkbenchError(event)"></script>
-	<script src="./static/out/vs/workbench/workbench.web.main.js" onerror="onVsCodeWorkbenchError(event)"></script>
-	<script src="./static/out/vs/gitpod/browser/workbench/workbench.js" onerror="onVsCodeWorkbenchError(event)"></script>
+	<script src="./static/out/vs/workbench/workbench.web.main.nls.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script src="./static/out/vs/workbench/workbench.web.main.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<script src="./static/out/vs/gitpod/browser/workbench/workbench.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
 </html>
