@@ -28,6 +28,8 @@ export enum SenderKind {
 	Node = 2
 }
 
+// TODO map 'UnhandledError' to our error and report it both only for window and remote-server
+
 export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | undefined {
 	const maybeMetrics = doMapMetrics(source, eventName, data);
 	return maybeMetrics instanceof Array ? maybeMetrics : typeof maybeMetrics === 'object' ? [maybeMetrics] : undefined;
