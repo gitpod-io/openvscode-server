@@ -45,7 +45,6 @@
 					p.error_name = error.name
 					p.error_message = error.message
 					const url = `${ideMetricsUrl}/reportError`;
-					// TODO: Add quality as a params
 					const params = {
 						errorStack: error.stack ?? String(error),
 						component: "vscode-workbench",
