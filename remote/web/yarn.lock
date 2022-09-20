@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@gitpod/ide-metrics-api-grpcweb@ak-ext-metrics":
-  version "0.0.1-ak-ext-metrics.4"
-  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-ak-ext-metrics.4.tgz#9dacee7f13181e132fba9e4a5b97cb7f4b1739d2"
-  integrity sha512-s1C4W5Q7nlgyaQGCKqG8gI1ZdzwsaFZW2k8VX5hJKIcpD5S60I7AJbP1wVxYhRqR93YW3++DHydSpbjBUVnQFA==
+"@gitpod/ide-metrics-api-grpcweb@^0.0.1-main.4783":
+  version "0.0.1-main.4783"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-main.4783.tgz#d618c0d37713b66eec3a58ae9fc76c91ace222c9"
+  integrity sha512-QxQT/chiDd7qRFUWNhsTHPBi6dgX9n1nuqHpUmqaiXq8KSWHGss4XY2jUfY+V64zmIQmKp/B/M+1H7VWIOQcUg==
   dependencies:
     "@improbable-eng/grpc-web" "^0.14.0"
     google-protobuf "^3.19.1"

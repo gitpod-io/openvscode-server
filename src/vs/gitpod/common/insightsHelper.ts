@@ -1,4 +1,4 @@
-/* eslint-disable code-import-patterns */
+/* eslint-disable local/code-import-patterns */
 /* eslint-disable header/header */
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Gitpod. All rights reserved.
@@ -6,7 +6,21 @@
 
 import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb/lib/index';
+import type { ErrorEvent } from 'vs/platform/telemetry/common/errorTelemetry';
 
+export interface GitpodErrorEvent extends ErrorEvent {
+	fromBrowser?: boolean;
+}
+
+export interface ReportErrorParam {
+	workspaceId: string;
+	instanceId: string;
+	errorStack: string;
+	userId: string;
+	component: string;
+	version: string;
+	properties?: Record<string, any>;
+}
 
 function getEventName(name: string) {
 	const str = name.replace('remoteConnection', '').replace('remoteReconnection', '');
@@ -23,17 +37,11 @@ function getEventName(name: string) {
 let readAccessTracked = false;
 let writeAccessTracked = false;
 
-export enum SenderKind {
-	Browser = 1,
-	Node = 2
-}
-
-// TODO map 'UnhandledError' to our error and report it both only for window and remote-server
-
 export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | undefined {
 	const maybeMetrics = doMapMetrics(source, eventName, data);
 	return maybeMetrics instanceof Array ? maybeMetrics : typeof maybeMetrics === 'object' ? [maybeMetrics] : undefined;
 }
+
 function doMapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | IDEMetric | undefined {
 	if (source === 'remote-server') {
 		if (eventName.startsWith('extensionGallery:')) {
