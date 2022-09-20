@@ -382,10 +382,10 @@
     vscode-ws-jsonrpc "^0.2.0"
     ws "^7.4.6"
 
-"@gitpod/ide-metrics-api-grpcweb@ak-ext-metrics":
-  version "0.0.1-ak-ext-metrics.4"
-  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-ak-ext-metrics.4.tgz#9dacee7f13181e132fba9e4a5b97cb7f4b1739d2"
-  integrity sha512-s1C4W5Q7nlgyaQGCKqG8gI1ZdzwsaFZW2k8VX5hJKIcpD5S60I7AJbP1wVxYhRqR93YW3++DHydSpbjBUVnQFA==
+"@gitpod/ide-metrics-api-grpcweb@^0.0.1-main.4780":
+  version "0.0.1-main.4780"
+  resolved "https://registry.yarnpkg.com/@gitpod/ide-metrics-api-grpcweb/-/ide-metrics-api-grpcweb-0.0.1-main.4780.tgz#2131c4d0634f243c58cc1958d403b640ee08d727"
+  integrity sha512-OknhowSlzKT6a+PWwdZ/Ot7gOgp60EkIT4yoyQ/0GUJSlEy+d8gDwZObLGMY/KzJC4Qrv8FN4/vLMYShh0jTpA==
   dependencies:
     "@improbable-eng/grpc-web" "^0.14.0"
     google-protobuf "^3.19.1"
