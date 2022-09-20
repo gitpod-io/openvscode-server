@@ -1,4 +1,4 @@
-/* eslint-disable code-import-patterns */
+/* eslint-disable local/code-import-patterns */
 /* eslint-disable header/header */
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Gitpod. All rights reserved.
@@ -21,9 +21,10 @@ import * as grpc from '@grpc/grpc-js';
 import * as util from 'util';
 import { filter, mixin } from 'vs/base/common/objects';
 import { mapMetrics, mapTelemetryData } from 'vs/gitpod/common/insightsHelper';
-import { MetricsServiceClient, sendMetrics } from '@gitpod/ide-metrics-api-grpcweb';
+import { MetricsServiceClient, sendMetrics, ReportErrorRequest } from '@gitpod/ide-metrics-api-grpcweb';
 import { IGitpodPreviewConfiguration } from 'vs/base/common/product';
 import { NodeHttpTransport } from '@improbable-eng/grpc-web-node-http-transport';
+import type { ErrorEvent } from 'vs/platform/telemetry/common/errorTelemetry';
 
 class SupervisorConnection {
 	readonly deadlines = {
@@ -45,7 +46,7 @@ class SupervisorConnection {
 }
 
 type GitpodConnection = Omit<GitpodServiceImpl<GitpodClient, GitpodServer>, 'server'> & {
-	server: Pick<GitpodServer, 'trackEvent'>;
+	server: Pick<GitpodServer, 'trackEvent' | 'getLoggedInUser'>;
 };
 
 export class GitpodInsightsAppender implements ITelemetryAppender {
@@ -55,6 +56,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	private _baseProperties: { appName: string; uiKind: 'web'; version: string };
 	private readonly supervisor = new SupervisorConnection();
 	private readonly devMode = this.productName.endsWith(' Dev');
+	private gitpodUserId: string | undefined;
 
 	constructor(private productName: string, private productVersion: string, private readonly gitpodPreview?: IGitpodPreviewConfiguration) {
 		this._asyncAIClient = null;
@@ -63,9 +65,12 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 			uiKind: 'web',
 			version: productVersion,
 		};
+		this._withAIClient(async (client) => {
+			this.gitpodUserId = (await client.getLoggedInUser()).id;
+		});
 	}
 
-	private _withAIClient(callback: (aiClient: Pick<GitpodServer, 'trackEvent'>) => void): void {
+	private _withAIClient(callback: (aiClient: Pick<GitpodServer, 'trackEvent' | 'getLoggedInUser'>) => void): void {
 		if (!this._asyncAIClient) {
 			this._asyncAIClient = this.getSupervisorData().then(
 				(supervisorData) => {
@@ -93,6 +98,12 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	log(eventName: string, data?: any): void {
 		this.sendAnalytics(data, eventName);
 		this.sendMetrics(data, eventName);
+		if (eventName === 'UnhandledError') {
+			if (data.fromBrowser) {
+				return;
+			}
+			this.sendErrorReport(data as ErrorEvent);
+		}
 	}
 
 	private async sendAnalytics(data: any, eventName: string): Promise<void> {
@@ -139,6 +150,35 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 			}
 		} catch (e) {
 			console.error('failed to send IDE metric:', e);
+		}
+	}
+
+	private async sendErrorReport(error: ErrorEvent): Promise<void> {
+		const req = new ReportErrorRequest();
+		req.setWorkspaceId(this._defaultData['workspaceId']);
+		req.setInstanceId(this._defaultData['instanceId']);
+		req.setErrorStack(error.callstack);
+		if (this.gitpodUserId) {
+			req.setUserId(this.gitpodUserId);
+		}
+		req.setComponent('vscode-server');
+		req.setVersion(this.productVersion);
+		req.getPropertiesMap().set('error_name', error.uncaught_error_name || '');
+		req.getPropertiesMap().set('error_message', error.msg || '');
+		req.getPropertiesMap().set('appName', this._baseProperties.appName);
+		req.getPropertiesMap().set('uiKind', this._baseProperties.uiKind);
+		req.getPropertiesMap().set('version', this._baseProperties.version);
+
+		if (this.devMode) {
+			console.log('Gitpod Error Reports: ', JSON.stringify(req.toObject(), null, 2));
+		}
+		const client = await this.getMetricsClient();
+		if (client) {
+			client.reportError(req, (e) => {
+				if (e) {
+					console.error('failed to send IDE error report:', e);
+				}
+			});
 		}
 	}
 
@@ -211,6 +251,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 		getTokenRequest.setKind('gitpod');
 		getTokenRequest.setHost(gitpodApiHost);
 		getTokenRequest.addScope('function:trackEvent');
+		getTokenRequest.addScope('function:getLoggedInUser');
 
 
 		const supervisor = this.supervisor;
