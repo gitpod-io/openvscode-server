@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@gitpod/gitpod-protocol": "main",
-    "@gitpod/ide-metrics-api-grpcweb": "ak-ext-metrics",
+    "@gitpod/ide-metrics-api-grpcweb": "^0.0.1-main.4783",
     "@gitpod/supervisor-api-grpc": "main",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@microsoft/1ds-core-js": "^3.2.2",
