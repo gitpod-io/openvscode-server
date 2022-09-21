@@ -5,13 +5,11 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
+import alias from '@rollup/plugin-alias';
 import css from 'rollup-plugin-css-only';
 import path from 'path';
 import copy from 'rollup-plugin-copy';
 import json from '@rollup/plugin-json';
-
-// copy before packet
-import './rollup.copy';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -37,18 +35,27 @@ function serve() {
 }
 
 export default {
-	input: path.join(__dirname, 'src/main.ts'),
+	input: path.join(__dirname, '../gitpod-shared/portsview/src/main.ts'),
 	output: [
 		{
-			sourcemap: true,
-			format: 'iife',
-			name: 'app',
-			file: path.join(__dirname, 'public/bundle.js'),
+			sourcemap: !production,
+			format: 'es',
+			file: path.join(__dirname, './public/portsview.js'),
 		},
 	],
 	plugins: [
+		alias({
+			entries: [
+				{ find: 'package.nls.json', replacement: path.join(__dirname, 'package.nls.json') },
+			]
+		}),
 		svelte({
-			preprocess: sveltePreprocess({ sourceMap: !production }),
+			preprocess: sveltePreprocess({
+				typescript: {
+					tsconfigFile: '../gitpod-shared/portsview/tsconfig.json'
+				},
+				sourceMap: !production
+			}),
 			compilerOptions: {
 				// enable run-time checks when not in production
 				dev: !production
@@ -56,14 +63,14 @@ export default {
 		}),
 		copy({
 			targets: [
-				{ src: 'node_modules/@vscode/codicons/dist/codicon.ttf', dest: 'public' },
-				// { src: '../package.nls.json', dest: 'public' },
+				{ src: 'node_modules/@vscode/codicons/dist/codicon.css', dest: 'public' },
+				{ src: 'node_modules/@vscode/codicons/dist/codicon.ttf', dest: 'public' }
 			],
 		}),
-		json(),
+		json({ compact: true }),
 		// we'll extract any component CSS out into
 		// a separate file - better for performance
-		css({ output: 'bundle.css' }),
+		css({ output: 'portsview.css' }),
 
 		// If you have external dependencies installed from
 		// npm, you'll most likely need these plugins. In
@@ -77,12 +84,13 @@ export default {
 		commonjs(),
 		typescript({
 			sourceMap: !production,
-			inlineSources: !production
+			inlineSources: !production,
+			tsconfig: '../gitpod-shared/portsview/tsconfig.json'
 		}),
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated
-		!production && serve(),
+		// !production && serve(),
 
 		// Watch the `public` directory and refresh the
 		// browser on changes when not in production

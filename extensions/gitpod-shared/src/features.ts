@@ -23,6 +23,7 @@ import { TerminalServiceClient } from '@gitpod/supervisor-api-grpc/lib/terminal_
 import { ListenTerminalRequest, ListenTerminalResponse, ListTerminalsRequest, SetTerminalSizeRequest, ShutdownTerminalRequest, Terminal as SupervisorTerminal, TerminalSize as SupervisorTerminalSize, WriteTerminalRequest } from '@gitpod/supervisor-api-grpc/lib/terminal_pb';
 import { TokenServiceClient } from '@gitpod/supervisor-api-grpc/lib/token_grpc_pb';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
+import { PortVisibility } from '@gitpod/gitpod-protocol/lib/workspace-instance';
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as http from 'http';
@@ -37,6 +38,7 @@ import { BaseGitpodAnalyticsEventPropeties, GitpodAnalyticsEvent } from './analy
 import * as uuid from 'uuid';
 import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 import Log from './common/logger';
+import { TunnelPortRequest, TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
 
 export class SupervisorConnection {
 	readonly deadlines = {
@@ -207,6 +209,23 @@ export class GitpodExtensionContext implements vscode.ExtensionContext {
 			this.logger.error('failed to track event:', e);
 			console.error('failed to track event:', e);
 		}
+	}
+
+	async setPortVisibility(port: number, visibility: PortVisibility): Promise<void> {
+		await this.gitpod.server.openPort(this.info.getWorkspaceId(), {
+			port,
+			visibility
+		});
+	}
+
+	async setTunnelVisibility(port: number, targetPort: number, visibility: TunnelVisiblity): Promise<void> {
+		const request = new TunnelPortRequest();
+		request.setPort(port);
+		request.setTargetPort(targetPort);
+		request.setVisibility(visibility);
+		await util.promisify(this.supervisor.port.tunnel.bind(this.supervisor.port, request, this.supervisor.metadata, {
+			deadline: Date.now() + this.supervisor.deadlines.normal
+		}))();
 	}
 }
 

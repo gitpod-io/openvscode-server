@@ -3,7 +3,7 @@
   "displayName": "%displayName%",
   "description": "%description%",
   "publisher": "gitpod",
-  "version": "0.0.35",
+  "version": "0.0.36",
   "license": "MIT",
   "preview": true,
   "icon": "resources/gitpod.png",
@@ -28,10 +28,10 @@
     "workspace"
   ],
   "capabilities": {
-		"untrustedWorkspaces": {
-			"supported": true
-		}
-	},
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
   "activationEvents": [
     "*"
   ],
@@ -109,19 +109,74 @@
         "enablement": "gitpod.inWorkspace == true && gitpod.workspaceOwned == true && gitpod.workspaceShared == true"
       },
       {
-        "command": "gitpod.openInStable",
-        "title": "%openInStable%",
-        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
-      },
-      {
-        "command": "gitpod.openInInsiders",
-        "title": "%openInInsiders%",
-        "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
-      },
-      {
         "command": "gitpod.openInBrowser",
         "title": "%openInBrowser%",
         "enablement": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop'"
+      },
+      {
+        "command": "gitpod.ports.openBrowser",
+        "title": "%openBrowser%",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "gitpod.ports.retryAutoExpose",
+        "title": "%retryAutoExpose%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitpod.ports.preview",
+        "title": "%openPreview%",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "gitpod.ports.makePrivate",
+        "title": "%makePrivate%",
+        "icon": "$(unlock)"
+      },
+      {
+        "command": "gitpod.ports.makePublic",
+        "title": "%makePublic%",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "gitpod.ports.tunnelNetwork",
+        "title": "%tunnelNetwork%",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "gitpod.ports.tunnelHost",
+        "title": "%tunnelHost%",
+        "icon": "$(eye-closed)"
+      }
+    ],
+    "commandPalette": [
+      {
+        "command": "gitpod.ports.preview",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.openBrowser",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.retryAutoExpose",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.makePublic",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.makePrivate",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.tunnelNetwork",
+        "when": "false"
+      },
+      {
+        "command": "gitpod.ports.tunnelHost",
+        "when": "false"
       }
     ],
     "menus": {
@@ -197,31 +252,64 @@
           "when": "gitpod.inWorkspace == true && gitpod.workspaceOwned == true && gitpod.workspaceShared == true"
         },
         {
-          "command": "gitpod.openInStable",
-          "group": "remote_00_gitpod_navigation@900",
-          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
-        },
-        {
-          "command": "gitpod.openInInsiders",
-          "group": "remote_00_gitpod_navigation@1000",
-          "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
-        },
-        {
           "command": "gitpod.openInBrowser",
           "group": "remote_00_gitpod_navigation@1000",
           "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop'"
         }
       ]
+    },
+    "views": {
+      "portsView": [
+        {
+          "id": "gitpod.portsView",
+          "name": "",
+          "type": "webview",
+          "contextualTitle": "",
+          "icon": "$(plug)"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "portsView",
+          "title": "Exposed Ports",
+          "icon": "$(plug)"
+        }
+      ]
     }
   },
   "scripts": {
-    "vscode:prepublish": "yarn run compile --cwd .."
+    "vscode:prepublish": "yarn build:webview; yarn compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "build:webview": "rollup -c",
+    "watch:webview": "rollup -c -w",
+    "start:webview": "sirv public --no-clear"
   },
   "devDependencies": {
-    "@types/node": "16.x"
+    "@types/node": "16.x",
+    "@tsconfig/svelte": "^2.0.0",
+    "@types/vscode-webview": "^1.57.0",
+    "svelte": "^3.0.0",
+    "svelte-check": "^2.0.0",
+    "rollup": "^2.3.4",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
+    "@rollup/plugin-typescript": "^8.0.0",
+    "@rollup/plugin-alias": "^3.1.9",
+    "svelte-preprocess": "^4.0.0",
+    "sirv-cli": "^2.0.0"
   },
   "dependencies": {
     "gitpod-shared": "0.0.1",
+    "jsonc-parser": "^3.2.0",
     "vscode-nls": "^5.0.0"
   }
 }

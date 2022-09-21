@@ -8,6 +8,7 @@ import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLa
 
 export { GitpodExtensionContext, registerTasks, SupervisorConnection, registerIpcHookCli } from './features';
 export * from './gitpod-plugin-model';
+export * from './workspacePort';
 
 export async function setupGitpodContext(context: vscode.ExtensionContext): Promise<GitpodExtensionContext | undefined> {
 	if (typeof vscode.env.remoteName === 'undefined' || context.extension.extensionKind !== vscode.ExtensionKind.Workspace) {

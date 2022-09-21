@@ -12,7 +12,7 @@
 	import PortInfo from "./PortInfo.svelte";
 	import PortStatus from "./PortStatus.svelte";
 	import PortLocalAddress from "./PortLocalAddress.svelte";
-	import { vscode } from "../utils/vscode";
+	import { vscode } from "../utils/vscodeApi";
 	import type { GitpodPortObject, PortCommand } from "../protocol/gitpod";
 	import { getNLSTitle, getSplitCommands } from "../utils/commands";
 	import type { MenuOption } from "../protocol/components";

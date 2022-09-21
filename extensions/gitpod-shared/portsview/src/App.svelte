@@ -2,8 +2,7 @@
 	Copyright (c) Gitpod. All rights reserved.
 ------------------------------------------------------------------------------------------------>
 <script lang="ts">
-	import "@vscode/codicons/dist/codicons.css";
-	import { vscode } from "./utils/vscode";
+	import { vscode } from "./utils/vscodeApi";
 	import PortTable from "./porttable/PortTable.svelte";
 	import type { GitpodPortObject } from "./protocol/gitpod";
 

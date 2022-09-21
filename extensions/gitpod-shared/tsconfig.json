@@ -6,5 +6,14 @@
 		"composite": true,
 		"esModuleInterop": true,
 		"sourceMap": true,
-	}
+		"declaration": true
+	},
+	"include": [
+		"./src/**/*"
+	],
+	"exclude": [
+		"./node_modules/**",
+		"./public/**",
+		"./portsview/**"
+	]
 }

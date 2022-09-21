@@ -1,6 +1,5 @@
-import { ExposedPortInfo, OnPortExposedAction, PortAutoExposure, PortsStatus, PortVisibility, TunneledPortInfo } from '@gitpod/supervisor-api-grpc/lib/status_pb';
-import { GitpodExtensionContext } from 'gitpod-shared';
-import { GitpodWorkspacePort, PortInfo, TunnelDescriptionI } from '../util/port';
+import { ExposedPortInfo, PortAutoExposure, PortsStatus, PortVisibility, TunneledPortInfo } from '@gitpod/supervisor-api-grpc/lib/status_pb';
+import { GitpodWorkspacePort, PortInfo, TunnelDescriptionI } from '../workspacePort';
 import { TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
 
 import * as assert from 'assert';
@@ -9,7 +8,7 @@ describe('GitpodWorkspacePort', () => {
 
 	const genPortsStatus = (obj: PortsStatus.AsObject) => {
 		function genExposed(obj?: ExposedPortInfo.AsObject) {
-			if (obj == null) {
+			if (!obj) {
 				return;
 			}
 			const exposed = new ExposedPortInfo();
@@ -19,7 +18,7 @@ describe('GitpodWorkspacePort', () => {
 			return exposed;
 		}
 		function genTunneledPortInfo(obj?: TunneledPortInfo.AsObject) {
-			if (obj == null) {
+			if (!obj) {
 				return;
 			}
 			const tunneled = new TunneledPortInfo();
@@ -54,8 +53,7 @@ describe('GitpodWorkspacePort', () => {
 			description: 'desc',
 			exposed: {
 				visibility: PortVisibility.PRIVATE,
-				url: 'http://localhost:3000',
-				onExposed: OnPortExposedAction.OPEN_BROWSER,
+				url: 'http://localhost:3000'
 			},
 			localPort: 3000,
 			served: false,
@@ -65,6 +63,7 @@ describe('GitpodWorkspacePort', () => {
 				clientsMap: [] as Array<[string, number]>,
 			},
 			autoExposure: PortAutoExposure.TRYING,
+			onOpen: PortsStatus.OnOpenAction.OPEN_BROWSER,
 		};
 		const cases: TestI[] = [
 			{
@@ -256,7 +255,7 @@ describe('GitpodWorkspacePort', () => {
 		];
 		for (const t of cases) {
 			const ps = genPortsStatus(Object.assign({}, base, t.ps));
-			const result = new GitpodWorkspacePort(ps.getLocalPort(), {} as GitpodExtensionContext, ps, t.tunnel as TunnelDescriptionI);
+			const result = new GitpodWorkspacePort(ps.getLocalPort(), ps.toObject(), t.tunnel as TunnelDescriptionI);
 			assert.deepEqual(result.info, t.result);
 		}
 	});

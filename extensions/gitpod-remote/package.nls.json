@@ -17,5 +17,13 @@
 	"stopSharingWorkspace": "Gitpod: Stop Sharing Running Workspace",
 	"openInStable": "Gitpod: Open in VS Code",
 	"openInInsiders": "Gitpod: Open in VS Code Insiders",
-	"openInBrowser": "Gitpod: Open in Browser"
+	"openInBrowser": "Gitpod: Open in Browser",
+	"makePrivate": "Make Private",
+	"makePublic": "Make Public",
+	"copyWebLink": "Copy web link",
+	"tunnelNetwork": "Tunnel on all interfaces",
+	"tunnelHost": "Tunnel on localhost",
+	"retryAutoExpose": "Retry to expose",
+	"openWebLinkInBrowser": "Open web link in Browser",
+	"showReleaseNotes": "Gitpod: Show Release Notes"
 }

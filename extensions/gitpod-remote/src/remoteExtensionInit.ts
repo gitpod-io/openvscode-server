@@ -70,7 +70,7 @@ export async function installInitialExtensions(context: GitpodExtensionContext) 
 		try {
 			const configUri = vscode.Uri.file(path.join(context.info.getCheckoutLocation(), '.gitpod.yml'));
 			const buffer = await vscode.workspace.fs.readFile(configUri);
-			const content = new util.TextDecoder('utf8').decode(buffer);
+			const content = new TextDecoder().decode(buffer);
 			const model = new context.config.GitpodPluginModel(content);
 			config = model.document.toJSON();
 		} catch { }

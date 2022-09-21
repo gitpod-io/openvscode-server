@@ -2,7 +2,7 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import nlsFile from '../../public/package.nls.json';
+import nlsFile from 'package.nls.json';
 import type { GitpodPortObject, PortCommand } from '../protocol/gitpod';
 
 // TODO: use vscode-nls
@@ -28,7 +28,7 @@ export const commandIconMap: Record<PortCommand, string> = {
 };
 
 export function getCommands(port: GitpodPortObject): PortCommand[] {
-	return getSplitCommands(port).filter(e => e != null);
+	return getSplitCommands(port).filter(e => !!e) as PortCommand[];
 }
 
 export function getSplitCommands(port: GitpodPortObject) {
@@ -40,8 +40,9 @@ export function getSplitCommands(port: GitpodPortObject) {
 	if (viewItem.includes('network') && viewItem.includes('tunneled')) {
 		opts.push('tunnelHost');
 	}
-	// eslint-disable-next-line code-no-unused-expressions
-	opts.length > 0 && opts.push(null);
+	if (opts.length > 0) {
+		opts.push(null);
+	}
 	if (viewItem.includes('private')) {
 		opts.push('makePublic');
 	}
@@ -53,8 +54,9 @@ export function getSplitCommands(port: GitpodPortObject) {
 		opts.push('openBrowser');
 	}
 	if (viewItem.includes('failed')) {
-		// eslint-disable-next-line code-no-unused-expressions
-		opts.length > 0 && opts.push(null);
+		if (opts.length > 0) {
+			opts.push(null);
+		}
 		opts.push('retryAutoExpose');
 	}
 	return opts;

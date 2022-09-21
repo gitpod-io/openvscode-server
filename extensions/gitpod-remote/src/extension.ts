@@ -7,6 +7,9 @@
 import { GitpodExtensionContext, registerTasks, setupGitpodContext, registerIpcHookCli } from 'gitpod-shared';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { configureMachineSettings } from './machineSettings';
+import { observePortsStatus, registerPortCommands, tunnelPorts } from './ports';
+import { GitpodPortViewProvider } from './portViewProvider';
 import { initializeRemoteExtensions, installInitialExtensions, ISyncExtension } from './remoteExtensionInit';
 
 let gitpodContext: GitpodExtensionContext | undefined;
@@ -18,6 +21,22 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	registerTasks(gitpodContext);
 	installInitialExtensions(gitpodContext);
+
+	registerPortCommands(gitpodContext);
+	const portViewProvider = new GitpodPortViewProvider(gitpodContext);
+	context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitpodPortViewProvider.viewType, portViewProvider, { webviewOptions: { retainContextWhenHidden: true } }));
+
+	const [onPortUpdate, disposePortObserve] = observePortsStatus(gitpodContext!);
+	context.subscriptions.push(disposePortObserve);
+	let initial = true;
+	context.subscriptions.push(onPortUpdate.event(portList => {
+		const promise = configureMachineSettings(gitpodContext!, portList);
+		if (initial) {
+			initial = false;
+			promise.then(() => tunnelPorts(portList));
+		}
+		portViewProvider.updatePortsStatus(portList);
+	}));
 
 	// We are moving the heartbeat to gitpod-desktop extension,
 	// so we register a command to cancel the heartbeat on the gitpod-remote extension

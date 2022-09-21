@@ -66,6 +66,11 @@ const packageMarketplaceExtensions = task.define('package-gitpod-marketplace-ext
 	}))
 ));
 gulp.task(packageMarketplaceExtensions);
+const bundlePortsWebview = task.define('bundle-remote-ports-webview', async () => {
+	await promisify(cp.exec)(`yarn --cwd ${path.join(extensionsPath, 'gitpod-remote')} run build:webview`, { encoding: 'utf8' });
+	gulp.src([`${path.join(extensionsPath, 'gitpod-remote')}/public/**/*`]).pipe(gulp.dest(path.join(outMarketplaceExtensions, 'gitpod-remote/public/')));
+});
+gulp.task(bundlePortsWebview);
 for (const extensionName of marketplaceExtensions) {
 	const cleanExtension = task.define('gitpod:clean-extension:' + extensionName, util.rimraf(path.join(outMarketplaceExtensions, extensionName)));
 	const bumpExtension = task.define('gitpod:bump-extension:' + extensionName, async () => {
@@ -96,6 +101,7 @@ for (const extensionName of marketplaceExtensions) {
 	gulp.task(publishExtension);
 	const packageExtension = task.define('gitpod:package-extension:' + extensionName, task.series(
 		bundleExtension,
+		bundlePortsWebview,
 		() => vsce.createVSIX({
 			cwd: path.join(outMarketplaceExtensions, extensionName)
 		})

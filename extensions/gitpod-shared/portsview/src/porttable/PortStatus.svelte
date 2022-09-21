@@ -2,7 +2,6 @@
 	Copyright (c) Gitpod. All rights reserved.
 ------------------------------------------------------------------------------------------------>
 <script lang="ts">
-	import "@vscode/codicons/dist/codicon.css";
 	import type { IconStatus } from "../protocol/gitpod";
 
 	export let status: IconStatus = "NotServed";
