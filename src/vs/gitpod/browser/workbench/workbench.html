@@ -3,8 +3,8 @@
 <html>
 	<head>
 		<script>
-			let workspaceId = null;
-			let ideMetricsUrl = null;
+			let gitpodWorkspaceId = null;
+			let gitpodIdeMetricsUrl = null;
 			(() => {
 				const baseWorkspaceIDRegex = '(([a-f][0-9a-f]{7}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})|([0-9a-z]{2,16}-[0-9a-z]{2,16}-[0-9a-z]{8,11}))';
 				// this pattern matches URL prefixes of workspaces
@@ -15,7 +15,7 @@
 				url.pathname = '';
 				const result = url.host.match(workspaceUrlPrefixRegex);
 				if (result) {
-					workspaceId = result[4]
+					gitpodWorkspaceId = result[4]
 					url.host = url.host.split('.').splice(2).join('.');
 				} else {
 					return;
@@ -25,15 +25,15 @@
 					url.host = 'ide.' + url.host;
 				}
 				url.pathname = '/metrics-api';
-				ideMetricsUrl = url.toString()
+				gitpodIdeMetricsUrl = url.toString()
 			})();
 
 			async function gitpodMetricsAddCounter(metricsName, labels, value) {
 				try {
-					if (!ideMetricsUrl) {
+					if (!gitpodIdeMetricsUrl) {
 						return false;
 					}
-					const url = `${ideMetricsUrl}/metrics/counter/add/${metricsName}`;
+					const url = `${gitpodIdeMetricsUrl}/metrics/counter/add/${metricsName}`;
 					const params = { value, labels };
 					const response = await fetch(url, {
 						method: 'POST',
@@ -41,7 +41,7 @@
 						credentials: 'omit',
 					});
 					if (!response.ok) {
-						const data = await response.json(); // { code: number; message: string; }
+						const data = await response.json();
 						console.error(`Cannot report metrics with addCounter: ${response.status} ${response.statusText}`, data);
 						return false;
 					}
@@ -54,18 +54,18 @@
 
 			async function gitpodMetricsReportError(error, properties) {
 				try {
-					if (!ideMetricsUrl) {
+					if (!gitpodIdeMetricsUrl) {
 						return false;
 					}
 					const p = Object.assign({}, properties)
 					p.error_name = error.name
 					p.error_message = error.message
-					const url = `${ideMetricsUrl}/reportError`;
+					const url = `${gitpodIdeMetricsUrl}/reportError`;
 					const params = {
 						errorStack: error.stack ?? String(error),
 						component: "vscode-workbench",
 						version: "{{VERSION}}",
-						workspaceId: workspaceId,
+						workspaceId: gitpodWorkspaceId,
 						properties: p,
 					};
 					const response = await fetch(url, {
