@@ -12,7 +12,6 @@ import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { StatusServiceClient } from '@gitpod/supervisor-api-grpc/lib/status_grpc_pb';
 import { InfoServiceClient } from '@gitpod/supervisor-api-grpc/lib/info_grpc_pb';
 import { TokenServiceClient } from '@gitpod/supervisor-api-grpc/lib/token_grpc_pb';
-import { ContentStatusRequest } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { WorkspaceInfoRequest, WorkspaceInfoResponse } from '@gitpod/supervisor-api-grpc/lib/info_pb';
 import * as ReconnectingWebSocket from 'reconnecting-websocket';
 import * as WebSocket from 'ws';
@@ -211,30 +210,12 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 
 	private _workspaceInfo: Promise<WorkspaceInfoResponse> | undefined;
 	private getWorkspaceInfo(): Promise<WorkspaceInfoResponse> {
-		if (this._workspaceInfo) {
-			return this._workspaceInfo;
-		}
-		return this._workspaceInfo = (async () => {
-			const supervisor = this.supervisor;
-
-			let contentAvailable = false;
-			while (!contentAvailable) {
-				try {
-					const contentStatusRequest = new ContentStatusRequest();
-					contentStatusRequest.setWait(true);
-					const result = await util.promisify(supervisor.status.contentStatus.bind(supervisor.status, contentStatusRequest, supervisor.metadata, {
-						deadline: Date.now() + supervisor.deadlines.long
-					}))();
-					contentAvailable = result.getAvailable();
-				} catch (e) {
-					console.error('Cannot maintain connection to supervisor', e);
-				}
-			}
-
-			return util.promisify(supervisor.info.workspaceInfo.bind(supervisor.info, new WorkspaceInfoRequest(), supervisor.metadata, {
-				deadline: Date.now() + supervisor.deadlines.long
+		if (!this._workspaceInfo) {
+			this._workspaceInfo = util.promisify(this.supervisor.info.workspaceInfo.bind(this.supervisor.info, new WorkspaceInfoRequest(), this.supervisor.metadata, {
+				deadline: Date.now() + this.supervisor.deadlines.long
 			}))();
-		})();
+		}
+		return this._workspaceInfo;
 	}
 
 	private async getSupervisorData() {
