@@ -7,6 +7,8 @@ import { registerActiveLanguageAnalytics, registerUsageAnalytics } from './analy
 import { createGitpodExtensionContext, GitpodExtensionContext, registerDefaultLayout, registerNotifications, registerWorkspaceCommands, registerWorkspaceSharing, registerWorkspaceTimeout } from './features';
 
 export { GitpodExtensionContext, registerTasks, SupervisorConnection, registerIpcHookCli } from './features';
+
+export * from './common/utils';
 export * from './gitpod-plugin-model';
 export * from './workspacePort';
 
