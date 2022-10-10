@@ -4,10 +4,9 @@
 import * as vscode from 'vscode';
 import * as grpc from '@grpc/grpc-js';
 import * as util from 'util';
-import { GitpodExtensionContext, GitpodWorkspacePort } from 'gitpod-shared';
+import { GitpodExtensionContext, GitpodWorkspacePort, isGRPCErrorStatus } from 'gitpod-shared';
 import { PortsStatus, PortsStatusRequest, PortsStatusResponse } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { RetryAutoExposeRequest, TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
-import { isGRPCErrorStatus } from 'gitpod-shared/src/common/utils';
 
 export async function getSupervisorPorts(context: GitpodExtensionContext) {
 	let supervisorPortList: PortsStatus.AsObject[] = [];

@@ -4,7 +4,6 @@
 import * as vscode from 'vscode';
 import { GitpodExtensionContext, ExposedServedGitpodWorkspacePort, GitpodWorkspacePort, isExposedServedGitpodWorkspacePort, isExposedServedPort, PortInfo } from 'gitpod-shared';
 import { PortsStatus } from '@gitpod/supervisor-api-grpc/lib/status_pb';
-import { isUserOverrideSetting } from './experiments';
 
 const PortCommands = <const>['tunnelNetwork', 'tunnelHost', 'makePublic', 'makePrivate', 'preview', 'openBrowser', 'retryAutoExpose', 'urlCopy', 'queryPortData'];
 
@@ -16,6 +15,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	private _view?: vscode.WebviewView;
 
 	readonly portMap = new Map<number, GitpodWorkspacePort>();
+	private portList: GitpodWorkspacePort[] = [];
 
 	private readonly onDidExposeServedPortEmitter = new vscode.EventEmitter<ExposedServedGitpodWorkspacePort>();
 	readonly onDidExposeServedPort = this.onDidExposeServedPortEmitter.event;
@@ -82,6 +82,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 		this.updating = true;
 		try {
 			if (!this.portStatus) { return; }
+			this.portList = [];
 			this.portStatus.forEach(e => {
 				const localPort = e.localPort;
 				const tunnel = this.tunnelsMap.get(localPort);
@@ -90,8 +91,10 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 				if (!gitpodPort) {
 					gitpodPort = new GitpodWorkspacePort(localPort, e, tunnel);
 					this.portMap.set(localPort, gitpodPort);
+					this.portList.push(gitpodPort);
 				} else {
 					gitpodPort.update(e, tunnel);
+					this.portList.push(gitpodPort);
 				}
 				if (isExposedServedGitpodWorkspacePort(gitpodPort) && !isExposedServedPort(prevStatus)) {
 					this.onDidExposeServedPortEmitter.fire(gitpodPort);
@@ -105,8 +108,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	private updateHtml(): void {
-		const ports = Array.from(this.portMap.values()).map(e => e.toSvelteObject());
-		this._view?.webview.postMessage({ command: 'updatePorts', ports });
+		this._view?.webview.postMessage({ command: 'updatePorts', ports: this.portList.map(e => e.toSvelteObject()) });
 	}
 
 	private onHtmlCommand() {
@@ -121,11 +123,11 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 				await vscode.env.clipboard.writeText(port.status.exposed.url);
 				this.context.fireAnalyticsEvent({
 					eventName: 'vscode_execute_command_gitpod_ports',
-					properties: { action: 'urlCopy', isWebview: true, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
+					properties: { action: 'urlCopy' }
 				});
 				return;
 			}
-			vscode.commands.executeCommand('gitpod.ports.' + message.command, { port, isWebview: true });
+			vscode.commands.executeCommand('gitpod.ports.' + message.command, { port });
 		});
 	}
 }

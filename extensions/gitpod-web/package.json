@@ -421,17 +421,15 @@
         {
           "id": "gitpod.workspace",
           "name": "Gitpod Workspace",
-          "when": "!gitpod.portsView.visible"
+          "when": "false"
         }
       ],
       "portsView": [
         {
           "id": "gitpod.portsView",
-          "name": "",
+          "name": "Ports",
           "type": "webview",
-          "contextualTitle": "",
-          "icon": "$(plug)",
-          "when": "gitpod.portsView.visible"
+          "icon": "$(plug)"
         }
       ]
     },
@@ -509,11 +507,6 @@
           "type": "boolean",
           "description": "Control whether to prompt to open in VS Code Desktop on page load.",
           "default": false
-        },
-        "gitpod.experimental.portsView.enabled": {
-          "type": "boolean",
-          "description": "Enable Gitpod portsView experiment features",
-          "default": true
         }
       }
     },

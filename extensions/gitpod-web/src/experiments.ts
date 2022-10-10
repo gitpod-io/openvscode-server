@@ -9,9 +9,7 @@ import * as semver from 'semver';
 import Log from 'gitpod-shared/out/common/logger';
 import { URL } from 'url';
 
-const EXPERTIMENTAL_SETTINGS = [
-	'gitpod.experimental.portsView.enabled',
-];
+const EXPERTIMENTAL_SETTINGS: string[] = [];
 
 export class ExperimentalSettings {
 	private configcatClient: configcatcommon.IConfigCatClient;

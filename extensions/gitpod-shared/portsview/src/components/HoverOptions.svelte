@@ -49,9 +49,9 @@
 	.opts {
 		display: inline-flex;
 		flex: none;
-		padding-left: 4px;
 		box-sizing: border-box;
 		align-content: center;
+		align-items: center;
 	}
 	.hide {
 		display: none;

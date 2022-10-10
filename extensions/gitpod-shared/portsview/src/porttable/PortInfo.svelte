@@ -34,13 +34,11 @@
 <style>
 	.container {
 		display: flex;
-		width: 100%;
 	}
 	span {
 		display: inline-block;
 	}
 	.title {
-		flex: none;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;

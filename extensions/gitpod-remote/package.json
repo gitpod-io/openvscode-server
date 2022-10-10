@@ -262,9 +262,8 @@
       "portsView": [
         {
           "id": "gitpod.portsView",
-          "name": "",
+          "name": "Exposed Ports",
           "type": "webview",
-          "contextualTitle": "",
           "icon": "$(plug)"
         }
       ]
