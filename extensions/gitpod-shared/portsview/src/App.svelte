@@ -4,6 +4,7 @@
 <script lang="ts">
 	import { vscode } from "./utils/vscodeApi";
 	import PortTable from "./porttable/PortTable.svelte";
+	import PortList from "./porttable/PortList.svelte";
 	import type { GitpodPortObject } from "./protocol/gitpod";
 
 	let ports: GitpodPortObject[] = [];
@@ -14,8 +15,22 @@
 		}
 	});
 	vscode.postMessage({ command: "queryPortData" });
+
+	let innerWidth = 0;
 </script>
 
+<svelte:window bind:innerWidth />
+
 <main>
-	<PortTable {ports} />
+	{#if innerWidth > 500}
+		<PortTable {ports} />
+	{:else}
+		<PortList {ports} />
+	{/if}
 </main>
+
+<style>
+	:global(body) {
+		padding: 10px;
+	}
+</style>
