@@ -4,15 +4,19 @@
 <script lang="ts">
 	import type { IconStatus } from "../protocol/gitpod";
 
-	export let status: IconStatus = "NotServed";
+	import type { GitpodPortObject } from "../protocol/gitpod";
+
+	export let port: GitpodPortObject;
 
 	const fillArr: IconStatus[] = ["Detecting", "Served"];
+
+	$: status = port?.info.iconStatus ?? "NotServed";
 
 	$: circleFill = fillArr.includes(status);
 </script>
 
 <main>
-	<div class="container">
+	<div class="container" title={port.info.description}>
 		{#if status === "ExposureFailed"}
 			<i class="codicon codicon-warning ExposureFailed" />
 		{:else if circleFill}

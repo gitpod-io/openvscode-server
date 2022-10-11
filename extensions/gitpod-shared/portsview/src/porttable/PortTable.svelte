@@ -16,6 +16,7 @@
 	import type { GitpodPortObject, PortCommand } from "../protocol/gitpod";
 	import { getNLSTitle, getSplitCommands } from "../utils/commands";
 	import type { MenuOption } from "../protocol/components";
+	import PortHoverActions from './PortHoverActions.svelte';
 
 	provideVSCodeDesignSystem().register(
 		vsCodeDataGrid(),
@@ -24,8 +25,6 @@
 	);
 
 	let tableHovered = false;
-
-	const headers = ["", "Port", "Address", "Description", "State"];
 
 	function postData(command: string, port: GitpodPortObject) {
 		vscode.postMessage({
@@ -71,6 +70,32 @@
 	}
 
 	//#endregion
+
+	//#region Responsive
+
+	let innerWidth = 0
+
+	const responsiveMap: Record<number, {layout: string; headers: string[]; options?: { allInPort?: boolean; }}> = {
+		850: {
+			layout: "50px 180px 1fr 180px 180px",
+			headers: ["", "Port", "Address", "Description", "State"],
+		},
+		700: {
+			layout: "50px 180px 1fr 180px",
+			headers: ["", "Port", "Address", "State"],
+		},
+		500: {
+			layout: "50px 180px 1fr 108px",
+			headers: ["", "Port", "State", "Action"],
+		}
+	}
+
+	const sortedResponsiveKeys = Object.keys(responsiveMap).map(e => Number(e)).sort((a, b) => b - a)
+
+	$: useResponsive = responsiveMap[sortedResponsiveKeys.find(e => innerWidth > e) ?? 850]
+
+	//#endregion
+
 </script>
 
 <main>
@@ -87,14 +112,14 @@
 	<vscode-data-grid
 		class="table"
 		id="table"
-		grid-template-columns="1fr 5fr 520px 5fr 7fr"
+		grid-template-columns={useResponsive.layout}
 		class:table-hover={tableHovered}
 		on:contextmenu|preventDefault
 		on:mouseenter={() => (tableHovered = true)}
 		on:mouseleave={() => (tableHovered = false)}
 	>
 		<vscode-data-grid-row class="tr" row-type="sticky-header">
-			{#each headers as header, i (i)}
+			{#each useResponsive.headers as header, i (i)}
 				<vscode-data-grid-cell
 					class="th"
 					cellType="columnheader"
@@ -107,44 +132,60 @@
 				class="tr tr-data"
 				on:contextmenu|preventDefault={(event) => onRightClick(event, port)}
 			>
-				<vscode-data-grid-cell
-					class="td"
-					grid-column="1"
-					class:served={port.status.served}
-					style="text-align: center"
-				>
-					<PortStatus status={port.info.iconStatus} />
-				</vscode-data-grid-cell>
+				{#if useResponsive.headers.includes("")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("") + 1}
+						class="td"
+						class:served={port.status.served}
+						style="text-align: center"
+					>
+						<PortStatus port={port} />
+					</vscode-data-grid-cell>
+				{/if}
 
-				<vscode-data-grid-cell class="td" grid-column="2">
-					<PortInfo {port} />
-				</vscode-data-grid-cell>
+				{#if useResponsive.headers.includes("Port")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("Port") + 1} class="td">
+						<PortInfo {port} />
+					</vscode-data-grid-cell>
+				{/if}
 
-				<vscode-data-grid-cell class="td" grid-column="3">
-					{#if (port.status.exposed?.url.length ?? 0) > 0}
-						<PortLocalAddress
-							on:command={(e) => {
-								const { command, port } = e.detail;
-								postData(command, port);
-							}}
-							{port}
-						/>
-					{/if}
-				</vscode-data-grid-cell>
+				{#if useResponsive.headers.includes("Address")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("Address") + 1} class="td">
+						{#if (port.status.exposed?.url.length ?? 0) > 0}
+							<PortLocalAddress
+								on:command={(e) => {
+									const { command, port } = e.detail;
+									postData(command, port);
+								}}
+								{port}
+							/>
+						{/if}
+					</vscode-data-grid-cell>
+				{/if}
 
-				<vscode-data-grid-cell class="td" grid-column="4">
-					<span title={port.status.description}>{port.status.description}</span>
-				</vscode-data-grid-cell>
+				{#if useResponsive.headers.includes("Description")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("Description") + 1} class="td">
+						<span title={port.status.description}>{port.status.description}</span>
+					</vscode-data-grid-cell>
+				{/if}
 
-				<vscode-data-grid-cell class="td" grid-column="5">
-					<span title={port.info.description}>{port.info.description}</span>
-				</vscode-data-grid-cell>
+				{#if useResponsive.headers.includes("State")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("State") + 1} class="td">
+						<span title={port.info.description}>{port.info.description}</span>
+					</vscode-data-grid-cell>
+				{/if}
+
+				{#if useResponsive.headers.includes("Action")}
+					<vscode-data-grid-cell grid-column={useResponsive.headers.indexOf("Action") + 1} class="td">
+						<PortHoverActions port={port} alwaysShow on:command={(e) => { postData(e.detail, port) }} />
+					</vscode-data-grid-cell>
+				{/if}
 			</vscode-data-grid-row>
 		{/each}
 	</vscode-data-grid>
 </main>
 
 <svelte:window
+	bind:innerWidth
 	on:scroll={() => {
 		if (menuData.show) {
 			menuData.show = false;
@@ -154,7 +195,6 @@
 
 <style>
 	.table {
-		min-width: 1030px;
 		width: 100%;
 		height: 100%;
 		font-size: 13px;
