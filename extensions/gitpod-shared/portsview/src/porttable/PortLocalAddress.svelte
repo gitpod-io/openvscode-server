@@ -11,8 +11,7 @@
 	const dispatch = createEventDispatcher<{
 		command: { command: PortCommand; port: GitpodPortObject };
 	}>();
-	function openAddr(e: Event) {
-		e.preventDefault();
+	function openAddr() {
 		if (port.status.exposed.url) {
 			dispatch("command", { command: "openBrowser" as PortCommand, port });
 		}
@@ -24,7 +23,8 @@
 	alwaysShow
 	on:command={(e) => { console.log(e); dispatch("command", { command: e.detail, port}) }}
 >
-	<a on:click={(e) => { openAddr(e) }} href={port.status.exposed.url}>{port.status.exposed.url}</a>
+<!-- svelte-ignore a11y-invalid-attribute -->
+	<a on:click={() => { openAddr(); return false; }} href="javascript:void(0)">{port.status.exposed.url}</a>
 </PortHoverActions>
 
 <style>
