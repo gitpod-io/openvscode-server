@@ -4,6 +4,7 @@
 
 /// <reference path='../../../src/vscode-dts/vscode.d.ts'/>
 /// <reference path='../../../src/vscode-dts/vscode.proposed.resolvers.d.ts'/>
+/// <reference path='../../../src/vscode-dts/vscode.proposed.tunnels.d.ts'/>
 
 import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
