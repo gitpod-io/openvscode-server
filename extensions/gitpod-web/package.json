@@ -18,6 +18,7 @@
   },
   "enabledApiProposals": [
     "resolvers",
+    "tunnels",
     "contribViewsRemote",
     "contribRemoteHelp",
     "contribMenuBarHome"
