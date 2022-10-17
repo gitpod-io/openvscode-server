@@ -18,10 +18,10 @@ import { isWindows } from 'vs/base/common/platform';
 import { IFileDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { mnemonicButtonLabel } from 'vs/base/common/labels';
 import { ShowCurrentReleaseNotesActionId } from 'vs/workbench/contrib/update/common/update';
-import { IsWebContext } from 'vs/platform/contextkey/common/contextkeys';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IProductService } from 'vs/platform/product/common/productService';
 import { URI } from 'vs/base/common/uri';
+import { RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 
 const workbench = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
 
@@ -140,6 +140,8 @@ class RestartToUpdateAction extends Action2 {
 	}
 }
 
+const CONTEXT_DONT_SHOW_DOWNLOAD_ACTION = new RawContextKey<false>('doNotShowDownloadAction', false);
+
 class DownloadAction extends Action2 {
 
 	static readonly ID = 'workbench.action.download';
@@ -152,11 +154,11 @@ class DownloadAction extends Action2 {
 				value: localize('openDownloadPage', "Download {0}", product.nameLong),
 				original: `Download ${product.downloadUrl}`
 			},
-			precondition: IsWebContext, // Only show when running in a web browser
+			precondition: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION, // Only show when running in a web browser
 			f1: true,
 			menu: [{
 				id: MenuId.StatusBarWindowIndicatorMenu,
-				when: IsWebContext
+				when: CONTEXT_DONT_SHOW_DOWNLOAD_ACTION
 			}]
 		});
 	}
