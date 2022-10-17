@@ -34,38 +34,7 @@ const bumpMarketplaceExtensions = task.define('bump-marketplace-extensions', () 
 		}));
 	}
 });
-const bundleMarketplaceExtensions = task.define('bundle-gitpod-marketplace-extensions', task.series(
-	cleanMarketplaceExtensions,
-	bumpMarketplaceExtensions,
-	() =>
-		ext.minifyExtensionResources(
-			es.merge(
-				...marketplaceExtensions.map(extensionName =>
-					ext.fromLocal(path.join(extensionsPath, extensionName), false)
-						.pipe(rename(p => p.dirname = `${extensionName}/${p.dirname}`))
-				)
-			)
-		).pipe(gulp.dest(outMarketplaceExtensions))
-));
-gulp.task(bundleMarketplaceExtensions);
-const publishMarketplaceExtensions = task.define('publish-gitpod-marketplace-extensions', task.series(
-	bundleMarketplaceExtensions,
-	() => Promise.allSettled(marketplaceExtensions.map(extensionName => {
-		vsce.publish({
-			cwd: path.join(outMarketplaceExtensions, extensionName)
-		});
-	}))
-));
-gulp.task(publishMarketplaceExtensions);
-const packageMarketplaceExtensions = task.define('package-gitpod-marketplace-extensions', task.series(
-	bundleMarketplaceExtensions,
-	() => Promise.allSettled(marketplaceExtensions.map(extensionName => {
-		vsce.createVSIX({
-			cwd: path.join(outMarketplaceExtensions, extensionName)
-		});
-	}))
-));
-gulp.task(packageMarketplaceExtensions);
+
 const bundlePortsWebview = task.define('bundle-remote-ports-webview', async () => {
 	await promisify(cp.exec)(`yarn --cwd ${path.join(extensionsPath, 'gitpod-remote')} run build:webview`, { encoding: 'utf8' });
 	gulp.src([`${path.join(extensionsPath, 'gitpod-remote')}/public/**/*`]).pipe(gulp.dest(path.join(outMarketplaceExtensions, 'gitpod-remote/public/')));
