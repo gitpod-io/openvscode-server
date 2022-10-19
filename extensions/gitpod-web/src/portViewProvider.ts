@@ -16,6 +16,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	private _view?: vscode.WebviewView;
 
 	readonly portMap = new Map<number, GitpodWorkspacePort>();
+	private portList: GitpodWorkspacePort[] = [];
 
 	private readonly onDidExposeServedPortEmitter = new vscode.EventEmitter<ExposedServedGitpodWorkspacePort>();
 	readonly onDidExposeServedPort = this.onDidExposeServedPortEmitter.event;
@@ -82,6 +83,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 		this.updating = true;
 		try {
 			if (!this.portStatus) { return; }
+			this.portList = [];
 			this.portStatus.forEach(e => {
 				const localPort = e.localPort;
 				const tunnel = this.tunnelsMap.get(localPort);
@@ -90,8 +92,10 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 				if (!gitpodPort) {
 					gitpodPort = new GitpodWorkspacePort(localPort, e, tunnel);
 					this.portMap.set(localPort, gitpodPort);
+					this.portList.push(gitpodPort);
 				} else {
 					gitpodPort.update(e, tunnel);
+					this.portList.push(gitpodPort);
 				}
 				if (isExposedServedGitpodWorkspacePort(gitpodPort) && !isExposedServedPort(prevStatus)) {
 					this.onDidExposeServedPortEmitter.fire(gitpodPort);
@@ -105,8 +109,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	private updateHtml(): void {
-		const ports = Array.from(this.portMap.values()).map(e => e.toSvelteObject());
-		this._view?.webview.postMessage({ command: 'updatePorts', ports });
+		this._view?.webview.postMessage({ command: 'updatePorts', ports: this.portList.map(e => e.toSvelteObject()) });
 	}
 
 	private onHtmlCommand() {
