@@ -514,6 +514,7 @@
       "panel": [
         {
           "id": "portsView",
+          "title": "Ports",
           "icon": "$(plug)"
         }
       ]
