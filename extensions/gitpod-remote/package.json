@@ -272,6 +272,7 @@
       "panel": [
         {
           "id": "portsView",
+          "title": "Exposed Ports",
           "icon": "$(plug)"
         }
       ]
