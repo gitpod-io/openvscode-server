@@ -686,9 +686,9 @@
 		}
 	],
 	"extensionsGallery": {
-		"serviceUrl": "https://open-vsx.org/vscode/gallery",
+		"serviceUrl": "https://openvsx-mirror.gitpod-staging.com/vscode/gallery",
 		"itemUrl": "https://open-vsx.org/vscode/item",
-		"resourceUrlTemplate": "https://open-vsx.org/vscode/asset/{publisher}/{name}/{version}/Microsoft.VisualStudio.Code.WebResources/{path}",
+		"resourceUrlTemplate": "https://openvsx-mirror.gitpod-staging.com/vscode/asset/{publisher}/{name}/{version}/Microsoft.VisualStudio.Code.WebResources/{path}",
 		"controlUrl": "https://ide.gitpod.io/code/marketplace.json",
 		"recommendationsUrl": "",
 		"nlsBaseUrl": "",
