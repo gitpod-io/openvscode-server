@@ -581,7 +581,7 @@ async function doStart(): Promise<IDisposable> {
 	const baseUri = FileAccess.asBrowserUri('', require);
 	const uuidUri = `${baseUri.scheme}://{{uuid}}.${info.workspaceClusterHost}${baseUri.path.replace(/^\/blobserve/, '').replace(/\/out\/$/, '')}`;
 	const webEndpointUrlTemplate = uuidUri;
-	const webviewEndpoint = `${uuidUri}/out/vs/workbench/contrib/webview/browser/pre/`;
+	const webviewEndpoint = devMode ? undefined : `${uuidUri}/out/vs/workbench/contrib/webview/browser/pre/`;
 
 	const folderUri = info.workspaceLocationFolder
 		? URI.from({
