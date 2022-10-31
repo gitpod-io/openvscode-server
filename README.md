@@ -70,6 +70,8 @@ Since OpenVSCode Server v1.64, you can access the Web UI without authentication 
 
 If you want to use a connection token and are working with OpenVSCode Server via [the Docker image](https://hub.docker.com/r/gitpod/openvscode-server), you will have to edit the `ENTRYPOINT` in [the Dockerfile](https://github.com/gitpod-io/openvscode-releases/blob/eb59ab37e23f8d17532b4af4de37eafaf48037a5/Dockerfile#L64) or modify it with the [`entrypoint` option](https://docs.docker.com/compose/compose-file/compose-file-v3/#entrypoint) when working with `docker-compose`.
 
+Note that while OpenVSCode Server is safe for multiple users, they will share the same filesystem.
+
 ### Deployment guides
 
 Please refer to [Guides](https://github.com/gitpod-io/openvscode-server/tree/docs/guides) to learn how to deploy OpenVSCode Server to your cloud provider of choice.
