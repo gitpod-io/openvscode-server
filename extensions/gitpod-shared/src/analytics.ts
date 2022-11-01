@@ -39,8 +39,6 @@ export type GitpodAnalyticsEvent =
 	}> |
 	GAET<'vscode_execute_command_gitpod_ports', {
 		action: 'private' | 'public' | 'preview' | 'openBrowser' | 'urlCopy';
-		isWebview?: boolean;
-		userOverride?: string; // 'true' | 'false'
 	}> |
 	GAET<'vscode_execute_command_gitpod_config', {
 		action: 'remove' | 'add';
