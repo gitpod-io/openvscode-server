@@ -39,6 +39,7 @@ import * as uuid from 'uuid';
 import { RemoteTrackMessage } from '@gitpod/gitpod-protocol/lib/analytics';
 import Log from './common/logger';
 import { TunnelPortRequest, TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
+import { isGRPCErrorStatus } from './common/utils';
 
 export class SupervisorConnection {
 	readonly deadlines = {
@@ -686,10 +687,10 @@ export function registerNotifications(context: GitpodExtensionContext): void {
 						});
 					});
 				} catch (err) {
-					if ('code' in err && err.code === grpc.status.UNIMPLEMENTED) {
+					if (isGRPCErrorStatus(err, grpc.status.UNIMPLEMENTED)) {
 						console.warn('supervisor does not implement the notification server');
 						run = false;
-					} else if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+					} else if (!isGRPCErrorStatus(err, grpc.status.CANCELLED)) {
 						console.error('cannot maintain connection to supervisor', err);
 					}
 				} finally {
@@ -822,7 +823,7 @@ export async function registerTasks(context: GitpodExtensionContext): Promise<vo
 				});
 			});
 		} catch (err) {
-			if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+			if (!isGRPCErrorStatus(err, grpc.status.CANCELLED)) {
 				context.logger.error('code server: listening task updates failed:', err);
 				console.error('code server: listening task updates failed:', err);
 			}
@@ -931,8 +932,8 @@ function createTaskPty(alias: string, context: GitpodExtensionContext, contextTo
 						});
 					});
 				} catch (e) {
-					notFound = 'code' in e && e.code === grpc.status.NOT_FOUND;
-					if (!token.isCancellationRequested && !notFound && !('code' in e && e.code === grpc.status.CANCELLED)) {
+					notFound = isGRPCErrorStatus(e, grpc.status.NOT_FOUND);
+					if (!token.isCancellationRequested && !notFound && !isGRPCErrorStatus(e, grpc.status.CANCELLED)) {
 						context.logger.error(`${alias} terminal: listening failed:`, e);
 						console.error(`${alias} terminal: listening failed:`, e);
 					}

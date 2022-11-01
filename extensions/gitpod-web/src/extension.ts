@@ -27,6 +27,7 @@ import { ReleaseNotes } from './releaseNotes';
 import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
 import { ExperimentalSettings, isUserOverrideSetting } from './experiments';
 import { GitpodPortViewProvider } from './portViewProvider';
+import { isGRPCErrorStatus } from 'gitpod-shared/src/common/utils';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
@@ -403,7 +404,7 @@ async function registerPorts(context: GitpodExtensionContext): Promise<void> {
 						});
 					});
 				} catch (err) {
-					if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+					if (!isGRPCErrorStatus(err, grpc.status.CANCELLED)) {
 						context.logger.error('cannot maintain connection to supervisor', err);
 						console.error('cannot maintain connection to supervisor', err);
 					}
