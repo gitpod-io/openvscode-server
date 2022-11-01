@@ -7,6 +7,7 @@ import * as util from 'util';
 import { GitpodExtensionContext, GitpodWorkspacePort } from 'gitpod-shared';
 import { PortsStatus, PortsStatusRequest, PortsStatusResponse } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { RetryAutoExposeRequest, TunnelVisiblity } from '@gitpod/supervisor-api-grpc/lib/port_pb';
+import { isGRPCErrorStatus } from 'gitpod-shared/src/common/utils';
 
 export async function getSupervisorPorts(context: GitpodExtensionContext) {
 	let supervisorPortList: PortsStatus.AsObject[] = [];
@@ -41,7 +42,7 @@ export function observePortsStatus(context: GitpodExtensionContext): [vscode.Eve
 					evts.on('data', (resp: PortsStatusResponse) => onPortUpdate.fire(resp.getPortsList().map(p => p.toObject())));
 				});
 			} catch (err) {
-				if (!('code' in err && err.code === grpc.status.CANCELLED)) {
+				if (!isGRPCErrorStatus(err, grpc.status.CANCELLED)) {
 					context.logger.error('cannot maintain connection to supervisor', err);
 					console.error('cannot maintain connection to supervisor', err);
 				}
