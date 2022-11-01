@@ -4,7 +4,6 @@
 import * as vscode from 'vscode';
 import { GitpodExtensionContext, ExposedServedGitpodWorkspacePort, GitpodWorkspacePort, isExposedServedGitpodWorkspacePort, isExposedServedPort, PortInfo } from 'gitpod-shared';
 import { PortsStatus } from '@gitpod/supervisor-api-grpc/lib/status_pb';
-import { isUserOverrideSetting } from './experiments';
 
 const PortCommands = <const>['tunnelNetwork', 'tunnelHost', 'makePublic', 'makePrivate', 'preview', 'openBrowser', 'retryAutoExpose', 'urlCopy', 'queryPortData'];
 
@@ -124,11 +123,11 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 				await vscode.env.clipboard.writeText(port.status.exposed.url);
 				this.context.fireAnalyticsEvent({
 					eventName: 'vscode_execute_command_gitpod_ports',
-					properties: { action: 'urlCopy', isWebview: true, userOverride: String(isUserOverrideSetting('gitpod.experimental.portsView.enabled')) }
+					properties: { action: 'urlCopy' }
 				});
 				return;
 			}
-			vscode.commands.executeCommand('gitpod.ports.' + message.command, { port, isWebview: true });
+			vscode.commands.executeCommand('gitpod.ports.' + message.command, { port });
 		});
 	}
 }
