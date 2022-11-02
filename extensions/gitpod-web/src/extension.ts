@@ -27,7 +27,7 @@ import { ReleaseNotes } from './releaseNotes';
 import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
 import { ExperimentalSettings } from './experiments';
 import { GitpodPortViewProvider } from './portViewProvider';
-import { isGRPCErrorStatus } from 'gitpod-shared/src/common/utils';
+import { isGRPCErrorStatus } from 'gitpod-shared/out/common/utils';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
