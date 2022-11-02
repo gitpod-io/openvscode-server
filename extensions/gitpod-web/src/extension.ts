@@ -10,7 +10,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as uuid from 'uuid';
-import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli, ExposedServedGitpodWorkspacePort, GitpodWorkspacePort, isExposedServedGitpodWorkspacePort } from 'gitpod-shared';
+import { GitpodPluginModel, GitpodExtensionContext, setupGitpodContext, registerTasks, registerIpcHookCli, ExposedServedGitpodWorkspacePort, GitpodWorkspacePort, isExposedServedGitpodWorkspacePort, isGRPCErrorStatus } from 'gitpod-shared';
 import { GetTokenRequest } from '@gitpod/supervisor-api-grpc/lib/token_pb';
 import { PortsStatus, PortsStatusRequest, PortsStatusResponse, PortVisibility } from '@gitpod/supervisor-api-grpc/lib/status_pb';
 import { TunnelVisiblity, TunnelPortRequest, RetryAutoExposeRequest, CloseTunnelRequest } from '@gitpod/supervisor-api-grpc/lib/port_pb';
@@ -27,7 +27,6 @@ import { ReleaseNotes } from './releaseNotes';
 import { registerWelcomeWalkthroughContribution, WELCOME_WALKTROUGH_KEY } from './welcomeWalktrough';
 import { ExperimentalSettings } from './experiments';
 import { GitpodPortViewProvider } from './portViewProvider';
-import { isGRPCErrorStatus } from 'gitpod-shared/out/common/utils';
 
 let gitpodContext: GitpodExtensionContext | undefined;
 export async function activate(context: vscode.ExtensionContext) {
