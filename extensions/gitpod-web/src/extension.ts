@@ -501,7 +501,7 @@ async function registerPorts(context: GitpodExtensionContext): Promise<void> {
 		const request = new TunnelPortRequest();
 		request.setPort(tunnelOptions.remoteAddress.port);
 		request.setTargetPort(tunnelOptions.localAddressPort || tunnelOptions.remoteAddress.port);
-		request.setVisibility(!!tunnelOptions?.public ? TunnelVisiblity.NETWORK : TunnelVisiblity.HOST);
+		request.setVisibility(tunnelOptions.privacy === 'public' ? TunnelVisiblity.NETWORK : TunnelVisiblity.HOST);
 		await util.promisify(context.supervisor.port.tunnel.bind(context.supervisor.port, request, context.supervisor.metadata, {
 			deadline: Date.now() + context.supervisor.deadlines.normal
 		}))();

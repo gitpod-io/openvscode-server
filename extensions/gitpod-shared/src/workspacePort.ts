@@ -115,8 +115,7 @@ export class GitpodWorkspacePort {
 
 		const accessible = exposed || tunnel;
 
-		// We use .public here because https://github.com/gitpod-io/openvscode-server/pull/360#discussion_r882953586
-		const isPortTunnelPublic = !!tunnel?.public;
+		const isPortTunnelPublic = tunnel?.privacy === 'public';
 		if (!served) {
 			port.description = 'not served';
 			port.iconStatus = 'NotServed';

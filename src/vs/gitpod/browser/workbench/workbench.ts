@@ -29,8 +29,9 @@ import type { ICommand, ITunnel, ITunnelProvider, IWorkbenchConstructionOptions 
 import type { IWorkspace, IWorkspaceProvider } from 'vs/workbench/services/host/browser/browserHostService';
 import { defaultWebSocketFactory } from 'vs/platform/remote/browser/browserSocketFactory';
 import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from 'vs/platform/remote/common/remoteAuthorityResolver';
-import { extractLocalHostUriMetaDataForPortMapping, isLocalhost } from 'vs/platform/tunnel/common/tunnel';
+import { extractLocalHostUriMetaDataForPortMapping, isLocalhost, TunnelPrivacyId } from 'vs/platform/tunnel/common/tunnel';
 import { ColorScheme } from 'vs/platform/theme/common/theme';
+import type { TunnelOptions } from 'vscode';
 
 const loadingGrpc = import('@improbable-eng/grpc-web');
 const loadingLocalApp = (async () => {
@@ -655,7 +656,7 @@ async function doStart(): Promise<IDisposable> {
 	class Tunnel implements ITunnel {
 		localAddress: string;
 		remoteAddress: { port: number; host: string };
-		public?: boolean;
+		privacy?: string;
 
 		private readonly onDidDisposeEmitter = new Emitter<void>();
 		readonly onDidDispose = this.onDidDisposeEmitter.event;
@@ -668,7 +669,7 @@ async function doStart(): Promise<IDisposable> {
 				port: status.remotePort
 			};
 			this.localAddress = 'http://localhost:' + status.localPort;
-			this.public = status.visibility === TunnelVisiblity.NETWORK;
+			this.privacy = status.visibility === TunnelVisiblity.NETWORK ? TunnelPrivacyId.Public : TunnelPrivacyId.Private;
 		}
 		async dispose(close = true): Promise<void> {
 			if (this.disposed) {
@@ -724,14 +725,14 @@ async function doStart(): Promise<IDisposable> {
 								toDispose.delete(status.getRemotePort());
 								const tunnel = new Tunnel(status.toObject());
 								const existing = tunnels.get(status.getRemotePort());
-								if (!existing || existing.public !== tunnel.public) {
+								if (!existing || existing.privacy !== tunnel.privacy) {
 									existing?.dispose(false);
 									tunnels.set(status.getRemotePort(), tunnel);
 									commands.executeCommand('gitpod.vscode.workspace.openTunnel', {
 										remoteAddress: tunnel.remoteAddress,
 										localAddressPort: tunnel.remoteAddress.port,
-										public: tunnel.public
-									});
+										privacy: tunnel.privacy
+									} as TunnelOptions);
 									notify = true;
 								}
 							}
@@ -795,13 +796,13 @@ async function doStart(): Promise<IDisposable> {
 				remoteAddress: { port: number; host: string };
 				//The complete local address(ex. localhost:1234)
 				localAddress: { port: number; host: string } | string;
-				public?: boolean;
+				privacy?: string;
 			}[] = [];
 			for (const tunnel of tunnels.values()) {
 				result.push({
 					remoteAddress: tunnel.remoteAddress,
 					localAddress: tunnel.localAddress,
-					public: tunnel.public
+					privacy: tunnel.privacy
 				});
 			}
 			return result;
