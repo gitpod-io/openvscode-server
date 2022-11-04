@@ -38,7 +38,7 @@ let readAccessTracked = false;
 let writeAccessTracked = false;
 
 export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any, extraData?: any): IDEMetric[] | undefined {
-	const maybeMetrics = doMapMetrics(source, eventName, data);
+	const maybeMetrics = doMapMetrics(source, eventName, data, extraData);
 	return maybeMetrics instanceof Array ? maybeMetrics : typeof maybeMetrics === 'object' ? [maybeMetrics] : undefined;
 }
 
