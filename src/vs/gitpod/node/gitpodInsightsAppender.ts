@@ -56,14 +56,22 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	private readonly supervisor = new SupervisorConnection();
 	private readonly devMode = this.productName.endsWith(' Dev');
 	private gitpodUserId: string | undefined;
+	private galleryHost: string | undefined;
 
-	constructor(private productName: string, private productVersion: string, private readonly gitpodPreview?: IGitpodPreviewConfiguration) {
+	constructor(
+		private productName: string,
+		private productVersion: string,
+		private readonly gitpodPreview?: IGitpodPreviewConfiguration,
+		readonly galleryServiceUrl?: string
+	) {
 		this._asyncAIClient = null;
 		this._baseProperties = {
 			appName: productName,
 			uiKind: 'web',
 			version: productVersion,
 		};
+		this.galleryHost = galleryServiceUrl ? new URL(galleryServiceUrl).host : undefined;
+
 		this._withAIClient(async (client) => {
 			this.gitpodUserId = (await client.getLoggedInUser()).id;
 		});
@@ -136,7 +144,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 
 	private async sendMetrics(data: any, eventName: string): Promise<void> {
 		try {
-			const metrics = mapMetrics('remote-server', eventName, data);
+			const metrics = mapMetrics('remote-server', eventName, data, { galleryHost: this.galleryHost });
 			if (!metrics || !metrics.length) {
 				return;
 			}
