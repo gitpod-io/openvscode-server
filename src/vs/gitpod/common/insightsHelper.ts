@@ -37,12 +37,12 @@ function getEventName(name: string) {
 let readAccessTracked = false;
 let writeAccessTracked = false;
 
-export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | undefined {
-	const maybeMetrics = doMapMetrics(source, eventName, data);
+export function mapMetrics(source: 'window' | 'remote-server', eventName: string, data: any, extraData?: any): IDEMetric[] | undefined {
+	const maybeMetrics = doMapMetrics(source, eventName, data, extraData);
 	return maybeMetrics instanceof Array ? maybeMetrics : typeof maybeMetrics === 'object' ? [maybeMetrics] : undefined;
 }
 
-function doMapMetrics(source: 'window' | 'remote-server', eventName: string, data: any): IDEMetric[] | IDEMetric | undefined {
+function doMapMetrics(source: 'window' | 'remote-server', eventName: string, data: any, extraData?: any): IDEMetric[] | IDEMetric | undefined {
 	if (source === 'remote-server') {
 		if (eventName.startsWith('extensionGallery:')) {
 			const operation = eventName.split(':')[1];
@@ -53,6 +53,7 @@ function doMapMetrics(source: 'window' | 'remote-server', eventName: string, dat
 					labels: {
 						operation,
 						status: data.success ? 'success' : 'failure',
+						galleryHost: extraData.galleryHost
 						// TODO errorCode
 					}
 				}];
@@ -61,7 +62,8 @@ function doMapMetrics(source: 'window' | 'remote-server', eventName: string, dat
 						kind: 'histogram',
 						name: 'gitpod_vscode_extension_gallery_operation_duration_seconds',
 						labels: {
-							operation
+							operation,
+							galleryHost: extraData.galleryHost
 						},
 						value: data.duration / 1000
 					});
@@ -77,11 +79,14 @@ function doMapMetrics(source: 'window' | 'remote-server', eventName: string, dat
 					status: data.success ? 'success' : 'failure',
 					statusCode: data.statusCode,
 					errorCode: data.errorCode,
+					galleryHost: extraData.galleryHost
 				}
 			}, {
 				kind: 'histogram',
 				name: 'gitpod_vscode_extension_gallery_query_duration_seconds',
-				labels: {},
+				labels: {
+					galleryHost: extraData.galleryHost
+				},
 				value: data.duration / 1000
 			}];
 			return metrics;

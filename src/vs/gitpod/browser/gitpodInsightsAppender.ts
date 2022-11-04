@@ -20,6 +20,8 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	private readonly _baseProperties: { appName: string; uiKind: 'web'; version: string };
 	private readonly devMode = this.productService.nameShort.endsWith(' Dev');
 	private gitpodUserId: string | undefined;
+	private galleryHost: string | undefined;
+
 	constructor(
 		@IProductService private readonly productService: IProductService
 	) {
@@ -28,6 +30,8 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 			uiKind: 'web',
 			version: this.productService.version,
 		};
+		this.galleryHost = this.productService.extensionsGallery?.serviceUrl ? new URL(this.productService.extensionsGallery?.serviceUrl).host : undefined;
+
 		window.gitpod?.service.server.getLoggedInUser().then((user) => {
 			this.gitpodUserId = user.id;
 		}).catch((e) => {
@@ -71,7 +75,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 
 	private async sendMetrics(eventName: string, data: any): Promise<void> {
 		try {
-			const metrics = mapMetrics('window', eventName, data);
+			const metrics = mapMetrics('window', eventName, data, { galleryHost: this.galleryHost });
 			if (!metrics || !metrics.length) {
 				return;
 			}
