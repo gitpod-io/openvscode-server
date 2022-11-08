@@ -696,5 +696,16 @@
 	},
 	"linkProtectionTrustedDomains": [
 		"https://open-vsx.org"
+	],
+	"trustedExtensionAuthAccess": [
+		"vscode.git",
+		"vscode.github",
+		"ms-vscode.remote-repositories",
+		"github.remotehub",
+		"github.vscode-pull-request-github",
+		"ms-vscode.vscode-github-issue-notebooks",
+		"ms-vsliveshare.vsliveshare",
+		"github.copilot",
+		"gitpod.gitpod-web"
 	]
 }
