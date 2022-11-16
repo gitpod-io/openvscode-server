@@ -46,6 +46,9 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 
 	const galleryUrl: string | undefined = (await getVSCodeProductJson()).extensionsGallery?.serviceUrl;
 	if (galleryUrl) {
+		const controller = new AbortController();
+		setTimeout(() => controller.abort(), 30000);
+		token.onCancellationRequested(() => controller.abort());
 		const queryResult: IRawGalleryQueryResult | undefined = await fetch(
 			`${galleryUrl}/extensionquery`,
 			{
@@ -53,7 +56,8 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 				headers: {
 					'Content-Type': 'application/json',
 					'Accept': 'application/json;api-version=3.0-preview.1',
-					'Accept-Encoding': 'gzip'
+					'Accept-Encoding': 'gzip',
+					'X-Market-Client-Id': `VSCode ${vscode.version}`
 				},
 				body: JSON.stringify({
 					filters: [{
@@ -69,7 +73,8 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 					}],
 					flags: 950
 				}),
-				timeout: 2000
+				// @ts-ignore
+				signal: controller.signal,
 			}
 		).then(resp => {
 			if (!resp.ok) {
@@ -78,6 +83,9 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 			}
 			return resp.json() as Promise<IRawGalleryQueryResult>;
 		}, e => {
+			if (e.name === 'AbortError') {
+				return undefined;
+			}
 			console.error('Fetch failed while querying gallery service', e);
 			return undefined;
 		});
