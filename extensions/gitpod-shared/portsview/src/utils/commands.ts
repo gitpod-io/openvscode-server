@@ -4,6 +4,8 @@
 
 import nlsFile from 'package.nls.json';
 import type { GitpodPortObject, PortCommand } from '../protocol/gitpod';
+// eslint-disable-next-line no-duplicate-imports
+import { PortCommands } from '../protocol/gitpod';
 
 // TODO: use vscode-nls
 export function getNLSTitle(command: PortCommand) {
@@ -26,6 +28,13 @@ export const commandIconMap: Record<PortCommand, string> = {
 	urlCopy: 'copy',
 	queryPortData: '',
 };
+
+let supportedCommands: PortCommand[] = [...PortCommands];
+window.addEventListener('message', (event) => {
+	if (event.data.command === 'supportedCommands') {
+		supportedCommands = event.data.commands;
+	}
+});
 
 export function getCommands(port: GitpodPortObject): PortCommand[] {
 	return getSplitCommands(port).filter(e => !!e) as PortCommand[];
@@ -58,6 +67,9 @@ export function getSplitCommands(port: GitpodPortObject) {
 			opts.push(null);
 		}
 		opts.push('retryAutoExpose');
+	}
+	if (supportedCommands.length > 0) {
+		return opts.filter(e => e === null || supportedCommands.includes(e));
 	}
 	return opts;
 }

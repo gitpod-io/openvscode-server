@@ -9,6 +9,8 @@ const PortCommands = <const>['tunnelNetwork', 'tunnelHost', 'makePublic', 'makeP
 
 type PortCommand = typeof PortCommands[number];
 
+const supportedCommands = [...PortCommands].filter(e => e !== 'preview');
+
 export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'gitpod.portsView';
 
@@ -104,6 +106,7 @@ export class GitpodPortViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	private updateHtml(): void {
+		this._view?.webview.postMessage({ command: 'supportedCommands', commands: supportedCommands });
 		const ports = Array.from(this.portMap.values()).map(e => e.toSvelteObject());
 		this._view?.webview.postMessage({ command: 'updatePorts', ports });
 	}
