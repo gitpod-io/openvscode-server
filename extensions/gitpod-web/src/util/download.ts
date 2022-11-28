@@ -42,6 +42,8 @@ export function download(url: string, dest: string, token: vscode.CancellationTo
 			} else {
 				reject(new Error(`Download request failed, response status: ${res.statusCode} ${res.statusMessage}`));
 			}
+		}).on('error', (err) => {
+			reject(err);
 		});
 
 		if (timeout) {
