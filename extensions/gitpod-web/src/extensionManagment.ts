@@ -5,9 +5,9 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as uuid from 'uuid';
 import * as util from 'util';
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 import fetch from 'node-fetch';
 import { ThrottledDelayer } from './util/async';
 import { download } from './util/download';
@@ -15,32 +15,23 @@ import { GitpodExtensionContext, GitpodPluginModel } from 'gitpod-shared';
 import { getVSCodeProductJson } from './util/serverConfig';
 import { getVsixManifest, IRawGalleryQueryResult } from './util/extensionManagmentUtill';
 
-async function validateExtensions(extensionsToValidate: { id: string; version?: string }[], linkToValidate: string[], token: vscode.CancellationToken) {
+const downloadedCache = new Set<string>();
+
+function getLinkDownloadFile(link: string) {
+	const hash = crypto.createHash('md5').update(link).digest('hex');
+	const downloadPath = path.join(os.tmpdir(), `tmp_vsix_${hash}`);
+	return downloadPath;
+}
+
+interface ValidateResults {
+	extensions: string[];
+	missingMachined: string[];
+	uninstalled: string[];
+	linkExtMap: Record<string, string>;
+}
+
+async function validateExtensions(extensionsToValidate: { id: string; version?: string }[], linkToValidate: string[], token: vscode.CancellationToken): Promise<ValidateResults | undefined> {
 	const allUserExtensions = vscode.extensions.all.filter(ext => !ext.packageJSON['isBuiltin'] && !ext.packageJSON['isUserBuiltin']);
-
-	const lookup = new Set<string>(extensionsToValidate.map(({ id }) => id));
-	const uninstalled = new Set<string>([...lookup]);
-	lookup.add('github.vscode-pull-request-github');
-	const missingMachined = new Set<string>();
-	for (const extension of allUserExtensions) {
-		const id = extension.id.toLowerCase();
-		const packageBytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(extension.extensionUri, 'package.json'));
-		const rawPackage = JSON.parse(packageBytes.toString());
-		const isMachineScoped = !!rawPackage['__metadata']?.['isMachineScoped'];
-		uninstalled.delete(id);
-		if (isMachineScoped && !lookup.has(id)) {
-			missingMachined.add(id);
-		}
-
-		if (token.isCancellationRequested) {
-			return {
-				extensions: [],
-				missingMachined: [],
-				uninstalled: [],
-				links: []
-			};
-		}
-	}
 
 	const validatedExtensions = new Set<string>();
 
@@ -91,12 +82,7 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 		});
 
 		if (token.isCancellationRequested) {
-			return {
-				extensions: [],
-				missingMachined: [],
-				uninstalled: [],
-				links: []
-			};
+			return undefined;
 		}
 
 		if (queryResult) {
@@ -107,26 +93,61 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 		}
 	}
 
-	const links = new Set<string>();
-	for (const link of linkToValidate) {
-		const downloadPath = path.join(os.tmpdir(), uuid.v4());
-		try {
-			await download(link, downloadPath, token, 10000);
-			const manifest = await getVsixManifest(downloadPath);
-			if (manifest.engines?.vscode) {
-				links.add(link);
+	const downloadResult = await Promise.allSettled(linkToValidate.map(link => {
+		const downloadPath = getLinkDownloadFile(link);
+		if (downloadedCache.has(link)) {
+			return Promise.resolve(downloadPath);
+		}
+		return download(link, downloadPath, token, 30000).then(() => {
+			downloadedCache.add(link);
+			return downloadPath;
+		});
+	}));
+
+	if (token.isCancellationRequested) {
+		return undefined;
+	}
+
+	const linkExtMap = new Map<string, string>();
+	for (let i = 0; i < linkToValidate.length; i++) {
+		const link = linkToValidate[i];
+		const result = downloadResult[i];
+		if (result.status === 'rejected') {
+			console.error('Failed to download vsix url ' + link, result.reason);
+		} else {
+			try {
+				const manifest = await getVsixManifest(result.value);
+				if (manifest.engines?.vscode) {
+					const extId = `${manifest.publisher}.${manifest.name}`.toLowerCase();
+					linkExtMap.set(link, extId);
+				}
+			} catch (e) {
+				console.error('Failed to validate vsix from url ' + link, e);
 			}
-		} catch (error) {
-			console.error('Failed to validate vsix url', error);
+		}
+	}
+
+	if (token.isCancellationRequested) {
+		return undefined;
+	}
+
+	const lookup = new Set<string>([...extensionsToValidate.map(({ id }) => id), ...linkExtMap.values()]);
+	const uninstalled = new Set<string>([...lookup]);
+	lookup.add('github.vscode-pull-request-github');
+	const missingMachined = new Set<string>();
+	for (const extension of allUserExtensions) {
+		const id = extension.id.toLowerCase();
+		const packageBytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(extension.extensionUri, 'package.json'));
+		const rawPackage = JSON.parse(packageBytes.toString());
+		const isMachineScoped = !!rawPackage['__metadata']?.['isMachineScoped'];
+		uninstalled.delete(id);
+
+		if (isMachineScoped && !lookup.has(id)) {
+			missingMachined.add(id);
 		}
 
 		if (token.isCancellationRequested) {
-			return {
-				extensions: [],
-				missingMachined: [],
-				uninstalled: [],
-				links: []
-			};
+			return undefined;
 		}
 	}
 
@@ -134,7 +155,7 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 		extensions: [...validatedExtensions],
 		missingMachined: [...missingMachined],
 		uninstalled: [...uninstalled],
-		links: [...links]
+		linkExtMap: Object.fromEntries(linkExtMap),
 	};
 }
 
@@ -187,6 +208,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 	const deprecatedUserExtensionMessage = 'user uploaded extensions are deprecated';
 	const extensionNotFoundMessageSuffix = ' extension is not found in Open VSX';
 	const invalidVSIXLinkMessageSuffix = ' does not point to a valid VSIX file';
+	const invalidVSIXLinkNotInstalledMessageSuffix = ' VSIX file is not installed yet';
 	const missingExtensionMessageSuffix = ' extension is not synced, but not added in .gitpod.yml';
 	const uninstalledExtensionMessageSuffix = ' extension is not installed, but not removed from .gitpod.yml';
 	const gitpodDiagnostics = vscode.languages.createDiagnosticCollection('gitpod');
@@ -247,11 +269,11 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 							link = vscode.Uri.parse(extension.trim(), true);
 							if (link.scheme !== 'http' && link.scheme !== 'https') {
 								link = undefined;
+							} else {
+								toLink.set(link.toString(), new vscode.Range(document.positionAt(item.range[0]), document.positionAt(item.range[1])));
 							}
 						} catch { }
-						if (link) {
-							toLink.set(link.toString(), new vscode.Range(document.positionAt(item.range[0]), document.positionAt(item.range[1])));
-						} else {
+						if (!link) {
 							const [idAndVersion, hash] = extension.trim().split(':', 2);
 							if (hash) {
 								const hashOffset = item.range[0] + extension.indexOf(':');
@@ -286,8 +308,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 					const extensionsToValidate = [...toFind.entries()].map(([id, { version }]) => ({ id, version }));
 					const linksToValidate = [...toLink.keys()];
 					const result = await validateExtensions(extensionsToValidate, linksToValidate, token);
-
-					if (token.isCancellationRequested) {
+					if (!result) {
 						return;
 					}
 
@@ -307,13 +328,17 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 						pushDiagnostic(diagnostic);
 					}
 
-					for (const link of result.links) {
-						toLink.delete(link);
-					}
 					for (const [link, range] of toLink) {
-						const diagnostic = new vscode.Diagnostic(range, link + invalidVSIXLinkMessageSuffix, vscode.DiagnosticSeverity.Error);
-						diagnostic.source = 'gitpod';
-						pushDiagnostic(diagnostic);
+						const extId = result.linkExtMap[link];
+						if (!extId) {
+							const diagnostic = new vscode.Diagnostic(range, link + invalidVSIXLinkMessageSuffix, vscode.DiagnosticSeverity.Error);
+							diagnostic.source = 'gitpod';
+							pushDiagnostic(diagnostic);
+						} else if (result.uninstalled.includes(extId)) {
+							const diagnostic = new vscode.Diagnostic(range, link + invalidVSIXLinkNotInstalledMessageSuffix, vscode.DiagnosticSeverity.Warning);
+							diagnostic.source = 'gitpod';
+							pushDiagnostic(diagnostic);
+						}
 					}
 
 					for (const id of result.missingMachined) {
@@ -386,6 +411,11 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 						const link = diagnostic.message.substr(0, invalidVSIXIndex);
 						codeActions.push(createRemoveFromConfigCodeAction(link, diagnostic, document));
 					}
+					const uninstalledVSIXIndex = diagnostic.message.indexOf(invalidVSIXLinkNotInstalledMessageSuffix);
+					if (uninstalledVSIXIndex !== -1) {
+						const link = diagnostic.message.substr(0, uninstalledVSIXIndex);
+						codeActions.push(createURLInstallFromConfigCodeAction(link, vscode.Uri.parse(getLinkDownloadFile(link)), diagnostic));
+					}
 				}
 				return codeActions;
 			}
@@ -449,6 +479,19 @@ function createInstallFromConfigCodeAction(id: string, diagnostic: vscode.Diagno
 		title: title,
 		command: 'gitpod.extensions.installFromConfig',
 		arguments: [id]
+	};
+	return codeAction;
+}
+
+function createURLInstallFromConfigCodeAction(id: string, url: vscode.Uri, diagnostic: vscode.Diagnostic) {
+	const title = `Install ${id} extension from .gitpod.yml.`;
+	const codeAction = new vscode.CodeAction(title, vscode.CodeActionKind.QuickFix);
+	codeAction.diagnostics = [diagnostic];
+	codeAction.isPreferred = false;
+	codeAction.command = {
+		title: title,
+		command: 'gitpod.extensions.installFromConfig',
+		arguments: [url]
 	};
 	return codeAction;
 }
