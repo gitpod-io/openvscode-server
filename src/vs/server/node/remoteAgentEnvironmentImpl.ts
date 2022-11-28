@@ -29,6 +29,10 @@ import { IExtensionsScannerService, toExtensionDescription } from 'vs/platform/e
 import { dedupExtensions } from 'vs/workbench/services/extensions/common/extensionsUtil';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { ExtensionManagementCLI } from 'vs/platform/extensionManagement/common/extensionManagementCLI';
+import { IDownloadService } from 'vs/platform/download/common/download';
+import { joinPath } from 'vs/base/common/resources';
+import { tmpdir } from 'os';
+import { generateUuid } from 'vs/base/common/uuid';
 
 export class RemoteAgentEnvironmentChannel implements IServerChannel {
 
@@ -44,6 +48,7 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 		private readonly _logService: ILogService,
 		private readonly _extensionHostStatusService: IExtensionHostStatusService,
 		private readonly _extensionsScannerService: IExtensionsScannerService,
+		private readonly _downloadService: IDownloadService,
 	) {
 		if (_environmentService.args['install-builtin-extension']) {
 			const installOptions: InstallOptions = { isMachineScoped: !!_environmentService.args['do-not-sync'], installPreReleaseVersion: !!_environmentService.args['pre-release'] };
@@ -57,11 +62,34 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 
 		const extensionsToInstall = _environmentService.args['install-extension'];
 		if (extensionsToInstall) {
-			const idsOrVSIX = extensionsToInstall.map(input => /\.vsix$/i.test(input) ? URI.file(isAbsolute(input) ? input : join(cwd(), input)) : input);
+			const idsOrVSIX = extensionsToInstall.map(input => {
+				if (/\.vsix$/i.test(input)) {
+					if (/^https?:\/\//.test(input)) {
+						return URI.parse(input);
+					}
+					if (!isAbsolute(input)) {
+						return join(cwd(), input);
+					}
+					return URI.file(input);
+				}
+				return input;
+			});
+			const whenExtensionDownloaded = Promise.all(idsOrVSIX.map(async extension => {
+				if (extension instanceof URI && extension.scheme !== Schemas.file) {
+					const location = joinPath(URI.file(tmpdir()), generateUuid());
+					await this._downloadService.download(extension, location);
+					return location;
+				} else {
+					return extension;
+				}
+			}));
 			this.whenExtensionsReady
-				.then(() => extensionManagementCLI.installExtensions(idsOrVSIX, [], { isMachineScoped: !!_environmentService.args['do-not-sync'], installPreReleaseVersion: !!_environmentService.args['pre-release'] }, !!_environmentService.args['force']))
-				.then(null, error => {
-					_logService.error(error);
+				.then(() => {
+					whenExtensionDownloaded.then(idsOrVSIX => {
+						extensionManagementCLI.installExtensions(idsOrVSIX, [], { isMachineScoped: !!_environmentService.args['do-not-sync'], installPreReleaseVersion: !!_environmentService.args['pre-release'] }, !!_environmentService.args['force']);
+					}).then(null, error => {
+						_logService.error(error);
+					});
 				});
 		}
 
