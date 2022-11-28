@@ -78,6 +78,7 @@ import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
 import { LoggerService } from 'vs/platform/log/node/loggerService';
 import { URI } from 'vs/base/common/uri';
 import { BufferLogService } from 'vs/platform/log/common/bufferLog';
+import { DownloadService } from 'vs/platform/download/common/downloadService';
 import { ServerUserDataProfilesService } from 'vs/platform/userDataProfile/node/userDataProfile';
 
 const eventPrefix = 'monacoworkbench';
@@ -199,9 +200,10 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	services.set(ICredentialsMainService, new SyncDescriptor(CredentialsWebMainService));
 
 	instantiationService.invokeFunction(accessor => {
+		const nativeDownloadService = new DownloadService(accessor.get(IRequestService), accessor.get(IFileService));
 		const extensionManagementService = accessor.get(INativeServerExtensionManagementService);
 		const extensionsScannerService = accessor.get(IExtensionsScannerService);
-		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, userDataProfilesService, instantiationService.createInstance(ExtensionManagementCLI), logService, extensionHostStatusService, extensionsScannerService);
+		const remoteExtensionEnvironmentChannel = new RemoteAgentEnvironmentChannel(connectionToken, environmentService, userDataProfilesService, instantiationService.createInstance(ExtensionManagementCLI), logService, extensionHostStatusService, extensionsScannerService, nativeDownloadService);
 		socketServer.registerChannel('remoteextensionsenvironment', remoteExtensionEnvironmentChannel);
 
 		const telemetryChannel = new ServerTelemetryChannel(accessor.get(IServerTelemetryService), oneDsAppender);
