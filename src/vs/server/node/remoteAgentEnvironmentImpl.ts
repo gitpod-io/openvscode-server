@@ -77,19 +77,20 @@ export class RemoteAgentEnvironmentChannel implements IServerChannel {
 			const whenExtensionDownloaded = Promise.all(idsOrVSIX.map(async extension => {
 				if (extension instanceof URI && extension.scheme !== Schemas.file) {
 					const location = joinPath(URI.file(tmpdir()), generateUuid());
-					await this._downloadService.download(extension, location);
+					try {
+						await this._downloadService.download(extension, location);
+					} catch (e) {
+						_logService.error(`Error downloading external vsix`, e);
+					}
 					return location;
 				} else {
 					return extension;
 				}
 			}));
 			this.whenExtensionsReady
-				.then(() => {
-					whenExtensionDownloaded.then(idsOrVSIX => {
-						extensionManagementCLI.installExtensions(idsOrVSIX, [], { isMachineScoped: !!_environmentService.args['do-not-sync'], installPreReleaseVersion: !!_environmentService.args['pre-release'] }, !!_environmentService.args['force']);
-					}).then(null, error => {
-						_logService.error(error);
-					});
+				.then(() => whenExtensionDownloaded.then(idsOrVSIX => extensionManagementCLI.installExtensions(idsOrVSIX, [], { isMachineScoped: !!_environmentService.args['do-not-sync'], installPreReleaseVersion: !!_environmentService.args['pre-release'] }, !!_environmentService.args['force'])))
+				.then(null, error => {
+					_logService.error(error);
 				});
 		}
 
