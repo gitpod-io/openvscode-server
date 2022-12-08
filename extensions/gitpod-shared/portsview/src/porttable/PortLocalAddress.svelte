@@ -21,7 +21,7 @@
 <PortHoverActions
 	{port}
 	alwaysShow
-	on:command={(e) => { console.log(e); dispatch("command", { command: e.detail, port}) }}
+	on:command={(e) => { dispatch("command", { command: e.detail, port}) }}
 >
 <!-- svelte-ignore a11y-invalid-attribute -->
 	<a on:click={() => { openAddr(); return false; }} href="javascript:void(0)">{port.status.exposed.url}</a>
