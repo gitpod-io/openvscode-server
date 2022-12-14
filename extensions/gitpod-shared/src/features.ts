@@ -870,10 +870,11 @@ export async function registerTasks(context: GitpodExtensionContext): Promise<vo
 				iconPath: new vscode.ThemeIcon('terminal'),
 				location: parentTerminal ? { parentTerminal } : vscode.TerminalLocation.Panel
 			});
-			terminal.show();
 			prevTerminal = terminal;
 		}
 	}
+	// Focus last created terminal
+	prevTerminal?.show();
 }
 
 function createTaskPty(alias: string, context: GitpodExtensionContext, contextToken: vscode.CancellationToken): vscode.Pseudoterminal {
