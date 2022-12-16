@@ -71,6 +71,9 @@ export class ReleaseNotes extends Disposable {
 				ttl: this.getResponseCacheTime(resp),
 			};
 		});
+		if (!md) {
+			return;
+		}
 
 		const parseInfo = (md: string) => {
 			if (!md.startsWith('---')) {
@@ -113,7 +116,15 @@ export class ReleaseNotes extends Disposable {
 		}
 
 		const releaseId = await this.getLastPublish();
+		if (!releaseId) {
+			return;
+		}
+
 		const mdContent = await this.loadChangelog(releaseId);
+		if (!mdContent) {
+			return;
+		}
+
 		const html = await vscode.commands.executeCommand<string>('markdown.api.render', mdContent);
 		this.panel.webview.html = `<!DOCTYPE html>
 <html lang="en">
@@ -143,10 +154,13 @@ export class ReleaseNotes extends Disposable {
 	}
 
 	private async showIfNewRelease(lastReadId: string | undefined) {
-		const releaseId = await this.getLastPublish();
-		console.log(`gitpod release notes lastReadId: ${lastReadId}, latestReleaseId: ${releaseId}`);
-		if (releaseId !== lastReadId) {
-			this.createOrShow();
+		const showReleaseNotes = vscode.workspace.getConfiguration('gitpod').get<boolean>('showReleaseNotes');
+		if (showReleaseNotes) {
+			const releaseId = await this.getLastPublish();
+			if (releaseId && releaseId !== lastReadId) {
+				console.log(`gitpod release notes lastReadId: ${lastReadId}, latestReleaseId: ${releaseId}`);
+				this.createOrShow();
+			}
 		}
 	}
 

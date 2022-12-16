@@ -40,12 +40,15 @@ export class CacheHelper {
 		return now > data.expiration ? undefined : data.value;
 	}
 
-	async getOrRefresh<T>(key: string, refreshCallback: () => Thenable<{ value: T; ttl?: number }>): Promise<T> {
+	async getOrRefresh<T>(key: string, refreshCallback: () => Thenable<{ value: T; ttl?: number }>): Promise<T | undefined> {
 		let value = this.get<T>(key);
 		if (value === undefined) {
-			const result = await refreshCallback();
-			await this.set(key, result.value, result.ttl);
-			value = result.value;
+			try {
+				const result = await refreshCallback();
+				await this.set(key, result.value, result.ttl);
+				value = result.value;
+			} catch {
+			}
 		}
 		return value;
 	}

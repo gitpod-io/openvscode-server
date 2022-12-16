@@ -507,6 +507,12 @@
           "type": "boolean",
           "description": "Control whether to prompt to open in VS Code Desktop on page load.",
           "default": false
+        },
+        "gitpod.showReleaseNotes": {
+          "type": "boolean",
+          "description": "Show the Gitpod Changelog whenever a new one comes out.",
+          "default": true,
+          "scope": "application"
         }
       }
     },
