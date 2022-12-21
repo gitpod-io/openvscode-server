@@ -35,10 +35,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerAuth(gitpodContext);
 	registerPorts(gitpodContext);
 	registerTasks(gitpodContext).then(() => {
-		if (vscode.window.terminals.length === 0) {
-			// Always show a terminal if no task terminals are created
-			vscode.window.createTerminal();
-		}
+		setTimeout(() => {
+			if (vscode.window.terminals.length === 0) {
+				// Always show terminal if no task terminals are created
+				vscode.commands.executeCommand('terminal.focus', { preserveFocus: true });
+			}
+		}, 0);
 	});
 
 	registerIpcHookCli(gitpodContext);
