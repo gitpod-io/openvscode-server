@@ -4,8 +4,7 @@
 
 import path from 'path';
 import * as vscode from 'vscode';
-
-import { GitpodExtensionContext } from './features';
+import { GitpodExtensionContext } from './gitpodContext';
 
 export interface BaseGitpodAnalyticsEventPropeties {
 	sessionId: string;

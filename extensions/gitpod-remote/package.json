@@ -147,36 +147,11 @@
         "command": "gitpod.ports.tunnelHost",
         "title": "%tunnelHost%",
         "icon": "$(eye-closed)"
-      }
-    ],
-    "commandPalette": [
-      {
-        "command": "gitpod.ports.preview",
-        "when": "false"
       },
       {
-        "command": "gitpod.ports.openBrowser",
-        "when": "false"
-      },
-      {
-        "command": "gitpod.ports.retryAutoExpose",
-        "when": "false"
-      },
-      {
-        "command": "gitpod.ports.makePublic",
-        "when": "false"
-      },
-      {
-        "command": "gitpod.ports.makePrivate",
-        "when": "false"
-      },
-      {
-        "command": "gitpod.ports.tunnelNetwork",
-        "when": "false"
-      },
-      {
-        "command": "gitpod.ports.tunnelHost",
-        "when": "false"
+        "command": "gitpod.gitpodyml.build",
+        "title": "%buildGitpodYml%",
+        "icon": "$(run)"
       }
     ],
     "menus": {
@@ -255,6 +230,54 @@
           "command": "gitpod.openInBrowser",
           "group": "remote_00_gitpod_navigation@1000",
           "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'desktop'"
+        }
+      ],
+      "editor/context":[
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "0_navigation@0"
+        }
+      ],
+      "editor/title":[
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gitpod.ports.preview",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.openBrowser",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.retryAutoExpose",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.makePublic",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.makePrivate",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.tunnelNetwork",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.ports.tunnelHost",
+          "when": "false"
+        },
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled"
         }
       ]
     },

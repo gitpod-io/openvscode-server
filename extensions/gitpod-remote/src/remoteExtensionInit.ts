@@ -68,10 +68,7 @@ export async function installInitialExtensions(context: GitpodExtensionContext) 
 
 		let config: { vscode?: { extensions?: string[] } } | undefined;
 		try {
-			const configUri = vscode.Uri.file(path.join(context.info.getCheckoutLocation(), '.gitpod.yml'));
-			const buffer = await vscode.workspace.fs.readFile(configUri);
-			const content = new TextDecoder().decode(buffer);
-			const model = new context.config.GitpodPluginModel(content);
+			const model = await context.gitpodYml.getYaml();
 			config = model.document.toJSON();
 		} catch { }
 		if (config?.vscode?.extensions) {

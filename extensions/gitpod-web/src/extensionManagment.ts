@@ -3,15 +3,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
-import * as fs from 'fs';
 import * as os from 'os';
-import * as util from 'util';
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import fetch from 'node-fetch';
 import { ThrottledDelayer } from './util/async';
 import { download } from './util/download';
-import { GitpodExtensionContext, GitpodPluginModel } from 'gitpod-shared';
+import { GitpodExtensionContext, isYamlScalar, isYamlSeq } from 'gitpod-shared';
 import { getVSCodeProductJson } from './util/serverConfig';
 import { getVsixManifest, IRawGalleryQueryResult } from './util/extensionManagmentUtill';
 
@@ -160,47 +158,23 @@ async function validateExtensions(extensionsToValidate: { id: string; version?: 
 }
 
 export function registerExtensionManagement(context: GitpodExtensionContext): void {
-	const { GitpodPluginModel, isYamlSeq, isYamlScalar } = context.config;
-	const gitpodFileUri = vscode.Uri.file(path.join(context.info.getCheckoutLocation(), '.gitpod.yml'));
-
-	async function modifyGipodPluginModel(unitOfWork: (model: GitpodPluginModel) => void): Promise<void> {
-		let document: vscode.TextDocument | undefined;
-		let content = '';
-		try {
-			await util.promisify(fs.access.bind(fs))(gitpodFileUri.fsPath, fs.constants.F_OK);
-			document = await vscode.workspace.openTextDocument(gitpodFileUri);
-			content = document.getText();
-		} catch {
-			/* no-op */
-		}
-
-		const model = new GitpodPluginModel(content);
-		unitOfWork(model);
-		const edit = new vscode.WorkspaceEdit();
-		if (document) {
-			edit.replace(gitpodFileUri, document.validateRange(new vscode.Range(
-				document.positionAt(0),
-				document.positionAt(content.length)
-			)), String(model));
-		} else {
-			edit.createFile(gitpodFileUri, { overwrite: true });
-			edit.insert(gitpodFileUri, new vscode.Position(0, 0), String(model));
-		}
-		await vscode.workspace.applyEdit(edit);
-	}
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.addToConfig', (id: string) => {
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.addToConfig', async (id: string) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_config',
 			properties: { action: 'add' }
 		});
-		return modifyGipodPluginModel(model => model.add(id));
+		const yaml = await context.gitpodYml.getYaml();
+		yaml.add(id);
+		await context.gitpodYml.writeContent(yaml.toString());
 	}));
-	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.removeFromConfig', (id: string) => {
+	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.removeFromConfig', async (id: string) => {
 		context.fireAnalyticsEvent({
 			eventName: 'vscode_execute_command_gitpod_config',
 			properties: { action: 'remove' }
 		});
-		return modifyGipodPluginModel(model => model.remove(id));
+		const yaml = await context.gitpodYml.getYaml();
+		yaml.remove(id);
+		await context.gitpodYml.writeContent(yaml.toString());
 	}));
 
 	context.subscriptions.push(vscode.commands.registerCommand('gitpod.extensions.installFromConfig', (id: string) => vscode.commands.executeCommand('workbench.extensions.installExtension', id, { donotSync: true })));
@@ -236,7 +210,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 			}
 			function publishDiagnostics(): void {
 				if (!token.isCancellationRequested) {
-					gitpodDiagnostics.set(gitpodFileUri, diagnostics);
+					gitpodDiagnostics.set(context.gitpodYml.uri, diagnostics);
 				}
 			}
 			try {
@@ -244,13 +218,16 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 				const toFind = new Map<string, { version?: string; range: vscode.Range }>();
 				let document: vscode.TextDocument | undefined;
 				try {
-					document = await vscode.workspace.openTextDocument(gitpodFileUri);
+					document = await vscode.workspace.openTextDocument(context.gitpodYml.uri);
 				} catch { }
 				if (token.isCancellationRequested) {
 					return;
 				}
-				const model = document && new GitpodPluginModel(document.getText());
-				const extensions = model && model.document.getIn(['vscode', 'extensions'], true);
+				const model = await context.gitpodYml.getYaml();
+				if (token.isCancellationRequested) {
+					return;
+				}
+				const extensions = model.document.getIn(['vscode', 'extensions'], true);
 				if (document && extensions && isYamlSeq(extensions)) {
 					resolveAllDeprecated = new vscode.CodeAction('Resolve all against Open VSX.', vscode.CodeActionKind.QuickFix);
 					resolveAllDeprecated.diagnostics = [];
@@ -292,7 +269,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 					if (resolveAllDeprecated.diagnostics.length) {
 						resolveAllDeprecated.edit = new vscode.WorkspaceEdit();
 						for (const diagnostic of resolveAllDeprecated.diagnostics) {
-							resolveAllDeprecated.edit.delete(gitpodFileUri, diagnostic.range);
+							resolveAllDeprecated.edit.delete(context.gitpodYml.uri, diagnostic.range);
 						}
 					} else {
 						resolveAllDeprecated = undefined;
@@ -371,7 +348,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 	}
 
 	context.subscriptions.push(vscode.languages.registerCodeActionsProvider(
-		{ pattern: gitpodFileUri.fsPath },
+		{ pattern: context.gitpodYml.uri.fsPath },
 		{
 			provideCodeActions: (document, _, context) => {
 				const codeActions: vscode.CodeAction[] = [];
@@ -423,7 +400,7 @@ export function registerExtensionManagement(context: GitpodExtensionContext): vo
 
 	validateGitpodFile();
 	context.subscriptions.push(gitpodDiagnostics);
-	const gitpodFileWatcher = vscode.workspace.createFileSystemWatcher(gitpodFileUri.fsPath);
+	const gitpodFileWatcher = vscode.workspace.createFileSystemWatcher(context.gitpodYml.uri.fsPath);
 	context.subscriptions.push(gitpodFileWatcher);
 	context.subscriptions.push(gitpodFileWatcher.onDidCreate(() => validateGitpodFile()));
 	context.subscriptions.push(gitpodFileWatcher.onDidChange(() => validateGitpodFile()));

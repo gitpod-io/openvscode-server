@@ -24,5 +24,6 @@
 	"tunnelNetwork": "Tunnel on all interfaces",
 	"tunnelHost": "Tunnel on localhost",
 	"retryAutoExpose": "Retry to expose",
-	"openWebLinkInBrowser": "Open web link in Browser"
+	"openWebLinkInBrowser": "Open web link in Browser",
+	"buildGitpodYml": "Build container image"
 }

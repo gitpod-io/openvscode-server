@@ -168,6 +168,11 @@
       {
         "command": "gitpod.dev.enableForwardedPortsView",
         "title": "%enableForwardedPortsView%"
+      },
+      {
+        "command": "gitpod.gitpodyml.build",
+        "title": "%buildGitpodYml%",
+        "icon": "$(run)"
       }
     ],
     "menus": {
@@ -326,6 +331,10 @@
         {
           "command": "gitpod.dev.connectLocalApp",
           "when": "gitpod.localAppConnected == false"
+        },
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled"
         }
       ],
       "statusBar/remoteIndicator": [
@@ -413,6 +422,20 @@
           "command": "gitpod.openInInsiders",
           "group": "remote_00_gitpod_navigation@1000",
           "when": "gitpod.inWorkspace == true && gitpod.UIKind == 'web'"
+        }
+      ],
+      "editor/context":[
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "0_navigation@0"
+        }
+      ],
+      "editor/title":[
+        {
+          "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "navigation"
         }
       ]
     },
