@@ -25,5 +25,6 @@
 	"tunnelHost": "Tunnel on localhost",
 	"retryAutoExpose": "Retry to expose",
 	"openWebLinkInBrowser": "Open web link in Browser",
-	"buildGitpodYml": "Build container image"
+	"buildGitpodYml": "Gitpod: Build Gitpod Configuration",
+	"runGitpodYml": "Gitpod: Test Gitpod Configuration"
 }

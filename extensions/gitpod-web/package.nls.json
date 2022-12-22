@@ -29,5 +29,6 @@
 	"openInStable": "Gitpod: Open in VS Code",
 	"openInInsiders": "Gitpod: Open in VS Code Insiders",
 	"openInBrowser": "Gitpod: Open in Browser",
-	"buildGitpodYml": "Build container image"
+	"buildGitpodYml": "Gitpod: Build Gitpod Configuration",
+	"runGitpodYml": "Gitpod: Test Gitpod Configuration"
 }

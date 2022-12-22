@@ -172,7 +172,12 @@
       {
         "command": "gitpod.gitpodyml.build",
         "title": "%buildGitpodYml%",
-        "icon": "$(run)"
+        "icon": "$(tools)"
+      },
+      {
+        "command": "gitpod.gitpodyml.run",
+        "title": "%runGitpodYml%",
+        "icon": "$(play)"
       }
     ],
     "menus": {
@@ -335,6 +340,10 @@
         {
           "command": "gitpod.gitpodyml.build",
           "when": "gitpod.run-gp.enabled"
+        },
+        {
+          "command": "gitpod.gitpodyml.run",
+          "when": "gitpod.run-gp.enabled"
         }
       ],
       "statusBar/remoteIndicator": [
@@ -429,11 +438,21 @@
           "command": "gitpod.gitpodyml.build",
           "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
           "group": "0_navigation@0"
+        },
+        {
+          "command": "gitpod.gitpodyml.run",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "0_navigation@0"
         }
       ],
       "editor/title":[
         {
           "command": "gitpod.gitpodyml.build",
+          "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
+          "group": "navigation"
+        },
+        {
+          "command": "gitpod.gitpodyml.run",
           "when": "gitpod.run-gp.enabled && resourceFilename == '.gitpod.yml' && resourceScheme == file",
           "group": "navigation"
         }
