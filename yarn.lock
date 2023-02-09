@@ -372,9 +372,9 @@
   integrity sha512-lxJ9R5ygVm8ZWgYdUweoq5ownDlJ4upvoWmO4eLxBYHdMo+vZ/Rx0EN6MbKWDJOSUGrqJy2Gt+Dyv/VKml0fjg==
 
 "@gitpod/gitpod-protocol@main":
-  version "0.1.5-main.6346"
-  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-main.6346.tgz#497ff7eb4db0730b7b0f11b1569806241add9f46"
-  integrity sha512-19b1dltXoE5aRwWiL/m/1X0LMzeMtJ8Tp1onckXYpK6vZO5+TyyZ8sAbH1vI6Dn3tGYmzI5wot4Z1k/nBwtLSw==
+  version "0.1.5-main.6530"
+  resolved "https://registry.yarnpkg.com/@gitpod/gitpod-protocol/-/gitpod-protocol-0.1.5-main.6530.tgz#5c028390d4c1e0a02a8e2c0a87297af1a0a71c45"
+  integrity sha512-eykW6FUXPyFJ+eJ1Twn6u9f/yas9rrl5Qx70Pvx09azzJgSAgn+8wEJolcmrNpjBwCuJ0VycxuKJFan2yLjXCQ==
   dependencies:
     "@types/react" "17.0.32"
     abort-controller-x "^0.4.0"

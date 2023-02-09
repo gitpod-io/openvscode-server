@@ -877,6 +877,16 @@ async function doStart(): Promise<IDisposable> {
 		}
 	};
 
+	const openDesktop: ICommand = {
+		id: 'gitpod.api.openDesktop',
+		handler: (url: string) => {
+			if (!url || url.length === 0) {
+				return;
+			}
+			return window.gitpod.openDesktopIDE(url);
+		}
+	};
+
 	subscriptions.add(create(document.body, {
 		remoteAuthority,
 		webviewEndpoint,
@@ -1020,7 +1030,8 @@ async function doStart(): Promise<IDisposable> {
 		commands: [
 			getTunnels,
 			connectLocalApp,
-			getLoggedInUser
+			getLoggedInUser,
+			openDesktop,
 		]
 	}));
 	return subscriptions;
