@@ -82,10 +82,15 @@ class LocalStorageCredentialsProvider implements ICredentialsProvider {
 			try {
 				const serializedCredentials = window.localStorage.getItem(LocalStorageCredentialsProvider.CREDENTIALS_STORAGE_KEY);
 				if (serializedCredentials) {
-					this._credentials = JSON.parse(serializedCredentials);
+					if (window.gitpod.isEncryptedData && window.gitpod.isEncryptedData(serializedCredentials)) {
+						this._credentials = JSON.parse(window.gitpod.decrypt(serializedCredentials));
+					} else {
+						this._credentials = JSON.parse(serializedCredentials);
+						this.save();
+					}
 				}
 			} catch (error) {
-				// ignore
+				console.error('failed to get credentials', error);
 			}
 
 			if (!Array.isArray(this._credentials)) {
@@ -97,7 +102,13 @@ class LocalStorageCredentialsProvider implements ICredentialsProvider {
 	}
 
 	private save(): void {
-		window.localStorage.setItem(LocalStorageCredentialsProvider.CREDENTIALS_STORAGE_KEY, JSON.stringify(this.credentials));
+		let data: string = JSON.stringify(this.credentials);
+		try {
+			data = window.gitpod.encrypt(data);
+		} catch (error) {
+			console.error('failed to encrypt credentials', error);
+		}
+		window.localStorage.setItem(LocalStorageCredentialsProvider.CREDENTIALS_STORAGE_KEY, data);
 	}
 
 	async getPassword(service: string, account: string): Promise<string | null> {
