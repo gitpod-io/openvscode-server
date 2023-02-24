@@ -846,19 +846,21 @@ async function doStart(): Promise<IDisposable> {
 			if (!localhost) {
 				return uri;
 			}
-			let externalEndpoint: URI;
+			let externalEndpoint: URL;
 			const tunnel = tunnels.get(localhost.port);
 			if (tunnel) {
-				externalEndpoint = URI.parse('http://localhost:' + tunnel.status.localPort);
+				externalEndpoint = new URL('http://localhost:' + tunnel.status.localPort);
 			} else {
 				const publicUrl = (await vscode.commands.executeCommand('gitpod.resolveExternalPort', localhost.port)) as any as string;
-				externalEndpoint = URI.parse(publicUrl);
+				externalEndpoint = new URL(publicUrl);
 			}
-			return externalEndpoint.with({
-				path: uri.path,
-				query: uri.query,
-				fragment: uri.fragment
-			});
+			externalEndpoint.pathname = uri.path.split('/').map(s => encodeURIComponent(s)).join('/');
+			externalEndpoint.hash = encodeURIComponent(uri.fragment);
+			// vscode uri is so buggy that if the query part of a url contains percent encoded '=' or '&', it will decode it internally and the url will be invalid forever
+			// using /=(.*)/s we can split only on the first ocurrence of '=' if the value also contains a '='
+			// sadly not the case if the value contains '&' as it's possible it could signal another query param
+			uri.query.split('&').map(s => s.split(/=(.*)/s)).forEach(([k, v]) => !!k && externalEndpoint.searchParams.append(k.replaceAll('+', ' '), v?.replaceAll('+', ' ') || ''));
+			return externalEndpoint;
 		},
 		windowIndicator: {
 			onDidChange: Event.None,
