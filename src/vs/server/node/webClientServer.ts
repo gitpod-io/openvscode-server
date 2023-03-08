@@ -384,6 +384,10 @@ export class WebClientServer {
 			'Content-Type': 'text/html',
 			'Content-Security-Policy': this._environmentService.isBuilt ? cspDirectives : allowAllCSP
 		};
+		//#region Gitpod - to truly allow all CSP as on regular workspace, otherwise frame-src * does not allow arbitrary custom schemes like vscode:, vscode-insiders: or jetbrains-gateway:
+		// reconsider to enable CSP on regular workspaces as well instead, not sure how to deal with an arbitrary customer scheme though
+		delete headers['Content-Security-Policy'];
+		//#endregion
 		if (this._connectionToken.type !== ServerConnectionTokenType.None) {
 			// At this point we know the client has a valid cookie
 			// and we want to set it prolong it to ensure that this
