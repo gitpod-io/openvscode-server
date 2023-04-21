@@ -21,7 +21,7 @@ import { isIOS } from 'vs/base/common/platform';
 class TwitterFeedbackService implements IFeedbackDelegate {
 
 	private static TWITTER_URL: string = 'https://twitter.com/intent/tweet';
-	private static VIA_NAME: string = 'code';
+	private static VIA_NAME: string = 'gitpod';
 	private static HASHTAGS: string[] = ['HappyCoding'];
 
 	private combineHashTagsAsString(): string {
