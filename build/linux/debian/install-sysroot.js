@@ -70,7 +70,7 @@ async function fetchUrl(options, retries = 10, retryDelay = 1000) {
         const timeout = setTimeout(() => controller.abort(), 30 * 1000);
         const version = '20240129-253798';
         try {
-            const response = await fetch(`https://api.github.com/repos/Microsoft/vscode-linux-build-agent/releases/tags/v${version}`, {
+            const response = await fetch(`https://api.github.com/repos/gitpod-io/vscode-linux-build-agent/releases/tags/v${version}`, {
                 headers: ghApiHeaders,
                 signal: controller.signal /* Typings issue with lib.dom.d.ts */
             });
@@ -79,7 +79,7 @@ async function fetchUrl(options, retries = 10, retryDelay = 1000) {
                 const contents = Buffer.from(await response.arrayBuffer());
                 const asset = JSON.parse(contents.toString()).assets.find((a) => a.name === options.assetName);
                 if (!asset) {
-                    throw new Error(`Could not find asset in release of Microsoft/vscode-linux-build-agent @ ${version}`);
+                    throw new Error(`Could not find asset in release of gitpod-io/vscode-linux-build-agent @ ${version}`);
                 }
                 console.log(`Found asset ${options.assetName} @ ${asset.url}.`);
                 const assetResponse = await fetch(asset.url, {
