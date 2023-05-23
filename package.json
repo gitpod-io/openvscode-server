@@ -71,6 +71,8 @@
   },
   "dependencies": {
     "@gitpod/gitpod-protocol": "main-gha",
+    "@segment/analytics-node": "^1.1.0",
+    "@jeanp413/analytics-node-umd": "^1.1.0",
     "@gitpod/ide-metrics-api-grpcweb": "main-gha",
     "@gitpod/local-app-api-grpcweb": "main-gha",
     "@gitpod/supervisor-api-grpc": "main-gha",

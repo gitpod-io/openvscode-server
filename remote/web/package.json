@@ -4,6 +4,7 @@
 	"private": true,
 	"dependencies": {
 		"@gitpod/ide-metrics-api-grpcweb": "main-gha",
+		"@jeanp413/analytics-node-umd": "^1.1.0",
 		"@gitpod/local-app-api-grpcweb": "main-gha",
 		"@microsoft/1ds-core-js": "^3.2.13",
 		"@microsoft/1ds-post-js": "^3.2.13",

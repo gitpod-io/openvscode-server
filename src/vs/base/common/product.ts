@@ -192,6 +192,7 @@ export interface IProductConfiguration {
 	readonly chatWelcomeView?: IChatWelcomeView;
 	readonly chatParticipantRegistry?: string;
 
+	readonly segmentKey: string;
 	readonly gitpodPreview?: IGitpodPreviewConfiguration;
 }
 

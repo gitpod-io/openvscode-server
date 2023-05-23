@@ -66,9 +66,7 @@ import { ExtensionsScannerService } from 'vs/server/node/extensionsScannerServic
 import { IExtensionsProfileScannerService } from 'vs/platform/extensionManagement/common/extensionsProfileScannerService';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { NullPolicyService } from 'vs/platform/policy/common/policy';
-import { OneDataSystemAppender } from 'vs/platform/telemetry/node/1dsAppender';
-// eslint-disable-next-line local/code-import-patterns
-import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
+// import { OneDataSystemAppender } from 'vs/platform/telemetry/node/1dsAppender';
 import { LoggerService } from 'vs/platform/log/node/loggerService';
 import { ServerUserDataProfilesService } from 'vs/platform/userDataProfile/node/userDataProfile';
 import { ExtensionsProfileScannerService } from 'vs/platform/extensionManagement/node/extensionsProfileScannerService';
@@ -79,9 +77,11 @@ import { RemoteExtensionsScannerChannel, RemoteExtensionsScannerService } from '
 import { RemoteExtensionsScannerChannelName } from 'vs/platform/remote/common/remoteExtensionsScanner';
 import { RemoteUserDataProfilesServiceChannel } from 'vs/platform/userDataProfile/common/userDataProfileIpc';
 import { NodePtyHostStarter } from 'vs/platform/terminal/node/nodePtyHostStarter';
+// eslint-disable-next-line local/code-import-patterns
+import { GitpodInsightsAppender } from 'vs/gitpod/node/gitpodInsightsAppender';
 import { DownloadService } from 'vs/platform/download/common/downloadService';
 
-const eventPrefix = 'monacoworkbench';
+// const eventPrefix = 'monacoworkbench';
 
 export async function setupServerServices(connectionToken: ServerConnectionToken, args: ServerParsedArgs, REMOTE_DATA_FOLDER: string, disposables: DisposableStore) {
 	const services = new ServiceCollection();
@@ -153,9 +153,8 @@ export async function setupServerServices(connectionToken: ServerConnectionToken
 	let oneDsAppender: ITelemetryAppender = NullAppender;
 	const isInternal = isInternalTelemetry(productService, configurationService);
 	if (supportsTelemetry(productService, environmentService)) {
-		oneDsAppender = new GitpodInsightsAppender(productService.nameShort, productService.version, productService.gitpodPreview, productService.extensionsGallery?.serviceUrl);
-		if (!isLoggingOnly(productService, environmentService) && productService.aiConfig?.ariaKey && !oneDsAppender) {
-			oneDsAppender = new OneDataSystemAppender(requestService, isInternal, eventPrefix, null, productService.aiConfig.ariaKey);
+		if (!isLoggingOnly(productService, environmentService) && productService.aiConfig?.ariaKey) {
+			oneDsAppender = new GitpodInsightsAppender(productService.segmentKey, productService.nameShort, productService.version, productService.gitpodPreview, productService.extensionsGallery?.serviceUrl);/* new OneDataSystemAppender(requestService, isInternal, eventPrefix, null, productService.aiConfig.ariaKey); */
 			disposables.add(toDisposable(() => oneDsAppender?.flush())); // Ensure the AI appender is disposed so that it flushes remaining data
 		}
 
