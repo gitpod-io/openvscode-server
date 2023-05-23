@@ -64,3 +64,6 @@ google-protobuf/**
 
 @zip.js/**
 !@zip.js/zip.js/dist/zip-no-worker-deflate.min.js
+
+@jeanp413/analytics-node-umd/**
+!@jeanp413/analytics-node-umd/dist/umd/index.js
