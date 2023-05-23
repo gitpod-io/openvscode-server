@@ -694,6 +694,17 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
+"@jeanp413/analytics-node-umd@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@jeanp413/analytics-node-umd/-/analytics-node-umd-1.1.0.tgz#bc612e1b2ed739f3ae05480aab196fdb56277e0f"
+  integrity sha512-po9BAbfNoOVAwgULj4N9HTjnVPnghM5/s3HKPTyjJkn/JHQKuOiPHvTq35eOKyiIrUQLHv8n7nKkDx1QYgp1eg==
+  dependencies:
+    "@lukeed/uuid" "^2.0.0"
+    "@segment/analytics-core" "1.3.0"
+    buffer "^6.0.3"
+    node-fetch "^2.6.7"
+    tslib "^2.4.1"
+
 "@jridgewell/gen-mapping@^0.1.0":
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.1.1.tgz#e5d2e450306a9491e3bd77e323e38d7aff315996"
@@ -815,6 +826,18 @@
     koa-compose "^4.1.0"
     methods "^1.1.2"
     path-to-regexp "^6.2.1"
+
+"@lukeed/csprng@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@lukeed/csprng/-/csprng-1.1.0.tgz#1e3e4bd05c1cc7a0b2ddbd8a03f39f6e4b5e6cfe"
+  integrity sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==
+
+"@lukeed/uuid@^2.0.0":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@lukeed/uuid/-/uuid-2.0.1.tgz#4f6c34259ee0982a455e1797d56ac27bb040fd74"
+  integrity sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w==
+  dependencies:
+    "@lukeed/csprng" "^1.1.0"
 
 "@microsoft/1ds-core-js@3.2.13", "@microsoft/1ds-core-js@^3.2.13":
   version "3.2.13"
@@ -1081,6 +1104,44 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
+
+"@segment/analytics-core@1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@segment/analytics-core/-/analytics-core-1.3.0.tgz#677d1087af44d31266ddf60f72f93b5d5693c933"
+  integrity sha512-ujScWZH49NK1hYlp2/EMw45nOPEh+pmTydAnR6gSkRNucZD4fuinvpPL03rmFCw8ibaMuKLAdgPJfQ0gkLKZ5A==
+  dependencies:
+    "@lukeed/uuid" "^2.0.0"
+    dset "^3.1.2"
+    tslib "^2.4.1"
+
+"@segment/analytics-core@1.4.1":
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/@segment/analytics-core/-/analytics-core-1.4.1.tgz#af0e5ec31f3d1978a56dee4683af4c34b207effb"
+  integrity sha512-kV0Pf33HnthuBOVdYNani21kYyj118Fn+9757bxqoksiXoZlYvBsFq6giNdCsKcTIE1eAMqNDq3xE1VQ0cfsHA==
+  dependencies:
+    "@lukeed/uuid" "^2.0.0"
+    "@segment/analytics-generic-utils" "1.1.1"
+    dset "^3.1.2"
+    tslib "^2.4.1"
+
+"@segment/analytics-generic-utils@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@segment/analytics-generic-utils/-/analytics-generic-utils-1.1.1.tgz#8603a38cc6bce5b0b0d2edfd97518489551ae789"
+  integrity sha512-THTIzBPHnvu1HYJU3fARdJ3qIkukO3zDXsmDm+kAeUks5R9CBXOQ6rPChiASVzSmwAIIo5uFIXXnCraojlq/Gw==
+  dependencies:
+    tslib "^2.4.1"
+
+"@segment/analytics-node@^1.1.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@segment/analytics-node/-/analytics-node-1.3.0.tgz#4129ea2c5e2bc9d5795cbf5d5ad1e3071a221783"
+  integrity sha512-lRLz1WZaDokMoUe299yP5JkInc3OgJuqNNlxb6j0q22umCiq6b5iDo2gRmFn93reirIvJxWIicQsGrHd93q8GQ==
+  dependencies:
+    "@lukeed/uuid" "^2.0.0"
+    "@segment/analytics-core" "1.4.1"
+    "@segment/analytics-generic-utils" "1.1.1"
+    buffer "^6.0.3"
+    node-fetch "^2.6.7"
+    tslib "^2.4.1"
 
 "@segment/loosely-validate-event@^2.0.0":
   version "2.0.0"
@@ -4223,6 +4284,11 @@ domutils@^3.0.1:
     dom-serializer "^2.0.0"
     domelementtype "^2.3.0"
     domhandler "^5.0.3"
+
+dset@^3.1.2:
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/dset/-/dset-3.1.3.tgz#c194147f159841148e8e34ca41f638556d9542d2"
+  integrity sha512-20TuZZHCEZ2O71q9/+8BwKwZ0QtD9D8ObhrihJPr+vLLYlSuAU3/zL4cSlgbfeoGHTjCSJBa7NGcrF9/Bx/WJQ==
 
 duplexer@^0.1.1, duplexer@~0.1.1:
   version "0.1.1"
@@ -10977,6 +11043,11 @@ tslib@^2.0.0, tslib@^2.2.0:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.3.1.tgz#e8a335add5ceae51aa261d32a490158ef042ef01"
   integrity sha512-77EbyPPpMz+FRFRuAFlWMtmgUWGe9UOG2Z25NqCwiIjRhOf5iKGuzSe5P2w1laq+FkRy4p+PCuVkJSGkzTEKVw==
+
+tslib@^2.4.1:
+  version "2.5.2"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.5.2.tgz#1b6f07185c881557b0ffa84b111a0106989e8338"
+  integrity sha512-5svOrSA2w3iGFDs1HibEVBGbDrAY82bFQ3HZ3ixB+88nsbsWQoKqDRb5UBYAUPEzbBn6dAp5gRNXglySbx1MlA==
 
 tslib@^2.6.2:
   version "2.6.2"

@@ -193,6 +193,7 @@ export interface IProductConfiguration {
 	readonly gitHubEntitlement?: IGitHubEntitlement;
 	readonly chatParticipantRegistry?: string;
 
+	readonly segmentKey: string;
 	readonly gitpodPreview?: IGitpodPreviewConfiguration;
 }
 
