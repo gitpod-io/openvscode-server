@@ -41,6 +41,7 @@
 	"urlProtocol": "gitpod-code",
 	"embedderIdentifier": "Gitpod",
 	"enableTelemetry": true,
+	"segmentKey": "YErmvd89wPsrCuGcVnF2XAl846W9WIGl",
 	"aiConfig": {
 		"ariaKey": "foo"
 	},
