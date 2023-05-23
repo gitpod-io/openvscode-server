@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@gitpod/gitpod-protocol": "main-gha",
+    "@segment/analytics-node": "^1.1.0",
     "@gitpod/ide-metrics-api-grpcweb": "main-gha",
     "@gitpod/supervisor-api-grpc": "main-gha",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
