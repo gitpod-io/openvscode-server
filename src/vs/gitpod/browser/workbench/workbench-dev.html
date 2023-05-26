@@ -125,9 +125,21 @@
 		<!-- Workbench Icon/Manifest/CSS -->
 		<link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/favicon.ico" type="image/x-icon" />
 		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/manifest.json" />
+
+		<style>
+			#gp-code-workbench {
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+			}
+		</style>
 	</head>
 
 	<body aria-label="">
+		<div id="gp-code-workbench">
+		</div>
 	</body>
 
 	<!-- Startup (do not modify order of script tags!) -->
