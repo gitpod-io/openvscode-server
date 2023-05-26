@@ -902,7 +902,11 @@ async function doStart(): Promise<IDisposable> {
 		onDidChangeEmitter.fire();
 	});
 
-	subscriptions.add(vscode.create(document.body, {
+	// Use another element other than window.body, workaround for ipad white bar
+	// https://github.com/microsoft/vscode/issues/149048
+	const workbenchElement = document.getElementById('gp-code-workbench')!;
+	subscriptions.add(vscode.create(workbenchElement, {
+		// subscriptions.add(vscode.create(document.body, {
 		remoteAuthority,
 		webviewEndpoint,
 		webSocketFactory: {
