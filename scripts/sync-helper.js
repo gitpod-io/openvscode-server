@@ -68,7 +68,7 @@ const AllowMissKeys = [
 	'darwinUniversalAssetId',
 ];
 
-const propiertaryExtension = [
+const proprietaryExtensions = [
 	'ms-vscode-remote.remote-containers',
 	'ms-dotnettools.csharp',
 	'ms-vscode.cpptools-extension-pack',
@@ -132,10 +132,10 @@ async function start() {
 	for (let key of pickKeys) {
 		let newValue = releaseProduct[key];
 		if (Array.isArray(newValue) && newValue.length && typeof newValue[0] === 'string') {
-			newValue = newValue.map(v => openvsxExtensionMap[v] ?? v).filter(v => !propiertaryExtension.includes(v));
+			newValue = newValue.map(v => openvsxExtensionMap[v] ?? v).filter(v => !proprietaryExtensions.includes(v));
 		} else if (typeof newValue === 'object' && newValue !== null) {
 			newValue = renameObjKey(newValue, k => openvsxExtensionMap[k] ?? k);
-			newValue = filterObj(newValue, k => !propiertaryExtension.includes(k));
+			newValue = filterObj(newValue, k => !proprietaryExtensions.includes(k));
 		}
 		branchProduct[key] = newValue;
 	}
@@ -195,7 +195,7 @@ async function checkProductExtensions(product) {
 
 	// Check if extensions exists in openvsx
 	for (let id of uniqueExtIds) {
-		if (propiertaryExtension.includes(id)) {
+		if (proprietaryExtensions.includes(id)) {
 			continue;
 		}
 
