@@ -129,6 +129,14 @@ registerAction2(class ExportLogsAction extends Action2 {
 				if (await fileService.exists(credentialHelperPath)) {
 					entries.push({ name: resources.basename(credentialHelperPath), resource: credentialHelperPath });
 				}
+				const supervisorPath = URI.file('/var/log/gitpod/supervisor.log').with({ scheme: Schemas.vscodeRemote });
+				if (await fileService.exists(supervisorPath)) {
+					entries.push({ name: resources.basename(supervisorPath), resource: supervisorPath });
+				}
+				const dockerUpPath = URI.file('/workspace/.gitpod/logs/docker-up.log').with({ scheme: Schemas.vscodeRemote });
+				if (await fileService.exists(dockerUpPath)) {
+					entries.push({ name: resources.basename(dockerUpPath), resource: dockerUpPath });
+				}
 
 				console.log('All log entries', entries);
 
