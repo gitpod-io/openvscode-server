@@ -9,4 +9,8 @@ esac
 
 ROOT="$(dirname "$(dirname "$(readlink -f "$0")")")"
 
-"$ROOT/node" ${INSPECT:-} "$ROOT/out/server-main.js" "$@"
+if [ -z "$GP_VSCODE_NODE" ]; then
+	GP_VSCODE_NODE="$ROOT/node"
+fi
+
+"$GP_VSCODE_NODE" ${INSPECT:-} "$ROOT/out/server-main.js" "$@"
