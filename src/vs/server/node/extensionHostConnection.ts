@@ -45,10 +45,7 @@ export async function buildUserEnvironment(startParamsEnv: { [key: string]: stri
 			VSCODE_HANDLES_UNCAUGHT_ERRORS: 'true',
 			VSCODE_NLS_CONFIG: JSON.stringify(nlsConfig)
 		},
-		...startParamsEnv,
-		...{
-			GITPOD_CODE_HOST: environmentService.isBuilt ? processEnv['GITPOD_HOST'] : undefined
-		}
+		...startParamsEnv
 	};
 
 	const binFolder = environmentService.isBuilt ? join(environmentService.appRoot, 'bin') : join(environmentService.appRoot, 'resources', 'server', 'bin-dev');
