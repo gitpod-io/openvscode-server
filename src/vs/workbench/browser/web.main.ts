@@ -96,6 +96,8 @@ import { ISecretStorageService } from 'vs/platform/secrets/common/secrets';
 import { TunnelSource } from 'vs/workbench/services/remote/common/tunnelModel';
 import { mainWindow } from 'vs/base/browser/window';
 import { INotificationService, Severity } from 'vs/platform/notification/common/notification';
+// eslint-disable-next-line local/code-import-patterns
+import { addCustomGitpodProductProperties } from 'vs/gitpod/platform/product/common/product';
 
 export class BrowserMain extends Disposable {
 
@@ -276,7 +278,7 @@ export class BrowserMain extends Disposable {
 		const workspace = this.resolveWorkspace();
 
 		// Product
-		const productService: IProductService = mixin({ _serviceBrand: undefined, ...product }, this.configuration.productConfiguration);
+		const productService: IProductService = { _serviceBrand: undefined, ...addCustomGitpodProductProperties(mixin({ ...product }, this.configuration.productConfiguration)) };
 		serviceCollection.set(IProductService, productService);
 
 		// Environment
