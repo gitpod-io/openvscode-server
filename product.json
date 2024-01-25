@@ -7,7 +7,7 @@
 	"licenseName": "MIT",
 	"licenseUrl": "https://github.com/gitpod-io/openvscode-server/blob/main/LICENSE.txt",
 	"serverLicenseUrl": "https://github.com/gitpod-io/openvscode-server/blob/main/LICENSE.txt",
-	"serverGreeting": [],
+	"serverGreeting": []
 	"serverLicense": [],
 	"serverLicensePrompt": "",
 	"serverApplicationName": "openvscode-server",
