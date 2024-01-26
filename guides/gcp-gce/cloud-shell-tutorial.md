@@ -66,10 +66,12 @@ While you are still connected to the VM, execute the following command to start 
 
 ```bash
 cd openvscode-server-v$SERVER_VERSION-linux-x64
-./server.sh
+./bin/openvscode-server --host 0.0.0.0
 ```
 
 **Note**: If you cancel the script, the OpenVSCode Server will stop.
+
+Copy the token part of the link as we'll need it in the next step.
 
 Next up, you are going to access the shiny new OpenVSCode Server in your browser.
 
@@ -82,7 +84,7 @@ With the server still running, open a new Cloud Shell tab and execute the follow
 ```bash
 export SERVER_IP=$(gcloud compute instances describe openvscode-server \
   --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-echo "http://$SERVER_IP:3000"
+echo "http://$SERVER_IP:3000/?tkn=YOUR-TOKEN-HERE"
 ```
 
-Click the URL displayed in the terminal to see OpenVSCode Server up and running.
+Use the URL displayed in the terminal with your token to see OpenVSCode Server up and running.
