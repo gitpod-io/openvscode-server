@@ -310,7 +310,7 @@ export async function main(desc: ProductDescription, args: string[]): Promise<vo
 		}
 
 		if (parsedArgs['install-extension'] !== undefined || parsedArgs['uninstall-extension'] !== undefined || parsedArgs['list-extensions'] || parsedArgs['update-extensions']) {
-			sendToPipe({
+			sendToPort({
 				type: 'extensionManagement',
 				list: parsedArgs['list-extensions'] ? { showVersions: parsedArgs['show-versions'], category: parsedArgs['category'] } : undefined,
 				install: asExtensionIdOrVSIX(parsedArgs['install-extension']),
