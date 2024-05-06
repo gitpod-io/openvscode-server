@@ -184,17 +184,17 @@ async function checkProductExtensions(product) {
 	// uniqueExtIds.push(...product.extensionAllowedProposedApi);
 
 	// Check recommand extension tips
-	for (let key in product.configBasedExtensionTips) {
+	for (const key in product.configBasedExtensionTips) {
 		Object.keys(product.configBasedExtensionTips[key].recommendations ?? {}).forEach(id => uniqueExtIds.add(id));
 	}
-	Object.keys(product.extensionImportantTips).forEach(id => uniqueExtIds.add(id));
-	Object.keys(product.extensionTips).forEach(id => uniqueExtIds.add(id));
+	Object.keys(product.extensionImportantTips ?? {}).forEach(id => uniqueExtIds.add(id));
+	Object.keys(product.extensionRecommendations ?? {}).forEach(id => uniqueExtIds.add(id));
 	Object.keys(product.extensionEnabledApiProposals).forEach(id => uniqueExtIds.add(id));
 	product.keymapExtensionTips.forEach(id => uniqueExtIds.add(id));
 	product.languageExtensionTips.forEach(id => uniqueExtIds.add(id));
 
 	// Check if extensions exists in openvsx
-	for (let id of uniqueExtIds) {
+	for (const id of uniqueExtIds) {
 		if (propiertaryExtension.includes(id)) {
 			continue;
 		}
