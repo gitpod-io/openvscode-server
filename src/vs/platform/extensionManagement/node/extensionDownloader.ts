@@ -115,8 +115,7 @@ export class ExtensionsDownloader extends Disposable {
 		}
 
 		const value = this.configurationService.getValue('extensions.verifySignature');
-		// for now we disable signature verification until we properly test it with the Open VSX deployment
-		return false ?? (isBoolean(value) ? value : true);
+		return isBoolean(value) ? value : true;
 	}
 
 	private async downloadVSIX(extension: IGalleryExtension, operation: InstallOperation): Promise<URI> {
