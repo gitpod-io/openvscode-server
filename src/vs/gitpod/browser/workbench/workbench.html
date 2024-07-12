@@ -197,7 +197,10 @@
 	<script>
 		performance.mark('code/willLoadWorkbenchMain');
 	</script>
-	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/workbench/workbench.web.main.nls.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
+	<!-- always ensure built in english NLS messages -->
+	<script src="{{WORKBENCH_NLS_FALLBACK_URL}}"></script>
+	<!-- attempt to load NLS messages in case non-english -->
+	<script src="{{WORKBENCH_NLS_URL}}"></script>
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/workbench/workbench.web.main.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
 	<script src="{{WORKBENCH_WEB_BASE_URL}}/out/vs/gitpod/browser/workbench/workbench.js" onerror="onVsCodeWorkbenchError(event)" crossorigin="anonymous"></script>
 </html>
