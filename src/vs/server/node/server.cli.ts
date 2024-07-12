@@ -418,7 +418,7 @@ function sendToPort(args: PipeCommand | { type: 'preview'; url: string }, verbos
 			return;
 		}
 
-		const opts: _http.RequestOptions = {
+		const opts: http.RequestOptions = {
 			hostname: '127.0.0.1',
 			port: cliPort,
 			protocol: 'http:',
@@ -430,7 +430,7 @@ function sendToPort(args: PipeCommand | { type: 'preview'; url: string }, verbos
 			}
 		};
 
-		const req = _http.request(opts, res => {
+		const req = http.request(opts, res => {
 			if (res.headers['content-type'] !== 'application/json') {
 				reject('Error in response: Invalid content type: Expected \'application/json\', is: ' + res.headers['content-type']);
 				return;
