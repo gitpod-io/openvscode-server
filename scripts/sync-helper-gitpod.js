@@ -129,7 +129,7 @@ async function start() {
 	const branchProduct = JSON.parse(await fs.promises.readFile(localPath, { encoding: 'utf8' }));
 	const releaseProduct = JSON.parse(await fs.promises.readFile(releasePath, { encoding: 'utf8' }));
 	const tmpProductPath = path.join(__dirname, '../product-tmp.json');
-	for (let key of pickKeys) {
+	for (const key of pickKeys) {
 		let newValue = releaseProduct[key];
 		if (Array.isArray(newValue) && newValue.length && typeof newValue[0] === 'string') {
 			newValue = newValue.map(v => openvsxExtensionMap[v] ?? v).filter(v => !propiertaryExtension.includes(v));
@@ -161,14 +161,14 @@ function keysDiff(branch, release) {
 	const map1 = Object.keys(branch).reduce(toMap, {});
 	const map2 = Object.keys(release).reduce(toMap, {});
 	let changed = false;
-	for (let key in branch) {
+	for (const key in branch) {
 		if (!!!map2[key]) {
 			changed = true;
 			// allow-any-unicode-next-line
 			console.log(`🟠 Remove key: ${key}`);
 		}
 	}
-	for (let key in release) {
+	for (const key in release) {
 		if (!!!map1[key] && !AllowMissKeys.includes(key)) {
 			changed = true;
 			// allow-any-unicode-next-line
@@ -185,7 +185,12 @@ async function checkProductExtensions(product) {
 
 	// Check recommand extension tips
 	for (const key in product.configBasedExtensionTips) {
-		Object.keys(product.configBasedExtensionTips[key].recommendations ?? {}).forEach(id => uniqueExtIds.add(id));
+		Object.keys(product.configBasedExtensionTips[key].recommendations ?? {}).forEach(id => {
+			if (product.configBasedExtensionTips[key].recommendations[id].whenNotInstalled) {
+				product.configBasedExtensionTips[key].recommendations[id].whenNotInstalled.forEach(iid => uniqueExtIds.add(iid));
+			}
+			uniqueExtIds.add(id);
+		});
 	}
 	Object.keys(product.extensionImportantTips ?? {}).forEach(id => uniqueExtIds.add(id));
 	Object.keys(product.extensionRecommendations ?? {}).forEach(id => uniqueExtIds.add(id));

@@ -107,20 +107,14 @@
 				{
 					"pathGlob": "{**/*.java}",
 					"important": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java",
-						"Oracle.oracle-java"
-					]
+					"whenNotInstalled": []
 				},
 				{
 					"languages": [
 						"java"
 					],
 					"important": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java",
-						"Oracle.oracle-java"
-					]
+					"whenNotInstalled": []
 				}
 			]
 		},
@@ -534,7 +528,6 @@
 		"ms-vscode.vs-keybindings",
 		"ms-vscode.notepadplusplus-keybindings",
 		"k--kato.intellij-idea-keybindings",
-		"lfs.vscode-emacs-friendly",
 		"alphabotsec.vscode-eclipse-keybindings",
 		"alefragnani.delphi-keybindings"
 	],
@@ -575,9 +568,7 @@
 					"name": "Java",
 					"important": true,
 					"isExtensionPack": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
-					]
+					"whenNotInstalled": []
 				},
 				"vmware.vscode-boot-dev-pack": {
 					"name": "Spring Boot Extension Pack",
@@ -593,9 +584,7 @@
 					"name": "Java",
 					"important": true,
 					"isExtensionPack": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
-					]
+					"whenNotInstalled": []
 				}
 			}
 		},
@@ -607,6 +596,127 @@
 				"github.vscode-pull-request-github": {
 					"name": "GitHub Pull Request",
 					"important": true
+				}
+			}
+		},
+		"pyproject-formatter": {
+			"configPath": "pyproject.toml",
+			"configName": "Python Formatter",
+			"recommendations": {
+				"ms-python.black-formatter": {
+					"name": "Black Formatter",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?black\"?\\s*[\\].])|(\"black\\s*[\"[(<=>!~;@])"
+				},
+				"ms-python.autopep8": {
+					"name": "Autopep8",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?autopep8\"?\\s*[\\].])|(\"autopep8\\s*[\"[(<=>!~;@])"
+				}
+			}
+		},
+		"pep8-formatter": {
+			"configPath": ".pep8",
+			"configName": "Python Formatter",
+			"recommendations": {
+				"ms-python.autopep8": {
+					"name": "Autopep8"
+				}
+			}
+		},
+		"python-setup-cgf-formatter": {
+			"configPath": "setup.cfg",
+			"configName": "Python Formatter",
+			"recommendations": {
+				"ms-python.autopep8": {
+					"name": "Autopep8",
+					"contentPattern": "^\\[pep8\\]"
+				}
+			}
+		},
+		"tox-ini-formatter": {
+			"configPath": "tox.ini",
+			"configName": "Python Formatter",
+			"recommendations": {
+				"ms-python.autopep8": {
+					"name": "Autopep8",
+					"contentPattern": "^\\[pep8\\]"
+				}
+			}
+		},
+		"pyproject-linter": {
+			"configPath": "pyproject.toml",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.pylint": {
+					"name": "Pylint",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?pylint\"?\\s*[\\].])|(\"pylint\\s*[\"[(<=>!~;@])"
+				},
+				"charliermarsh.ruff": {
+					"name": "Ruff",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?ruff\"?\\s*[\\].])|(\"ruff\\s*[\"[(<=>!~;@])"
+				},
+				"ms-python.mypy-type-checker": {
+					"name": "Mypy Type Checker",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?mypy\"?\\s*[\\].])|(\"mypy\\s*[\"[(<=>!~;@])"
+				},
+				"ms-python.flake8": {
+					"name": "Flake8",
+					"contentPattern": "(^\\s*\\[\\[?\\s*\"?tool\"?\\s*\\.\\s*\"?flake8\"?\\s*[\\].])|(\"flake8\\s*[\"[(<=>!~;@])"
+				}
+			}
+		},
+		".pylintrc-linter": {
+			"configPath": ".pylintrc",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.pylint": {
+					"name": "Pylint"
+				}
+			}
+		},
+		"pylintrc-linter": {
+			"configPath": "pylintrc",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.pylint": {
+					"name": "Pylint"
+				}
+			}
+		},
+		"mypy-ini-linter": {
+			"configPath": ".mypy.ini",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.mypy-type-checker": {
+					"name": "Mypy Type Checker"
+				}
+			}
+		},
+		"tox-ini-linter": {
+			"configPath": "tox.ini",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.flake8": {
+					"name": "Flake8",
+					"contentPattern": "^\\[flake8\\]"
+				}
+			}
+		},
+		".flake8-linter": {
+			"configPath": ".flake8",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.flake8": {
+					"name": "Flake8"
+				}
+			}
+		},
+		"python-setup-cgf-linter": {
+			"configPath": "setup.cfg",
+			"configName": "Python Linter",
+			"recommendations": {
+				"ms-python.flake8": {
+					"name": "Flake8",
+					"contentPattern": "^\\[flake8\\]"
 				}
 			}
 		}
