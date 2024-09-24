@@ -5,31 +5,24 @@ ports:
     onOpen: open-browser
 tasks:
   - init: |
-      yarn
-      yarn server:init
+      npm ci
+      npm run server:init
     command: |
       gp sync-done init
+      export VSCODE_BUILD_AMD=true
       export NODE_ENV=development
       export VSCODE_DEV=1
-      yarn gulp watch
+      npm run watch
     name: watch app
   - command: |
-      export NODE_ENV=development
-      export VSCODE_DEV=1
-      gp sync-await init
-      cd ./extensions
-      yarn watch
-    name: watch extension
-  - command: |
+      export VSCODE_BUILD_AMD=true
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
       ./scripts/code-server.sh --without-connection-token
     name: run app
     openMode: split-right
-github:
-  prebuilds:
-    pullRequestsFromForks: true
+
 vscode:
   extensions:
     - dbaeumer.vscode-eslint

@@ -4,18 +4,18 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import { IBrowserWorkbenchEnvironmentService } from 'vs/workbench/services/environment/browser/environmentService';
-import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
-import { IFileService } from 'vs/platform/files/common/files';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { URI } from 'vs/base/common/uri';
-import * as resources from 'vs/base/common/resources';
-import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { IBrowserWorkbenchEnvironmentService } from '../../../../workbench/services/environment/browser/environmentService.js';
+import { IRemoteAgentService } from '../../../../workbench/services/remote/common/remoteAgentService.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { Action2, MenuId, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+import { URI } from '../../../../base/common/uri.js';
+import * as resources from '../../../../base/common/resources.js';
+import { IProgressService, ProgressLocation } from '../../../../platform/progress/common/progress.js';
+import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import type * as zipModule from '@zip.js/zip.js';
-import { Schemas } from 'vs/base/common/network';
-import { triggerDownload } from 'vs/base/browser/dom';
+import { Schemas } from '../../../../base/common/network.js';
+import { triggerDownload } from '../../../../base/browser/dom.js';
 
 const getZipModule = (function () {
 	let zip: typeof zipModule;

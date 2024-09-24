@@ -4,8 +4,8 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import { isWeb } from 'vs/base/common/platform';
-import { IProductConfiguration } from 'vs/base/common/product';
+import { isWeb } from '../../../../base/common/platform.js';
+import { IProductConfiguration } from '../../../../base/common/product.js';
 
 // This is required so that webview resources load sucessfully in firefox
 // Firefox is more strict regarding CSP rules and it will complain if we left

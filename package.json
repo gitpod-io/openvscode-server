@@ -70,7 +70,7 @@
     "extensions-ci-pr": "node ./node_modules/gulp/bin/gulp.js extensions-ci-pr",
     "perf": "node scripts/code-perf.js",
     "update-build-ts-version": "npm install typescript@next && tsc -p ./build/tsconfig.build.json",
-    "server:init": "yarn --cwd ./build compile && yarn compile && yarn download-builtin-extensions",
+    "server:init": "npm run compile && npm run download-builtin-extensions",
     "link:gitpod-web": "ln -s /workspace/gitpod-code/gitpod-web extensions/",
     "unlink:gitpod-web": "rm extensions/gitpod-web"
   },

@@ -8,27 +8,27 @@
 
 import type { IDEFrontendState } from '@gitpod/gitpod-protocol/lib/ide-frontend-service';
 import type { Status, TunnelStatus } from '@gitpod/local-app-api-grpcweb';
-import { isStandalone } from 'vs/base/browser/browser';
-import { parse } from 'vs/base/common/marshalling';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { FileAccess, Schemas } from 'vs/base/common/network';
-import { isEqual } from 'vs/base/common/resources';
-import { URI, UriComponents } from 'vs/base/common/uri';
-import { localize } from 'vs/nls';
-import product from 'vs/platform/product/common/product';
-import { isFolderToOpen, isWorkspaceToOpen } from 'vs/platform/window/common/window';
-import * as vscode from 'vs/workbench/workbench.web.main';
-import { posix } from 'vs/base/common/path';
-import { ltrim } from 'vs/base/common/strings';
-import type { ISecretStorageProvider } from 'vs/platform/secrets/common/secrets';
-import type { IURLCallbackProvider } from 'vs/workbench/services/url/browser/urlService';
-import type { ICommand, ITunnel, ITunnelProvider, IWorkbenchConstructionOptions, IWorkspace, IWorkspaceProvider } from 'vs/workbench/browser/web.api';
-import type { AuthenticationSessionInfo } from 'vs/workbench/services/authentication/browser/authenticationService';
-import { defaultWebSocketFactory } from 'vs/platform/remote/browser/browserSocketFactory';
-import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from 'vs/platform/remote/common/remoteAuthorityResolver';
-import { extractLocalHostUriMetaDataForPortMapping, isLocalhost, TunnelPrivacyId } from 'vs/platform/tunnel/common/tunnel';
-import { ColorScheme } from 'vs/platform/theme/common/theme';
+import { isStandalone } from '../../../base/browser/browser.js';
+import { parse } from '../../../base/common/marshalling.js';
+import { Emitter, Event } from '../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable } from '../../../base/common/lifecycle.js';
+import { FileAccess, Schemas } from '../../../base/common/network.js';
+import { isEqual } from '../../../base/common/resources.js';
+import { URI, UriComponents } from '../../../base/common/uri.js';
+import { localize } from '../../../nls.js';
+import product from '../../../platform/product/common/product.js';
+import { isFolderToOpen, isWorkspaceToOpen } from '../../../platform/window/common/window.js';
+import * as vscode from '../../../workbench/workbench.web.main.internal.js';
+import { posix } from '../../../base/common/path.js';
+import { ltrim } from '../../../base/common/strings.js';
+import type { ISecretStorageProvider } from '../../../platform/secrets/common/secrets.js';
+import type { IURLCallbackProvider } from '../../../workbench/services/url/browser/urlService.js';
+import type { ICommand, ITunnel, ITunnelProvider, IWorkbenchConstructionOptions, IWorkspace, IWorkspaceProvider } from '../../../workbench/browser/web.api.js';
+import type { AuthenticationSessionInfo } from '../../../workbench/services/authentication/browser/authenticationService.js';
+import { defaultWebSocketFactory } from '../../../platform/remote/browser/browserSocketFactory.js';
+import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from '../../../platform/remote/common/remoteAuthorityResolver.js';
+import { extractLocalHostUriMetaDataForPortMapping, isLocalhost, TunnelPrivacyId } from '../../../platform/tunnel/common/tunnel.js';
+import { ColorScheme } from '../../../platform/theme/common/theme.js';
 import type { TunnelOptions } from 'vscode';
 
 const loadingGrpc = import('@improbable-eng/grpc-web');
@@ -815,7 +815,7 @@ async function doStart(): Promise<IDisposable> {
 		remoteAuthority,
 		webviewEndpoint,
 		webSocketFactory: {
-			create: (url, debugLabel) => {
+			create: (url: string, debugLabel: string) => {
 				if (_state as any === 'terminated') {
 					throw new RemoteAuthorityResolverError('workspace stopped', RemoteAuthorityResolverErrorCode.NotAvailable);
 				}
@@ -840,7 +840,7 @@ async function doStart(): Promise<IDisposable> {
 					onOpen: socket.onOpen,
 					onClose: socket.onClose,
 					onError: onError.event,
-					send: data => socket.send(data),
+					send: (data: ArrayBufferView) => socket.send(data),
 					close: () => {
 						socket.close();
 						onError.dispose();
@@ -849,7 +849,7 @@ async function doStart(): Promise<IDisposable> {
 			}
 		},
 		workspaceProvider: WorkspaceProvider.create({ remoteAuthority, folderUri, workspaceUri }),
-		resolveExternalUri: async (uri) => {
+		resolveExternalUri: async (uri: URI) => {
 			const localhost = extractLocalHostUriMetaDataForPortMapping(uri);
 			if (!localhost) {
 				return uri;
@@ -925,7 +925,7 @@ async function doStart(): Promise<IDisposable> {
 		settingsSyncOptions: {
 			enabled: true,
 			extensionsSyncStateVersion: info.instanceId,
-			enablementHandler: enablement => {
+			enablementHandler: (enablement: unknown) => {
 				// TODO
 			}
 		},

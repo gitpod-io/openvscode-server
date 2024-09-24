@@ -4,18 +4,18 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import { onUnexpectedError } from 'vs/base/common/errors';
-import { ITelemetryAppender, validateTelemetryData } from 'vs/platform/telemetry/common/telemetryUtils';
+import { onUnexpectedError } from '../../base/common/errors.js';
+import { ITelemetryAppender, validateTelemetryData } from '../../platform/telemetry/common/telemetryUtils.js';
 import { InfoServiceClient } from '@gitpod/supervisor-api-grpc/lib/info_grpc_pb';
 import { WorkspaceInfoRequest, WorkspaceInfoResponse, DebugWorkspaceType } from '@gitpod/supervisor-api-grpc/lib/info_pb';
 import * as grpc from '@grpc/grpc-js';
 import * as util from 'util';
-import { filter } from 'vs/base/common/objects';
-import { mapMetrics, mapTelemetryData } from 'vs/gitpod/common/insightsHelper';
+import { filter } from '../../base/common/objects.js';
+import { mapMetrics, mapTelemetryData } from '../../gitpod/common/insightsHelper.js';
 import { MetricsServiceClient, sendMetrics, ReportErrorRequest } from '@gitpod/ide-metrics-api-grpcweb';
-import { IGitpodPreviewConfiguration } from 'vs/base/common/product';
+import { IGitpodPreviewConfiguration } from '../../base/common/product.js';
 import { NodeHttpTransport } from '@improbable-eng/grpc-web-node-http-transport';
-import { ErrorEvent } from 'vs/platform/telemetry/common/errorTelemetry';
+import { ErrorEvent } from '../../platform/telemetry/common/errorTelemetry.js';
 import { Analytics, AnalyticsSettings } from '@segment/analytics-node';
 
 class SupervisorConnection {

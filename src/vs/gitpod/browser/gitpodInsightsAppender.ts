@@ -4,13 +4,13 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import { onUnexpectedError } from 'vs/base/common/errors';
-import { ITelemetryAppender, validateTelemetryData } from 'vs/platform/telemetry/common/telemetryUtils';
-import { mapMetrics, mapTelemetryData, ReportErrorParam } from 'vs/gitpod/common/insightsHelper';
+import { onUnexpectedError } from '../../base/common/errors.js';
+import { ITelemetryAppender, validateTelemetryData } from '../../platform/telemetry/common/telemetryUtils.js';
+import { mapMetrics, mapTelemetryData, ReportErrorParam } from '../../gitpod/common/insightsHelper.js';
 import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb';
-import type { ErrorEvent } from 'vs/platform/telemetry/common/errorTelemetry';
-import { IGitpodPreviewConfiguration } from 'vs/base/common/product';
-import { filter } from 'vs/base/common/objects';
+import type { ErrorEvent } from '../../platform/telemetry/common/errorTelemetry.js';
+import { IGitpodPreviewConfiguration } from '../../base/common/product.js';
+import { filter } from '../../base/common/objects.js';
 // eslint-disable-next-line local/code-amd-node-module
 import { Analytics, AnalyticsSettings } from '@jeanp413/analytics-node-umd';
 

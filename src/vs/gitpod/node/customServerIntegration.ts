@@ -5,8 +5,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as http from 'http';
-import { Emitter } from 'vs/base/common/event';
-import { IDisposable } from 'vs/base/common/lifecycle';
+import { Emitter } from '../../base/common/event.js';
+import { IDisposable } from '../../base/common/lifecycle.js';
 
 const devMode = !!process.env['VSCODE_DEV'];
 const supervisorAddr = process.env.SUPERVISOR_ADDR || 'localhost:22999';
