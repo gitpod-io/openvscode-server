@@ -12,7 +12,10 @@ import type { ErrorEvent } from '../../platform/telemetry/common/errorTelemetry.
 import { IGitpodPreviewConfiguration } from '../../base/common/product.js';
 import { filter } from '../../base/common/objects.js';
 // eslint-disable-next-line local/code-amd-node-module
-import { Analytics, AnalyticsSettings } from '@jeanp413/analytics-node-umd';
+import type { Analytics, AnalyticsSettings } from '@segment/analytics-node';
+import { importAMDNodeModule } from '../../amdX.js';
+
+const segmentResolver = importAMDNodeModule<typeof import('@segment/analytics-node')>('@segment/analytics-node', 'dist/esm/index.js');
 
 interface SupervisorWorkspaceInfo { gitpodHost: string; instanceId: string; workspaceId: string; debugWorkspaceType: 'noDebug' | 'regular' | 'prebuild'; ownerId: string }
 
@@ -44,7 +47,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 
 	private _withAIClient(callback: (aiClient: Analytics) => void): void {
 		if (!this._asyncAIClient) {
-			this._asyncAIClient = this.getWorkspaceInfo().then(({ gitpodHost }) => {
+			this._asyncAIClient = this.getWorkspaceInfo().then(async ({ gitpodHost }) => {
 				const settings: AnalyticsSettings = {
 					writeKey: this.segmentKey,
 					// in dev mode we report directly to IDE playground source
@@ -56,7 +59,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 					settings.host = gitpodHost;
 					settings.path = '/analytics/v1/batch';
 				}
-				return new Analytics(settings);
+				return new (await segmentResolver).Analytics(settings as any);
 			});
 		}
 
