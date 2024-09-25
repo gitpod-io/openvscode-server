@@ -4,8 +4,8 @@
 	"private": true,
 	"dependencies": {
 		"@gitpod/ide-metrics-api-grpcweb": "main-gha",
+		"@gitpod/local-app-api-grpcweb": "^0.1.5-hw-fix-code-nightly-gha.29105",
 		"@jeanp413/analytics-node-umd": "^1.1.0",
-		"@gitpod/local-app-api-grpcweb": "main-gha",
 		"@microsoft/1ds-core-js": "^3.2.13",
 		"@microsoft/1ds-post-js": "^3.2.13",
 		"@vscode/iconv-lite-umd": "0.7.0",
