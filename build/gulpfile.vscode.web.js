@@ -89,6 +89,9 @@ const vscodeWebResources = [
   // Includes
   ...vscodeWebResourceIncludes,
 
+  // Gitpod Workbench
+  'out-build/vs/gitpod/browser/workbench/*.html',
+
   // Excludes
   '!out-build/vs/**/{node,electron-sandbox,electron-main,electron-utility}/**',
   '!out-build/vs/editor/standalone/**',
