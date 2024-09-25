@@ -1,7 +1,7 @@
 image:
   file: .gitpod.Dockerfile
 ports:
-  - port: 9888
+  - port: 8080
     onOpen: open-browser
 tasks:
   - init: |
@@ -22,6 +22,11 @@ tasks:
       ./scripts/code-server.sh --without-connection-token
     name: run app
     openMode: split-right
+  - name: Local Proxy
+    command: |
+      cd gitpod-proxy
+      gp ports await 9888
+      go run main.go
 
 vscode:
   extensions:

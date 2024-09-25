@@ -30,14 +30,9 @@ import { RemoteAuthorityResolverError, RemoteAuthorityResolverErrorCode } from '
 import { extractLocalHostUriMetaDataForPortMapping, isLocalhost, TunnelPrivacyId } from '../../../platform/tunnel/common/tunnel.js';
 import { ColorScheme } from '../../../platform/theme/common/theme.js';
 import type { TunnelOptions } from 'vscode';
+import { importAMDNodeModule } from '../../../amdX.js';
 
-const loadingGrpc = import('@improbable-eng/grpc-web');
-const loadingLocalApp = (async () => {
-	// load grpc-web before local-app, see https://github.com/gitpod-io/gitpod/issues/4448
-	await loadingGrpc;
-	// eslint-disable-next-line local/code-amd-node-module
-	return import('@gitpod/local-app-api-grpcweb');
-})();
+const loadingGrpc = importAMDNodeModule<typeof import('@improbable-eng/grpc-web')>('@improbable-eng/grpc-web', 'dist/grpc-web-client.umd.js');
 
 export class LocalStorageSecretStorageProvider implements ISecretStorageProvider {
 	private readonly _storageKey = 'secrets.provider';
@@ -467,10 +462,6 @@ interface WorkspaceInfoResponse {
 
 async function doStart(): Promise<IDisposable> {
 	let supervisorHost = window.location.host;
-	// running from sources
-	if (devMode) {
-		supervisorHost = supervisorHost.substring(supervisorHost.indexOf('-') + 1);
-	}
 	const infoResponse = await fetch(window.location.protocol + '//' + supervisorHost + '/_supervisor/v1/info/workspace', {
 		credentials: 'include'
 	});
@@ -568,7 +559,7 @@ async function doStart(): Promise<IDisposable> {
 	}
 
 	const { grpc } = await loadingGrpc;
-	const { LocalAppClient, TunnelStatusRequest, TunnelVisiblity } = await loadingLocalApp;
+	const { LocalAppClient, TunnelStatusRequest, TunnelVisiblity } = (await importAMDNodeModule<typeof import('@gitpod/local-app-api-grpcweb')>('@gitpod/local-app-api-grpcweb', 'lib/localapp.js'));
 
 	//#region tunnels
 	class Tunnel implements ITunnel {
