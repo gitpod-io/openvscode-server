@@ -91,7 +91,8 @@ const serverResources = [
 
 const serverWithWebResourceIncludes = !isAMD() ? [
 	...serverResourceIncludes,
-	'out-build/vs/code/browser/workbench/*.html',
+	// 'out-build/vs/code/browser/workbench/*.html',
+	'out-build/vs/gitpod/browser/workbench/*.html',
 	...vscodeWebResourceIncludes
 ] : [
 	...serverResourceIncludes,
@@ -100,8 +101,10 @@ const serverWithWebResourceIncludes = !isAMD() ? [
 
 const serverWithWebResourceExcludes = [
 	...serverResourceExcludes,
-	'!out-build/vs/code/**/*-dev.html',
-	'!out-build/vs/code/**/*-dev.esm.html',
+	// '!out-build/vs/code/**/*-dev.html',
+	// '!out-build/vs/code/**/*-dev.esm.html',
+	'!out-build/vs/gitpod/**/*-dev.html',
+	'!out-build/vs/gitpod/**/*-dev.esm.html',
 ];
 
 const serverWithWebResources = [

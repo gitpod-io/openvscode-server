@@ -95,6 +95,8 @@ const vscodeWebResources = [
   '!out-build/vs/workbench/**/*-tb.png',
   '!out-build/vs/code/**/*-dev.html',
   '!out-build/vs/code/**/*-dev.esm.html',
+  '!out-build/vs/gitpod/**/*-dev.html',
+  '!out-build/vs/gitpod/**/*-dev.esm.html',
   '!**/test/**',
 ];
 

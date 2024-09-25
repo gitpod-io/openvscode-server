@@ -114,7 +114,8 @@ exports.code = [
 ];
 
 exports.codeWeb = [
-	createModuleDescription('vs/code/browser/workbench/workbench')
+	// createModuleDescription('vs/code/browser/workbench/workbench')
+	createModuleDescription('vs/gitpod/browser/workbench/workbench')
 ];
 
 exports.entrypoint = createModuleDescription;

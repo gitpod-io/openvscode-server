@@ -9,13 +9,11 @@ tasks:
       npm run server:init
     command: |
       gp sync-done init
-      export VSCODE_BUILD_AMD=true
       export NODE_ENV=development
       export VSCODE_DEV=1
       npm run watch
     name: watch app
   - command: |
-      export VSCODE_BUILD_AMD=true
       export NODE_ENV=development
       export VSCODE_DEV=1
       gp sync-await init
