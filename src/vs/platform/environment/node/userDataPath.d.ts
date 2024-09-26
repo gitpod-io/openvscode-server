@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { NativeParsedArgs } from '../../../platform/environment/common/argv.js';
+import { NativeParsedArgs } from 'vs/platform/environment/common/argv';
 
 /**
  * Returns the user data path to use with some rules:
