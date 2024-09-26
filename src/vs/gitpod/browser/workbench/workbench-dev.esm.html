@@ -99,6 +99,16 @@
 				gitpodMetricsAddCounter('gitpod_supervisor_frontend_error_total', labels);
 			};
 		</script>
+		<script>
+			globalThis._VSCODE_WEB_PACKAGE_TTP = window.trustedTypes?.createPolicy('amdLoader', {
+				createScriptURL(value) {
+					if (value.startsWith(window.location.origin) || value.startsWith('{{WORKBENCH_WEB_BASE_URL}}')) {
+						return value;
+					}
+					throw new Error(`Invalid script url: ${value}`);
+				}
+			})
+		</script>
 
 		<script>
 			performance.mark('code/didStartRenderer');
@@ -124,9 +134,13 @@
 		<meta id="vscode-workbench-builtin-extensions" data-settings="{{WORKBENCH_BUILTIN_EXTENSIONS}}">
 
 		<!-- Workbench Icon/Manifest/CSS -->
-		<link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/favicon.ico" type="image/x-icon" />
-		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/manifest.json" crossorigin="use-credentials" />
+		<!-- <link rel="icon" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/favicon.ico" type="image/x-icon" />
+		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/resources/server/manifest.json" crossorigin="use-credentials" /> -->
 		<style id="vscode-css-modules" type="text/css" media="screen"></style>
+
+		<!-- Gitpod Integration -->
+		<link rel="icon" href="/favicon.ico" type="image/x-icon" />
+		<link rel="manifest" href="{{WORKBENCH_WEB_BASE_URL}}/manifest.json" />
 
 
 		<style>

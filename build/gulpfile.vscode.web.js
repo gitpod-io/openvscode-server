@@ -115,6 +115,8 @@ const vscodeWebEntryPoints = !isAMD() ? [
   buildfile.workerBackgroundTokenization,
   buildfile.keyboardMaps,
   buildfile.workbenchWeb(),
+  // Gitpod Integration
+  buildfile.codeWeb,
   buildfile.entrypoint('vs/workbench/workbench.web.main.internal') // TODO@esm remove line when we stop supporting web-amd-esm-bridge
 ].flat() : [
   buildfile.entrypoint('vs/workbench/workbench.web.main.internal'),

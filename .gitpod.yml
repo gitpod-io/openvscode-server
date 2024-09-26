@@ -6,6 +6,7 @@ ports:
 tasks:
   - init: |
       npm ci
+      gp sync-done dependencies
       npm run server:init
     command: |
       gp sync-done init
@@ -22,9 +23,17 @@ tasks:
     openMode: split-right
   - name: Local Proxy
     command: |
-      cd gitpod-proxy
+      cd gitpod
       gp ports await 9888
-      go run main.go
+      go run proxy.go
+  - name: Build Prepare
+    init: |
+      gp sync-await dependencies
+      npm run gulp compile-build
+      npm run gulp extensions-ci \
+        && npm run gulp minify-vscode-reh \
+        && npm run gulp vscode-web-min-ci \
+        && npm run gulp vscode-reh-linux-x64-min-ci
 
 vscode:
   extensions:
