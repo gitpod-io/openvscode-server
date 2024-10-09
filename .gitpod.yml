@@ -5,13 +5,13 @@ ports:
     onOpen: open-browser
 tasks:
   - init: |
-      yarn
-      yarn server:init
+      npm ci
+      npm run server:init
     command: |
       gp sync-done init
       export NODE_ENV=development
       export VSCODE_DEV=1
-      yarn gulp watch-init
+      npm run watch
     name: watch app
   - command: |
       export NODE_ENV=development
