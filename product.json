@@ -532,7 +532,6 @@
 		"ms-vscode.vs-keybindings",
 		"ms-vscode.notepadplusplus-keybindings",
 		"k--kato.intellij-idea-keybindings",
-		"lfs.vscode-emacs-friendly",
 		"alphabotsec.vscode-eclipse-keybindings",
 		"alefragnani.delphi-keybindings"
 	],
@@ -574,7 +573,8 @@
 					"important": true,
 					"isExtensionPack": true,
 					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
+						"ASF.apache-netbeans-java",
+						"Oracle.oracle-java"
 					]
 				},
 				"vmware.vscode-boot-dev-pack": {
@@ -592,7 +592,8 @@
 					"important": true,
 					"isExtensionPack": true,
 					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
+						"ASF.apache-netbeans-java",
+						"Oracle.oracle-java"
 					]
 				}
 			}
@@ -1200,5 +1201,91 @@
 		"ms-vsliveshare.vsliveshare",
 		"github.copilot",
 		"gitpod.gitpod-web"
-	]
+	],
+	"extensionEnabledApiProposals": {
+		"ms-vscode.vscode-selfhost-test-provider": [
+			"testObserver",
+			"testRelatedCode",
+			"attributableCoverage"
+		],
+		"ms-vscode.js-debug": [
+			"portsAttributes",
+			"findTextInFiles",
+			"workspaceTrust",
+			"tunnels"
+		],
+		"ms-python.python": [
+			"codeActionAI",
+			"contribEditorContentMenu",
+			"quickPickSortByLabel",
+			"portsAttributes",
+			"testObserver",
+			"quickPickItemTooltip",
+			"terminalDataWriteEvent",
+			"terminalExecuteCommandEvent",
+			"contribIssueReporter",
+			"notebookReplDocument",
+			"notebookVariableProvider"
+		],
+		"GitHub.vscode-pull-request-github": [
+			"activeComment",
+			"codiconDecoration",
+			"codeActionRanges",
+			"commentingRangeHint",
+			"commentReactor",
+			"commentReveal",
+			"commentThreadApplicability",
+			"contribAccessibilityHelpContent",
+			"contribCommentEditorActionsMenu",
+			"contribCommentPeekContext",
+			"contribCommentThreadAdditionalMenu",
+			"contribCommentsViewThreadMenus",
+			"contribEditorContentMenu",
+			"contribMultiDiffEditorMenus",
+			"contribShareMenu",
+			"diffCommand",
+			"fileComments",
+			"quickDiffProvider",
+			"shareProvider",
+			"tabInputTextMerge",
+			"tokenInformation",
+			"treeViewMarkdownMessage"
+		],
+		"ms-python.debugpy": [
+			"contribIssueReporter",
+			"contribViewsWelcome",
+			"debugVisualization",
+			"portsAttributes"
+		],
+		"ms-toolsai.jupyter-renderers": [
+			"contribNotebookStaticPreloads"
+		],
+		"ms-toolsai.jupyter": [
+			"notebookDeprecated",
+			"notebookMessaging",
+			"notebookMime",
+			"notebookCellExecutionState",
+			"portsAttributes",
+			"quickPickSortByLabel",
+			"notebookKernelSource",
+			"interactiveWindow",
+			"notebookControllerAffinityHidden",
+			"contribNotebookStaticPreloads",
+			"quickPickItemTooltip",
+			"notebookExecution",
+			"notebookCellExecution",
+			"notebookVariableProvider",
+			"notebookReplDocument"
+		],
+		"dbaeumer.vscode-eslint": [
+			"notebookCellExecutionState"
+		],
+		"redhat.java": [
+			"documentPaste"
+		],
+		"vscjava.vscode-java-pack": [
+			"lmTools"
+		]
+	},
+	"version": "1.94.1"
 }
