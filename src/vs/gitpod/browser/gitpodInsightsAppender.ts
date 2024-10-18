@@ -11,9 +11,9 @@ import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb';
 import type { ErrorEvent } from '../../platform/telemetry/common/errorTelemetry.js';
 import { IGitpodPreviewConfiguration } from '../../base/common/product.js';
 import { filter } from '../../base/common/objects.js';
-// eslint-disable-next-line local/code-amd-node-module
 import type { Analytics, AnalyticsSettings } from '@jeanp413/analytics-node-umd';
 import { importAMDNodeModule } from '../../amdX.js';
+import { mainWindow } from '../../base/browser/window.js';
 
 const segmentResolver = importAMDNodeModule<typeof import('@jeanp413/analytics-node-umd')>('@jeanp413/analytics-node-umd', 'dist/umd/index.js');
 
@@ -153,7 +153,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 		const params: ReportErrorParam = {
 			workspaceId: gitpodWsInfo.workspaceId,
 			instanceId: gitpodWsInfo.instanceId,
-			userId: window.gitpod.loggedUserID || gitpodWsInfo.ownerId,
+			userId: mainWindow.gitpod.loggedUserID || gitpodWsInfo.ownerId,
 			errorStack: error.callstack,
 			component: 'vscode-web',
 			version: this.productVersion,
@@ -191,7 +191,6 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 				}
 				// load grpc-web before see https://github.com/gitpod-io/gitpod/issues/4448
 				await importAMDNodeModule<typeof import('@improbable-eng/grpc-web')>('@improbable-eng/grpc-web', 'dist/grpc-web-client.umd.js');
-				// eslint-disable-next-line local/code-amd-node-module
 
 				const MetricsServiceClient = (await importAMDNodeModule<typeof import('@gitpod/ide-metrics-api-grpcweb')>('@gitpod/ide-metrics-api-grpcweb', 'lib/idemetrics_grpc_web_pb.js')).MetricsServiceClient;
 				const sendMetrics = (await importAMDNodeModule<typeof import('@gitpod/ide-metrics-api-grpcweb')>('@gitpod/ide-metrics-api-grpcweb', 'lib/index.js')).sendMetrics;
@@ -211,7 +210,7 @@ export class GitpodInsightsAppender implements ITelemetryAppender {
 	private async getWorkspaceInfo() {
 		if (!this._workspaceInfo) {
 			this._workspaceInfo = (async () => {
-				const infoResponse = await fetch(window.location.protocol + '//' + window.location.host + '/_supervisor/v1/info/workspace', {
+				const infoResponse = await fetch(mainWindow.location.protocol + '//' + mainWindow.location.host + '/_supervisor/v1/info/workspace', {
 					credentials: 'include'
 				});
 				if (!infoResponse.ok) {
