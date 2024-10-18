@@ -19,6 +19,3 @@ RUN sudo apt-get update \
         libasound2 libgbm1 xfonts-base xfonts-terminus fonts-noto fonts-wqy-microhei \
         fonts-droid-fallback vim-tiny nano libgconf2-dev libgtk-3-dev twm \
     && sudo apt-get clean && sudo rm -rf /var/cache/apt/* && sudo rm -rf /var/lib/apt/lists/* && sudo rm -rf /tmp/*
-
-# Disable v8 cache used by yarn v1.x, refs https://github.com/nodejs/node/issues/51555
-ENV DISABLE_V8_COMPILE_CACHE=1
