@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@bpasero/watcher": "https://github.com/bpasero/watcher.git#3e5e50c275590703f3eb46fac777b720e515d0d5",
     "@gitpod/gitpod-protocol": "main-gha",
     "@gitpod/ide-metrics-api-grpcweb": "main-gha",
     "@gitpod/supervisor-api-grpc": "main-gha",
