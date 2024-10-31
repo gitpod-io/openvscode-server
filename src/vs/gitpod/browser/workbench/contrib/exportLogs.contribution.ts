@@ -16,6 +16,7 @@ import { CancellationTokenSource } from '../../../../base/common/cancellation.js
 import type * as zipModule from '@zip.js/zip.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { triggerDownload } from '../../../../base/browser/dom.js';
+import { importAMDNodeModule } from '../../../../amdX.js';
 
 const getZipModule = (function () {
 	let zip: typeof zipModule;
@@ -25,7 +26,7 @@ const getZipModule = (function () {
 			// without the dot because loader.js will do a check for `.js` extension
 			// and it won't resolve the module path correctly
 			// @ts-ignore
-			zip = await import('@zip.js/zipjs');
+			zip = await importAMDNodeModule<typeof import('@zip.js/zip.js')>('@zip.js/zip.js', 'dist/zip-no-worker-deflate.min.js');
 			zip.configure({
 				useWebWorkers: false
 			});
