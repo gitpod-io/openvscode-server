@@ -36,6 +36,7 @@ export function addCustomGitpodProductProperties(product: IProductConfiguration)
 		extensionsGallery: {
 			serviceUrl: `https://open-vsx.${baseHost}/vscode/gallery`,
 			itemUrl: `${openvsxUrl}/vscode/item`,
+			extensionUrlTemplate: `${openvsxUrl}/vscode/gallery/{publisher}/{name}/latest`,
 			resourceUrlTemplate: `${openvsxUrl}/vscode/unpkg/{publisher}/{name}/{version}/{path}`, // Hardcoded for now until open-vsx proxy is fixed
 			controlUrl: `https://ide.${baseHost}/code/marketplace.json`,
 			publisherUrl: '',
