@@ -15,7 +15,6 @@ import { Disposable, DisposableStore, IDisposable } from '../../../base/common/l
 import { FileAccess, Schemas } from '../../../base/common/network.js';
 import { isEqual } from '../../../base/common/resources.js';
 import { URI, UriComponents } from '../../../base/common/uri.js';
-import { localize } from '../../../nls.js';
 import product from '../../../platform/product/common/product.js';
 import { isFolderToOpen, isWorkspaceToOpen } from '../../../platform/window/common/window.js';
 import * as vscode from '../../../workbench/workbench.web.main.internal.js';
@@ -31,6 +30,7 @@ import { extractLocalHostUriMetaDataForPortMapping, isLocalhost, TunnelPrivacyId
 import { ColorScheme } from '../../../platform/theme/common/theme.js';
 import type { TunnelOptions } from 'vscode';
 import { importAMDNodeModule } from '../../../amdX.js';
+import { mainWindow } from '../../../base/browser/window.js';
 
 const loadingGrpc = importAMDNodeModule<typeof import('@improbable-eng/grpc-web')>('@improbable-eng/grpc-web', 'dist/grpc-web-client.umd.js');
 
@@ -46,14 +46,14 @@ export class LocalStorageSecretStorageProvider implements ISecretStorageProvider
 	private async load(): Promise<Record<string, string>> {
 		const record = this.loadAuthSessionFromElement();
 		// Get the secrets from localStorage
-		const encrypted = window.localStorage.getItem(this._storageKey);
+		const encrypted = mainWindow.localStorage.getItem(this._storageKey);
 		if (encrypted) {
 			try {
-				const decrypted = JSON.parse(window.gitpod.decrypt(encrypted));
+				const decrypted = JSON.parse(mainWindow.gitpod.decrypt(encrypted));
 				return { ...record, ...decrypted };
 			} catch (err) {
 				console.error('Failed to decrypt secrets from localStorage', err);
-				window.localStorage.removeItem(this._storageKey);
+				mainWindow.localStorage.removeItem(this._storageKey);
 			}
 		}
 
@@ -62,7 +62,7 @@ export class LocalStorageSecretStorageProvider implements ISecretStorageProvider
 
 	private loadAuthSessionFromElement(): Record<string, string> {
 		let authSessionInfo: (AuthenticationSessionInfo & { scopes: string[][] }) | undefined;
-		const authSessionElement = document.getElementById('vscode-workbench-auth-session');
+		const authSessionElement = mainWindow.document.getElementById('vscode-workbench-auth-session');
 		const authSessionElementAttribute = authSessionElement ? authSessionElement.getAttribute('data-settings') : undefined;
 		if (authSessionElementAttribute) {
 			try {
@@ -114,8 +114,8 @@ export class LocalStorageSecretStorageProvider implements ISecretStorageProvider
 
 	private async save(): Promise<void> {
 		try {
-			const encrypted = window.gitpod.encrypt(JSON.stringify(await this._secretsPromise));
-			window.localStorage.setItem(this._storageKey, encrypted);
+			const encrypted = mainWindow.gitpod.encrypt(JSON.stringify(await this._secretsPromise));
+			mainWindow.localStorage.setItem(this._storageKey, encrypted);
 		} catch (err) {
 			console.error(err);
 		}
@@ -163,13 +163,13 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 		// https://github.com/microsoft/vscode/blob/159479eb5ae451a66b5dac3c12d564f32f454796/extensions/github-authentication/src/githubServer.ts#L50-L50
 		if (!(options.authority === 'vscode.github-authentication' && options.path === '/dummy')) {
 			const key = `vscode-web.url-callbacks[${id}]`;
-			window.localStorage.removeItem(key);
+			mainWindow.localStorage.removeItem(key);
 
 			this.pendingCallbacks.add(id);
 			this.startListening();
 		}
 
-		return URI.parse(window.location.href).with({ path: this._callbackRoute, query: queryParams.join('&') });
+		return URI.parse(mainWindow.location.href).with({ path: this._callbackRoute, query: queryParams.join('&') });
 	}
 
 	private startListening(): void {
@@ -178,8 +178,8 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 		}
 
 		const fn = () => this.onDidChangeLocalStorage();
-		window.addEventListener('storage', fn);
-		this.onDidChangeLocalStorageDisposable = { dispose: () => window.removeEventListener('storage', fn) };
+		mainWindow.addEventListener('storage', fn);
+		this.onDidChangeLocalStorageDisposable = { dispose: () => mainWindow.removeEventListener('storage', fn) };
 	}
 
 	private stopListening(): void {
@@ -207,7 +207,7 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 
 		for (const id of this.pendingCallbacks) {
 			const key = `vscode-web.url-callbacks[${id}]`;
-			const result = window.localStorage.getItem(key);
+			const result = mainWindow.localStorage.getItem(key);
 
 			if (result !== null) {
 				try {
@@ -218,7 +218,7 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 
 				pendingCallbacks = pendingCallbacks ?? new Set(this.pendingCallbacks);
 				pendingCallbacks.delete(id);
-				window.localStorage.removeItem(key);
+				mainWindow.localStorage.removeItem(key);
 			}
 		}
 
@@ -325,14 +325,14 @@ class WorkspaceProvider implements IWorkspaceProvider {
 		const targetHref = this.createTargetUrl(workspace, options);
 		if (targetHref) {
 			if (options?.reuse) {
-				window.location.href = targetHref;
+				mainWindow.location.href = targetHref;
 				return true;
 			} else {
 				let result;
 				if (isStandalone()) {
-					result = window.open(targetHref, '_blank', 'toolbar=no'); // ensures to open another 'standalone' window!
+					result = mainWindow.open(targetHref, '_blank', 'toolbar=no'); // ensures to open another 'standalone' window!
 				} else {
-					result = window.open(targetHref);
+					result = mainWindow.open(targetHref);
 				}
 
 				return !!result;
@@ -461,8 +461,8 @@ interface WorkspaceInfoResponse {
 }
 
 async function doStart(): Promise<IDisposable> {
-	let supervisorHost = window.location.host;
-	const infoResponse = await fetch(window.location.protocol + '//' + supervisorHost + '/_supervisor/v1/info/workspace', {
+	const supervisorHost = mainWindow.location.host;
+	const infoResponse = await fetch(mainWindow.location.protocol + '//' + supervisorHost + '/_supervisor/v1/info/workspace', {
 		credentials: 'include'
 	});
 	if (!infoResponse.ok) {
@@ -479,7 +479,7 @@ async function doStart(): Promise<IDisposable> {
 		return Disposable.None;
 	}
 
-	const remoteAuthority = window.location.host;
+	const remoteAuthority = mainWindow.location.host;
 
 	// To make webviews work in development, go to file src/vs/workbench/contrib/webview/browser/pre/main.js
 	// and update `signalReady` method to bypass hostname check
@@ -520,7 +520,7 @@ async function doStart(): Promise<IDisposable> {
 	const scopes = [
 		'function:accessCodeSyncStorage'
 	];
-	const tokenResponse = await fetch(window.location.protocol + '//' + supervisorHost + '/_supervisor/v1/token/gitpod/' + info.gitpodApi.host + '/' + scopes.join(','), {
+	const tokenResponse = await fetch(mainWindow.location.protocol + '//' + supervisorHost + '/_supervisor/v1/token/gitpod/' + info.gitpodApi.host + '/' + scopes.join(','), {
 		credentials: 'include'
 	});
 	if (_state as any === 'terminated') {
@@ -637,11 +637,12 @@ async function doStart(): Promise<IDisposable> {
 								if (!existing || existing.privacy !== tunnel.privacy) {
 									existing?.dispose(false);
 									tunnels.set(status.getRemotePort(), tunnel);
-									vscode.commands.executeCommand('gitpod.vscode.workspace.openTunnel', {
+									const openTunnelOptions: TunnelOptions = {
 										remoteAddress: tunnel.remoteAddress,
 										localAddressPort: tunnel.remoteAddress.port,
 										privacy: tunnel.privacy
-									} as TunnelOptions);
+									};
+									vscode.commands.executeCommand('gitpod.vscode.workspace.openTunnel', openTunnelOptions);
 									notify = true;
 								}
 							}
@@ -778,7 +779,7 @@ async function doStart(): Promise<IDisposable> {
 			if (devMode) {
 				throw new Error('not supported in dev mode');
 			}
-			return window.gitpod.loggedUserID;
+			return mainWindow.gitpod.loggedUserID;
 		}
 	};
 
@@ -788,7 +789,7 @@ async function doStart(): Promise<IDisposable> {
 			if (!url || url.length === 0) {
 				return;
 			}
-			return window.gitpod.openDesktopIDE(url);
+			return mainWindow.gitpod.openDesktopIDE(url);
 		}
 	};
 
@@ -800,7 +801,7 @@ async function doStart(): Promise<IDisposable> {
 
 	// Use another element other than window.body, workaround for ipad white bar
 	// https://github.com/microsoft/vscode/issues/149048
-	const workbenchElement = document.getElementById('gp-code-workbench')!;
+	const workbenchElement = mainWindow.document.getElementById('gp-code-workbench')!;
 	subscriptions.add(vscode.create(workbenchElement, {
 		// subscriptions.add(vscode.create(document.body, {
 		remoteAuthority,
@@ -860,11 +861,6 @@ async function doStart(): Promise<IDisposable> {
 			// sadly not the case if the value contains '&' as it's possible it could signal another query param
 			uri.query.split('&').map(s => s.split(/=(.*)/s)).forEach(([k, v]) => !!k && externalEndpoint.searchParams.append(k.replaceAll('+', ' '), v?.replaceAll('+', ' ') || ''));
 			return externalEndpoint;
-		},
-		homeIndicator: {
-			href: info.gitpodHost,
-			icon: 'code',
-			title: localize('home', "Home")
 		},
 		windowIndicator: {
 			onDidChange: Event.None,
@@ -934,7 +930,7 @@ async function doStart(): Promise<IDisposable> {
 if (devMode) {
 	doStart();
 } else {
-	window.gitpod.ideService = {
+	mainWindow.gitpod.ideService = {
 		get state() {
 			return _state;
 		},
