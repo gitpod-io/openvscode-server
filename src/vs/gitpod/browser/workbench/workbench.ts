@@ -4,10 +4,10 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-/// <reference types='@gitpod/gitpod-protocol/lib/typings/globals'/>
+/// <reference types='@gitpod/gitpod-protocol/lib/typings/globals.d.ts'/>
 
-import type { IDEFrontendState } from '@gitpod/gitpod-protocol/lib/ide-frontend-service';
-import type { Status, TunnelStatus } from '@gitpod/local-app-api-grpcweb';
+import type { IDEFrontendState } from '@gitpod/gitpod-protocol/lib/ide-frontend-service.js';
+import type { Status, TunnelStatus } from '@gitpod/local-app-api-grpcweb/lib/localapp.d.ts';
 import { isStandalone } from '../../../base/browser/browser.js';
 import { parse } from '../../../base/common/marshalling.js';
 import { Emitter, Event } from '../../../base/common/event.js';
@@ -32,7 +32,7 @@ import type { TunnelOptions } from 'vscode';
 import { importAMDNodeModule } from '../../../amdX.js';
 import { mainWindow } from '../../../base/browser/window.js';
 
-const loadingGrpc = importAMDNodeModule<typeof import('@improbable-eng/grpc-web')>('@improbable-eng/grpc-web', 'dist/grpc-web-client.umd.js');
+const loadingGrpc = importAMDNodeModule<typeof import('@improbable-eng/grpc-web/dist/typings/index.d.ts')>('@improbable-eng/grpc-web', 'dist/grpc-web-client.umd.js');
 
 export class LocalStorageSecretStorageProvider implements ISecretStorageProvider {
 	private readonly _storageKey = 'secrets.provider';

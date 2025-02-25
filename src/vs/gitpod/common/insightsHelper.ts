@@ -4,7 +4,7 @@
  *  Copyright (c) Gitpod. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
-import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb/lib/index';
+import type { IDEMetric } from '@gitpod/ide-metrics-api-grpcweb/lib/index.js';
 
 export interface ReportErrorParam {
 	workspaceId: string;
@@ -216,6 +216,7 @@ export function mapTelemetryData(source: 'window' | 'remote-server', eventName: 
 			};
 			return {
 				event: 'vscode_browser_remote_connection',
+				// eslint-disable-next-line local/code-no-dangerous-type-assertions
 				properties: {
 					state: getEventName(eventName),
 					// Time, in ms, until connected / connection failure
@@ -231,6 +232,7 @@ export function mapTelemetryData(source: 'window' | 'remote-server', eventName: 
 			};
 			return {
 				event: 'vscode_browser_remote_connection_latency',
+				// eslint-disable-next-line local/code-no-dangerous-type-assertions
 				properties: {
 					latencyMs: data.latencyMs
 				} as ConnectionLatencyProperties
@@ -250,6 +252,7 @@ export function mapTelemetryData(source: 'window' | 'remote-server', eventName: 
 			};
 			return {
 				event: 'vscode_browser_remote_reconnection',
+				// eslint-disable-next-line local/code-no-dangerous-type-assertions
 				properties: {
 					event: getEventName(eventName),
 					reconnectionToken: data.reconnectionToken,

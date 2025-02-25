@@ -44,7 +44,7 @@ export class RemoteExtensionsScannerService implements IRemoteExtensionsScannerS
 		private readonly _logService: ILogService,
 		private readonly _extensionGalleryService: IExtensionGalleryService,
 		private readonly _languagePackService: ILanguagePackService,
-		private readonly _extensionManagementService: IExtensionManagementService,,
+		private readonly _extensionManagementService: IExtensionManagementService,
 		private readonly _downloadService: IDownloadService,
 	) {
 		const builtinExtensionsToInstall = environmentService.args['install-builtin-extension'];
