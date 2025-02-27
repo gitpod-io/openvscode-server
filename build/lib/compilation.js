@@ -3,24 +3,24 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function (o, m, k, k2) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
     if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function () { return m[k]; } };
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
     Object.defineProperty(o, k2, desc);
-}) : (function (o, m, k, k2) {
+}) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function (o, v) {
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
     Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function (o, v) {
+}) : function(o, v) {
     o["default"] = v;
 });
 var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function (o) {
+    var ownKeys = function(o) {
         ownKeys = Object.getOwnPropertyNames || function (o) {
             var ar = [];
             for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
@@ -121,10 +121,10 @@ function createCompile(src, { build, emitError, transpileOnly, preserveEnglish }
             .pipe(util.$if(build, nls.nls({ preserveEnglish })))
             .pipe(noDeclarationsFilter.restore)
             .pipe(util.$if(!transpileOnly, sourcemaps.write('.', {
-                addComment: false,
-                includeContent: !!build,
-                sourceRoot: overrideOptions.sourceRoot
-            })))
+            addComment: false,
+            includeContent: !!build,
+            sourceRoot: overrideOptions.sourceRoot
+        })))
             .pipe(tsFilter.restore)
             .pipe(reporter.end(!!emitError));
         return event_stream_1.default.duplex(input, output);
@@ -295,45 +295,45 @@ function generateApiProposalNames() {
     const output = input
         .pipe(util.filter((f) => pattern.test(f.path)))
         .pipe(event_stream_1.default.through((f) => {
-            const name = path_1.default.basename(f.path);
-            const match = pattern.exec(name);
-            if (!match) {
-                return;
-            }
-            const proposalName = match[1];
-            const contents = f.contents.toString('utf8');
-            const versionMatch = versionPattern.exec(contents);
-            const version = versionMatch ? versionMatch[1] : undefined;
-            proposals.set(proposalName, {
-                proposal: `https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.${proposalName}.d.ts`,
-                version: version ? parseInt(version) : undefined
-            });
-        }, function () {
-            const names = [...proposals.keys()].sort();
-            const contents = [
-                '/*---------------------------------------------------------------------------------------------',
-                ' *  Copyright (c) Microsoft Corporation. All rights reserved.',
-                ' *  Licensed under the MIT License. See License.txt in the project root for license information.',
-                ' *--------------------------------------------------------------------------------------------*/',
-                '',
-                '// THIS IS A GENERATED FILE. DO NOT EDIT DIRECTLY.',
-                '',
-                'const _allApiProposals = {',
-                `${names.map(proposalName => {
-                    const proposal = proposals.get(proposalName);
-                    return `\t${proposalName}: {${eol}\t\tproposal: '${proposal.proposal}',${eol}${proposal.version ? `\t\tversion: ${proposal.version}${eol}` : ''}\t}`;
-                }).join(`,${eol}`)}`,
-                '};',
-                'export const allApiProposals = Object.freeze<{ [proposalName: string]: Readonly<{ proposal: string; version?: number }> }>(_allApiProposals);',
-                'export type ApiProposalName = keyof typeof _allApiProposals;',
-                '',
-            ].join(eol);
-            this.emit('data', new vinyl_1.default({
-                path: 'vs/platform/extensions/common/extensionsApiProposals.ts',
-                contents: Buffer.from(contents)
-            }));
-            this.emit('end');
+        const name = path_1.default.basename(f.path);
+        const match = pattern.exec(name);
+        if (!match) {
+            return;
+        }
+        const proposalName = match[1];
+        const contents = f.contents.toString('utf8');
+        const versionMatch = versionPattern.exec(contents);
+        const version = versionMatch ? versionMatch[1] : undefined;
+        proposals.set(proposalName, {
+            proposal: `https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.${proposalName}.d.ts`,
+            version: version ? parseInt(version) : undefined
+        });
+    }, function () {
+        const names = [...proposals.keys()].sort();
+        const contents = [
+            '/*---------------------------------------------------------------------------------------------',
+            ' *  Copyright (c) Microsoft Corporation. All rights reserved.',
+            ' *  Licensed under the MIT License. See License.txt in the project root for license information.',
+            ' *--------------------------------------------------------------------------------------------*/',
+            '',
+            '// THIS IS A GENERATED FILE. DO NOT EDIT DIRECTLY.',
+            '',
+            'const _allApiProposals = {',
+            `${names.map(proposalName => {
+                const proposal = proposals.get(proposalName);
+                return `\t${proposalName}: {${eol}\t\tproposal: '${proposal.proposal}',${eol}${proposal.version ? `\t\tversion: ${proposal.version}${eol}` : ''}\t}`;
+            }).join(`,${eol}`)}`,
+            '};',
+            'export const allApiProposals = Object.freeze<{ [proposalName: string]: Readonly<{ proposal: string; version?: number }> }>(_allApiProposals);',
+            'export type ApiProposalName = keyof typeof _allApiProposals;',
+            '',
+        ].join(eol);
+        this.emit('data', new vinyl_1.default({
+            path: 'vs/platform/extensions/common/extensionsApiProposals.ts',
+            contents: Buffer.from(contents)
         }));
+        this.emit('end');
+    }));
     return event_stream_1.default.duplex(input, output);
 }
 const apiProposalNamesReporter = (0, reporter_1.createReporter)('api-proposal-names');
