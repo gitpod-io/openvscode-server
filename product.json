@@ -1009,19 +1009,14 @@
 		]
 	},
 	"extensionAllowedBadgeProviders": [
-		"api.bintray.com",
 		"api.travis-ci.com",
-		"api.travis-ci.org",
 		"app.fossa.io",
 		"badge.buildkite.com",
 		"badge.fury.io",
-		"badge.waffle.io",
 		"badgen.net",
 		"badges.frapsoft.com",
 		"badges.gitter.im",
-		"badges.greenkeeper.io",
 		"cdn.travis-ci.com",
-		"cdn.travis-ci.org",
 		"ci.appveyor.com",
 		"circleci.com",
 		"cla.opensource.microsoft.com",
@@ -1034,8 +1029,6 @@
 		"dev.azure.com",
 		"docs.rs",
 		"flat.badgen.net",
-		"gemnasium.com",
-		"githost.io",
 		"gitlab.com",
 		"godoc.org",
 		"goreportcard.com",
@@ -1048,9 +1041,7 @@
 		"travis-ci.com",
 		"travis-ci.org",
 		"visualstudio.com",
-		"vsmarketplacebadge.apphb.com",
-		"www.bithound.io",
-		"www.versioneye.com"
+		"vsmarketplacebadge.apphb.com"
 	],
 	"extensionAllowedBadgeProvidersRegex": [
 		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
