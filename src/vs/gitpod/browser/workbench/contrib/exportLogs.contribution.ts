@@ -40,7 +40,7 @@ registerAction2(class ExportLogsAction extends Action2 {
 		super({
 			id: 'gitpod.workbench.exportLogs',
 			title: { original: 'Export all logs', value: 'Export all logs' },
-			category: { original: 'Gitpod', value: 'Gitpod' },
+			category: { original: 'Gitpod Classic', value: 'Gitpod Classic' },
 			menu: {
 				id: MenuId.CommandPalette
 			}
