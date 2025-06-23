@@ -283,6 +283,7 @@ export interface IMcpResource {
 	/** Identifier of the file as given from the MCP server. */
 	readonly mcpUri: string;
 	readonly name: string;
+	readonly title?: string;
 	readonly description?: string;
 	readonly mimeType?: string;
 	readonly sizeInBytes?: number;
@@ -290,6 +291,7 @@ export interface IMcpResource {
 
 export interface IMcpResourceTemplate {
 	readonly name: string;
+	readonly title?: string;
 	readonly description?: string;
 	readonly mimeType?: string;
 	readonly template: UriTemplate;
@@ -326,20 +328,33 @@ export const enum McpServerCacheState {
 export interface IMcpPrompt {
 	readonly id: string;
 	readonly name: string;
+	readonly title?: string;
 	readonly description?: string;
 	readonly arguments: readonly MCP.PromptArgument[];
 
 	/** Gets string completions for the given prompt part. */
-	complete(argument: string, prefix: string, token: CancellationToken): Promise<string[]>;
+	complete(argument: string, prefix: string, alreadyResolved: Record<string, string>, token: CancellationToken): Promise<string[]>;
 
 	resolve(args: Record<string, string | undefined>, token?: CancellationToken): Promise<IMcpPromptMessage[]>;
 }
 
+export const mcpPromptReplaceSpecialChars = (s: string) => s.replace(/[^a-z0-9_.-]/gi, '_');
+
+export const mcpPromptPrefix = (definition: McpDefinitionReference) =>
+	`/mcp.` + mcpPromptReplaceSpecialChars(definition.label);
+
 export interface IMcpPromptMessage extends MCP.PromptMessage { }
+
+export interface IMcpToolCallContext {
+	chatSessionId?: string;
+	chatRequestId?: string;
+}
 
 export interface IMcpTool {
 
 	readonly id: string;
+	/** Name for #referencing in chat */
+	readonly referenceName: string;
 
 	readonly definition: MCP.Tool;
 
@@ -348,12 +363,12 @@ export interface IMcpTool {
 	 * @throws {@link MpcResponseError} if the tool fails to execute
 	 * @throws {@link McpConnectionFailedError} if the connection to the server fails
 	 */
-	call(params: Record<string, unknown>, token?: CancellationToken): Promise<MCP.CallToolResult>;
+	call(params: Record<string, unknown>, context?: IMcpToolCallContext, token?: CancellationToken): Promise<MCP.CallToolResult>;
 
 	/**
 	 * Identical to {@link call}, but reports progress.
 	 */
-	callWithProgress(params: Record<string, unknown>, progress: ToolProgress, token?: CancellationToken): Promise<MCP.CallToolResult>;
+	callWithProgress(params: Record<string, unknown>, progress: ToolProgress, context?: IMcpToolCallContext, token?: CancellationToken): Promise<MCP.CallToolResult>;
 }
 
 export const enum McpServerTransportType {
@@ -449,6 +464,8 @@ export interface IMcpServerConnection extends IDisposable {
 export interface IMcpClientMethods {
 	/** Handler for `sampling/createMessage` */
 	createMessageRequestHandler?(req: MCP.CreateMessageRequest['params']): Promise<MCP.CreateMessageResult>;
+	/** Handler for `elicitation/create` */
+	elicitationRequestHandler?(req: MCP.ElicitRequest['params']): Promise<MCP.ElicitResult>;
 }
 
 /**
@@ -602,6 +619,10 @@ export const mcpServerIcon = registerIcon('mcp-server', Codicon.mcp, localize('m
 export namespace McpResourceURI {
 	export const scheme = 'mcp-resource';
 
+	// Random placeholder for empty authorities, otherwise they're represente as
+	// `scheme//path/here` in the URI which would get normalized to `scheme/path/here`.
+	const emptyAuthorityPlaceholder = 'dylo78gyp'; // chosen by a fair dice roll. Guaranteed to be random.
+
 	export function fromServer(def: McpDefinitionReference, resourceURI: URI | string): URI {
 		if (typeof resourceURI === 'string') {
 			resourceURI = URI.parse(resourceURI);
@@ -609,7 +630,7 @@ export namespace McpResourceURI {
 		return resourceURI.with({
 			scheme,
 			authority: encodeHex(VSBuffer.fromString(def.id)),
-			path: ['', resourceURI.scheme, resourceURI.authority].join('/') + resourceURI.path,
+			path: ['', resourceURI.scheme, resourceURI.authority || emptyAuthorityPlaceholder].join('/') + resourceURI.path,
 		});
 	}
 
@@ -629,8 +650,8 @@ export namespace McpResourceURI {
 			definitionId: decodeHex(uri.authority).toString(),
 			resourceURI: uri.with({
 				scheme: serverScheme,
-				authority,
-				path: '/' + path.join('/'),
+				authority: authority.toLowerCase() === emptyAuthorityPlaceholder ? '' : authority,
+				path: path.length ? ('/' + path.join('/')) : '',
 			}),
 		};
 	}
@@ -705,3 +726,20 @@ export const enum McpToolName {
 	MaxPrefixLen = 18,
 	MaxLength = 64,
 }
+
+
+export interface IMcpElicitationService {
+	_serviceBrand: undefined;
+
+	/**
+	 * Elicits a response from the user. The `context` is optional and can be used
+	 * to provide additional information about the request.
+	 *
+	 * @param context Context for the elicitation, e.g. chat session ID.
+	 * @param elicitation Request to elicit a response.
+	 * @returns A promise that resolves to an {@link ElicitationResult}.
+	 */
+	elicit(server: IMcpServer, context: IMcpToolCallContext | undefined, elicitation: MCP.ElicitRequest['params'], token: CancellationToken): Promise<MCP.ElicitResult>;
+}
+
+export const IMcpElicitationService = createDecorator<IMcpElicitationService>('IMcpElicitationService');

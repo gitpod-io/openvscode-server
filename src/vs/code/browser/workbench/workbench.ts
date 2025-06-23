@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { isStandalone } from '../../../base/browser/browser.js';
+import { addDisposableListener } from '../../../base/browser/dom.js';
 import { mainWindow } from '../../../base/browser/window.js';
 import { VSBuffer, decodeBase64, encodeBase64 } from '../../../base/common/buffer.js';
 import { Emitter } from '../../../base/common/event.js';
@@ -340,9 +341,7 @@ class LocalStorageURLCallbackProvider extends Disposable implements IURLCallback
 			return;
 		}
 
-		const fn = () => this.onDidChangeLocalStorage();
-		mainWindow.addEventListener('storage', fn);
-		this.onDidChangeLocalStorageDisposable = { dispose: () => mainWindow.removeEventListener('storage', fn) };
+		this.onDidChangeLocalStorageDisposable = addDisposableListener(mainWindow, 'storage', () => this.onDidChangeLocalStorage());
 	}
 
 	private stopListening(): void {
@@ -598,14 +597,10 @@ function readCookie(name: string): string | undefined {
 	if (!configElement || !configElementAttribute) {
 		throw new Error('Missing web configuration element');
 	}
-	const originalConfig: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = JSON.parse(configElementAttribute);
+	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = JSON.parse(configElementAttribute);
 	const secretStorageKeyPath = readCookie('vscode-secret-key-path');
 	const secretStorageCrypto = secretStorageKeyPath && ServerKeyedAESCrypto.supported()
 		? new ServerKeyedAESCrypto(secretStorageKeyPath) : new TransparentCrypto();
-	const config: IWorkbenchConstructionOptions & { folderUri?: UriComponents; workspaceUri?: UriComponents; callbackRoute: string } = {
-		...originalConfig,
-		remoteAuthority: window.location.host,
-	};
 
 	// Create workbench
 	create(mainWindow.document.body, {

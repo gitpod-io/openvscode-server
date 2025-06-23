@@ -27,7 +27,7 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { IWorkbenchAssignmentService } from '../../../services/assignment/common/assignmentService.js';
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IChatAgentService } from './chatAgents.js';
-import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, isImageVariableEntry, normalizeSerializableChatData, toChatHistoryContent, updateRanges } from './chatModel.js';
+import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, toChatHistoryContent, updateRanges } from './chatModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './chatParserTypes.js';
 import { ChatRequestParser } from './chatRequestParser.js';
 import { IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatService, IChatTransferredSessionData, IChatUserActionEvent } from './chatService.js';
@@ -35,6 +35,7 @@ import { ChatServiceTelemetry } from './chatServiceTelemetry.js';
 import { ChatSessionStore, IChatTransfer2 } from './chatSessionStore.js';
 import { IChatSlashCommandService } from './chatSlashCommands.js';
 import { IChatTransferService } from './chatTransferService.js';
+import { IChatRequestVariableEntry, isImageVariableEntry } from './chatVariableEntries.js';
 import { ChatAgentLocation, ChatConfiguration, ChatMode } from './constants.js';
 import { ChatMessageRole, IChatMessage, ILanguageModelsService } from './languageModels.js';
 import { ILanguageModelToolsService } from './languageModelToolsService.js';
@@ -483,23 +484,47 @@ export class ChatService extends Disposable implements IChatService {
 		// for it to be ready so that the session can be used immediately
 		// without having to wait for the agent to be ready.
 		this.activateDefaultAgent(model.initialLocation).catch(e => this.logService.error(e));
-	}
-
-	async activateDefaultAgent(location: ChatAgentLocation): Promise<void> {
+	} async activateDefaultAgent(location: ChatAgentLocation): Promise<void> {
 		await this.extensionService.whenInstalledExtensionsRegistered();
 
 		const defaultAgentData = this.chatAgentService.getContributedDefaultAgent(location) ?? this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel);
 		if (!defaultAgentData) {
-			throw new ErrorNoTelemetry('No default agent contributed');
+			this.logService.warn('[ChatService] No default agent contributed - this is expected in web environments with browser default agent');
+			// In browser environments, we expect the browser default agent to be registered
+			// which is a core agent and doesn't require activation through this method
+			return;
 		}
 
-		// No setup participant to fall back on- wait for extension activation
-		await this.extensionService.activateByEvent(`onChatParticipant:${defaultAgentData.id}`);
+		// Check if the agent is already activated
+		const existingAgent = this.chatAgentService.getActivatedAgents().find(agent => agent.id === defaultAgentData.id);
+		if (existingAgent) {
+			return; // Agent already activated
+		}
+
+		// Await activation of the extension provided agent
+		// Using `activateById` as workaround for the issue
+		// https://github.com/microsoft/vscode/issues/250590
+		this.logService.info(`[ChatService] Activating default agent: ${defaultAgentData.id}`);
+		if (!defaultAgentData.isCore) {
+			try {
+				await this.extensionService.activateById(defaultAgentData.extensionId, {
+					activationEvent: `onChatParticipant:${defaultAgentData.id}`,
+					extensionId: defaultAgentData.extensionId,
+					startup: false
+				});
+			} catch (error) {
+				this.logService.error(`[ChatService] Failed to activate default agent extension: ${error}`);
+				throw new ErrorNoTelemetry(`Failed to activate default agent: ${error}`);
+			}
+		}
 
 		const defaultAgent = this.chatAgentService.getActivatedAgents().find(agent => agent.id === defaultAgentData.id);
 		if (!defaultAgent) {
+			this.logService.error('[ChatService] Default agent not found after activation');
 			throw new ErrorNoTelemetry('No default agent registered');
 		}
+
+		this.logService.info(`[ChatService] Successfully activated default agent: ${defaultAgent.id}`);
 	}
 
 	getSession(sessionId: string): IChatModel | undefined {
@@ -711,12 +736,11 @@ export class ChatService extends Disposable implements IChatService {
 					agentExtensionId: detectedAgent?.extensionId.value ?? agentPart?.agent.extensionId.value ?? '',
 					slashCommand: agentSlashCommandPart ? agentSlashCommandPart.command.name : commandPart?.slashCommand.command,
 					chatSessionId: model.sessionId,
-					location,
-					citations: request?.response?.codeCitations.length ?? 0,
+					location, citations: request?.response?.codeCitations.length ?? 0,
 					numCodeBlocks: getCodeBlocks(request.response?.response.toString() ?? '').length,
 					isParticipantDetected: !!detectedAgent,
 					enableCommandDetection,
-					attachmentKinds: this.attachmentKindsForTelemetry(request.variableData),
+					attachmentKinds: this.attachmentKindsForTelemetry(request?.variableData ?? { variables: [] }),
 					model: this.resolveModelId(options?.userSelectedModelId),
 				});
 
@@ -732,6 +756,10 @@ export class ChatService extends Disposable implements IChatService {
 					const prepareChatAgentRequest = (agent: IChatAgentData, command?: IChatAgentCommand, enableCommandDetection?: boolean, chatRequest?: ChatRequestModel, isParticipantDetected?: boolean): IChatAgentRequest => {
 						const initVariableData: IChatRequestVariableData = { variables: [] };
 						request = chatRequest ?? model.addRequest(parsedRequest, initVariableData, attempt, agent, command, options?.confirmation, options?.locationData, options?.attachedContext, undefined, options?.userSelectedModelId);
+
+						if (!request) {
+							throw new Error('Failed to create chat request');
+						}
 
 						let variableData: IChatRequestVariableData;
 						let message: string;
@@ -764,7 +792,6 @@ export class ChatService extends Disposable implements IChatService {
 							userSelectedModelId: options?.userSelectedModelId,
 							userSelectedTools: options?.userSelectedTools,
 							modeInstructions: options?.modeInstructions,
-							toolSelectionIsExclusive: options?.toolSelectionIsExclusive,
 							editedFileEvents: request.editedFileEvents
 						} satisfies IChatAgentRequest;
 					};
@@ -852,10 +879,9 @@ export class ChatService extends Disposable implements IChatService {
 						chatSessionId: model.sessionId,
 						enableCommandDetection,
 						isParticipantDetected: !!detectedAgent,
-						location,
-						citations: request.response?.codeCitations.length ?? 0,
+						location, citations: request.response?.codeCitations.length ?? 0,
 						numCodeBlocks: getCodeBlocks(request.response?.response.toString() ?? '').length,
-						attachmentKinds: this.attachmentKindsForTelemetry(request.variableData),
+						attachmentKinds: this.attachmentKindsForTelemetry(request?.variableData ?? { variables: [] }),
 						model: this.resolveModelId(options?.userSelectedModelId),
 					});
 					model.setResponse(request, rawResult);
@@ -888,10 +914,9 @@ export class ChatService extends Disposable implements IChatService {
 					chatSessionId: model.sessionId,
 					location,
 					citations: 0,
-					numCodeBlocks: 0,
-					enableCommandDetection,
+					numCodeBlocks: 0, enableCommandDetection,
 					isParticipantDetected: !!detectedAgent,
-					attachmentKinds: this.attachmentKindsForTelemetry(request.variableData),
+					attachmentKinds: this.attachmentKindsForTelemetry(request?.variableData ?? { variables: [] }),
 					model: this.resolveModelId(options?.userSelectedModelId)
 				});
 				this.logService.error(`Error while handling chat request: ${toErrorMessage(err, true)}`);

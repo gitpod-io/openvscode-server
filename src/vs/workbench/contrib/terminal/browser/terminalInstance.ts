@@ -91,6 +91,7 @@ import { IContextMenuService } from '../../../../platform/contextview/browser/co
 import { TerminalContribCommandId } from '../terminalContribExports.js';
 import type { IProgressState } from '@xterm/addon-progress';
 import { refreshShellIntegrationInfoStatus } from './terminalTooltip.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
 
 const enum Constants {
 	/**
@@ -361,6 +362,8 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	}));
 	readonly onLineData = this._onLineData.event;
 
+	readonly sessionId = generateUuid();
+
 	constructor(
 		private readonly _terminalShellTypeContextKey: IContextKey<string>,
 		private _shellLaunchConfig: IShellLaunchConfig,
@@ -565,9 +568,6 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		this._register(this._configurationService.onDidChangeConfiguration(async e => {
 			if (e.affectsConfiguration(AccessibilityVerbositySettingId.Terminal)) {
 				this._setAriaLabel(this.xterm?.raw, this._instanceId, this.title);
-			}
-			if (e.affectsConfiguration(TerminalSettingId.KillGracefully)) {
-				this.shellLaunchConfig.killGracefully = this._configurationService.getValue(TerminalSettingId.KillGracefully);
 			}
 			if (e.affectsConfiguration('terminal.integrated')) {
 				this.updateConfig();
@@ -795,7 +795,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 			capabilities: this.capabilities,
 			shellIntegrationNonce: this._processManager.shellIntegrationNonce,
 			disableShellIntegrationReporting,
-		});
+		}, this.onDidExecuteText);
 		this.xterm = xterm;
 		this._resizeDebouncer = this._register(new TerminalResizeDebouncer(
 			() => this._isVisible,
@@ -1320,6 +1320,11 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		}
 	}
 
+	async sendSignal(signal: string): Promise<void> {
+		this._logService.debug('sending signal (vscode)', signal);
+		await this._processManager.sendSignal(signal);
+	}
+
 	async sendPath(originalPath: string | URI, shouldExecute: boolean): Promise<void> {
 		return this.sendText(await this.preparePathForShell(originalPath), shouldExecute);
 	}
@@ -1509,7 +1514,6 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 				message: nls.localize('workspaceNotTrustedCreateTerminalCwd', "Cannot launch a terminal process in an untrusted workspace with cwd {0} and userHome {1}", this._cwd, this._userHome)
 			});
 		}
-		this.shellLaunchConfig.killGracefully = this._configurationService.getValue(TerminalSettingId.KillGracefully);
 		// Re-evaluate dimensions if the container has been set since the xterm instance was created
 		if (this._container && this._cols === 0 && this._rows === 0) {
 			this._initDimensions();

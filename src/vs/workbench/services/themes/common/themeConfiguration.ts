@@ -14,6 +14,7 @@ import { workbenchColorsSchemaId } from '../../../../platform/theme/common/color
 import { tokenStylingSchemaId } from '../../../../platform/theme/common/tokenClassificationRegistry.js';
 import { ThemeSettings, IWorkbenchColorTheme, IWorkbenchFileIconTheme, IColorCustomizations, ITokenColorCustomizations, IWorkbenchProductIconTheme, ISemanticTokenColorCustomizations, ThemeSettingTarget, ThemeSettingDefaults } from './workbenchThemeService.js';
 import { IConfigurationService, ConfigurationTarget } from '../../../../platform/configuration/common/configuration.js';
+import { isWeb } from '../../../../base/common/platform.js';
 import { ColorScheme } from '../../../../platform/theme/common/theme.js';
 import { IHostColorSchemeService } from './hostColorSchemeService.js';
 
@@ -33,7 +34,7 @@ export const COLOR_THEME_CONFIGURATION_SETTINGS_TAG = 'colorThemeConfiguration';
 const colorThemeSettingSchema: IConfigurationPropertySchema = {
 	type: 'string',
 	markdownDescription: nls.localize({ key: 'colorTheme', comment: ['{0} will become a link to another setting.'] }, "Specifies the color theme used in the workbench when {0} is not enabled.", formatSettingAsLink(ThemeSettings.DETECT_COLOR_SCHEME)),
-	default: ThemeSettingDefaults.COLOR_THEME_DARK,
+	default: isWeb ? ThemeSettingDefaults.COLOR_THEME_LIGHT : ThemeSettingDefaults.COLOR_THEME_DARK,
 	tags: [COLOR_THEME_CONFIGURATION_SETTINGS_TAG],
 	enum: colorThemeSettingEnum,
 	enumDescriptions: colorThemeSettingEnumDescriptions,
@@ -359,7 +360,7 @@ export class ThemeConfiguration {
 		return ConfigurationTarget.USER;
 	}
 
-	private async writeConfiguration(key: string, value: any, settingsTarget: ThemeSettingTarget): Promise<void> {
+	private async writeConfiguration(key: string, value: unknown, settingsTarget: ThemeSettingTarget): Promise<void> {
 		if (settingsTarget === undefined || settingsTarget === 'preview') {
 			return;
 		}

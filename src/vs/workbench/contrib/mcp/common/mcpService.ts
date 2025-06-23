@@ -114,8 +114,9 @@ export class McpService extends Disposable implements IMcpService {
 					id: tool.id,
 					source,
 					icon: Codicon.tools,
-					displayName: tool.definition.annotations?.title || tool.definition.name,
-					toolReferenceName: tool.id,
+					// duplicative: https://github.com/modelcontextprotocol/modelcontextprotocol/pull/813
+					displayName: tool.definition.annotations?.title || tool.definition.title || tool.definition.name,
+					toolReferenceName: tool.referenceName,
 					modelDescription: tool.definition.description ?? '',
 					userDescription: tool.definition.description ?? '',
 					inputSchema: tool.definition.inputSchema,
@@ -251,19 +252,20 @@ class McpToolImplementation implements IToolImpl {
 
 		const mcpToolWarning = localize(
 			'mcp.tool.warning',
-			"{0} Note that MCP servers or malicious conversation content may attempt to misuse '{1}' through tools.",
-			'$(info)',
+			"Note that MCP servers or malicious conversation content may attempt to misuse '{0}' through tools.",
 			this._productService.nameShort
 		);
 
 		const needsConfirmation = !tool.definition.annotations?.readOnlyHint;
-		const title = tool.definition.annotations?.title || ('`' + tool.definition.name + '`');
+		// duplicative: https://github.com/modelcontextprotocol/modelcontextprotocol/pull/813
+		const title = tool.definition.annotations?.title || tool.definition.title || ('`' + tool.definition.name + '`');
 		const subtitle = localize('msg.subtitle', "{0} (MCP Server)", server.definition.label);
 
 		return {
 			confirmationMessages: needsConfirmation ? {
 				title: new MarkdownString(localize('msg.title', "Run {0}", title)),
-				message: new MarkdownString(localize('msg.msg', "{0}\n\n {1}", tool.definition.description, mcpToolWarning), { supportThemeIcons: true }),
+				message: new MarkdownString(tool.definition.description, { supportThemeIcons: true }),
+				disclaimer: mcpToolWarning,
 				allowAutoConfirm: true,
 			} : undefined,
 			invocationMessage: new MarkdownString(localize('msg.run', "Running {0}", title)),
@@ -286,7 +288,7 @@ class McpToolImplementation implements IToolImpl {
 			content: []
 		};
 
-		const callResult = await this._tool.callWithProgress(invocation.parameters as Record<string, any>, progress, token);
+		const callResult = await this._tool.callWithProgress(invocation.parameters as Record<string, any>, progress, { chatRequestId: invocation.chatRequestId, chatSessionId: invocation.context?.sessionId }, token);
 		const details: IToolResultInputOutputDetails = {
 			input: JSON.stringify(invocation.parameters, undefined, 2),
 			output: [],
@@ -324,6 +326,8 @@ class McpToolImplementation implements IToolImpl {
 			} else if (item.type === 'image' || item.type === 'audio') {
 				// default to some image type if not given to hint
 				addAsInlineData(item.mimeType || 'image/png', item.data);
+			} else if (item.type === 'resource_link') {
+				// todo@connor4312 look at what we did before #250329 and use that here
 			} else if (item.type === 'resource') {
 				const uri = McpResourceURI.fromServer(this._server.definition, item.resource.uri);
 				if (item.resource.mimeType && getAttachableImageExtension(item.resource.mimeType) && 'blob' in item.resource) {

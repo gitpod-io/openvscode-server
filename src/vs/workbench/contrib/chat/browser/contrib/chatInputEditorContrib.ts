@@ -15,6 +15,7 @@ import { inputPlaceholderForeground } from '../../../../../platform/theme/common
 import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
 import { IChatAgentCommand, IChatAgentData, IChatAgentService } from '../../common/chatAgents.js';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from '../../common/chatColors.js';
+import { IChatModeService } from '../../common/chatModes.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestSlashPromptPart, ChatRequestTextPart, ChatRequestToolPart, ChatRequestToolSetPart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader } from '../../common/chatParserTypes.js';
 import { ChatRequestParser } from '../../common/chatRequestParser.js';
 import { IChatWidget } from '../chat.js';
@@ -27,6 +28,9 @@ const slashCommandTextDecorationType = 'chat-session-text';
 const variableTextDecorationType = 'chat-variable-text';
 
 function agentAndCommandToKey(agent: IChatAgentData, subcommand: string | undefined): string {
+	if (!agent || !agent.id) {
+		return '';
+	}
 	return subcommand ? `${agent.id}__${subcommand}` : agent.id;
 }
 
@@ -43,6 +47,7 @@ class InputEditorDecorations extends Disposable {
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IChatModeService private readonly chatModeService: IChatModeService,
 	) {
 		super();
 
@@ -57,11 +62,13 @@ class InputEditorDecorations extends Disposable {
 			this.registerViewModelListeners();
 			this.previouslyUsedAgents.clear();
 			this.updateInputEditorDecorations();
-		}));
-		this._register(this.widget.onDidSubmitAgent((e) => {
-			this.previouslyUsedAgents.add(agentAndCommandToKey(e.agent, e.slashCommand?.name));
+		})); this._register(this.widget.onDidSubmitAgent((e) => {
+			if (e.agent && e.agent.id) {
+				this.previouslyUsedAgents.add(agentAndCommandToKey(e.agent, e.slashCommand?.name));
+			}
 		}));
 		this._register(this.chatAgentService.onDidChangeAgents(() => this.updateInputEditorDecorations()));
+		this._register(this.chatModeService.onDidChangeChatModes(() => this.updateInputEditorDecorations()));
 
 		this.registerViewModelListeners();
 	}
@@ -160,9 +167,8 @@ class InputEditorDecorations extends Disposable {
 			startColumn: part.editorRange.endColumn + 1,
 			endColumn: 1000
 		});
-
 		const onlyAgentAndWhitespace = agentPart && parsedRequest.every(p => p instanceof ChatRequestTextPart && !p.text.trim().length || p instanceof ChatRequestAgentPart);
-		if (onlyAgentAndWhitespace) {
+		if (onlyAgentAndWhitespace && agentPart.agent && agentPart.agent.metadata) {
 			// Agent reference with no other text - show the placeholder
 			const isFollowupSlashCommand = this.previouslyUsedAgents.has(agentAndCommandToKey(agentPart.agent, undefined));
 			const shouldRenderFollowupPlaceholder = isFollowupSlashCommand && agentPart.agent.metadata.followupPlaceholder;
@@ -249,20 +255,27 @@ class InputEditorSlashCommandMode extends Disposable {
 	constructor(
 		private readonly widget: IChatWidget
 	) {
-		super();
-		this._register(this.widget.onDidChangeAgent(e => {
+		super(); this._register(this.widget.onDidChangeAgent(e => {
+			if (!e.agent || !e.agent.metadata) {
+				return;
+			}
 			if (e.slashCommand && e.slashCommand.isSticky || !e.slashCommand && e.agent.metadata.isSticky) {
 				this.repopulateAgentCommand(e.agent, e.slashCommand);
 			}
 		}));
 		this._register(this.widget.onDidSubmitAgent(e => {
-			this.repopulateAgentCommand(e.agent, e.slashCommand);
+			if (e.agent && e.agent.metadata) {
+				this.repopulateAgentCommand(e.agent, e.slashCommand);
+			}
 		}));
 	}
-
 	private async repopulateAgentCommand(agent: IChatAgentData, slashCommand: IChatAgentCommand | undefined) {
 		// Make sure we don't repopulate if the user already has something in the input
 		if (this.widget.inputEditor.getValue().trim()) {
+			return;
+		}
+
+		if (!agent || !agent.metadata) {
 			return;
 		}
 

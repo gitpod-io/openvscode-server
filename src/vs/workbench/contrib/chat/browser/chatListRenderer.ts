@@ -47,9 +47,9 @@ import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { checkModeOption } from '../common/chat.js';
 import { IChatAgentMetadata } from '../common/chatAgents.js';
 import { ChatContextKeys } from '../common/chatContextKeys.js';
-import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/chatModel.js';
+import { IChatTextEditGroup } from '../common/chatModel.js';
 import { chatSubcommandLeader } from '../common/chatParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatErrorLevel, IChatConfirmation, IChatContentReference, IChatExtensionsContent, IChatFollowup, IChatMarkdownContent, IChatTask, IChatTaskSerialized, IChatToolInvocation, IChatToolInvocationSerialized, IChatTreeData, IChatUndoStop } from '../common/chatService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatErrorLevel, IChatConfirmation, IChatContentReference, IChatElicitationRequest, IChatExtensionsContent, IChatFollowup, IChatMarkdownContent, IChatTask, IChatTaskSerialized, IChatToolInvocation, IChatToolInvocationSerialized, IChatTreeData, IChatUndoStop } from '../common/chatService.js';
 import { IChatCodeCitations, IChatErrorDetailsPart, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWorkingProgress, isRequestVM, isResponseVM } from '../common/chatViewModel.js';
 import { getNWords } from '../common/chatWordCounter.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -79,8 +79,12 @@ import { ChatMarkdownRenderer } from './chatMarkdownRenderer.js';
 import { ChatEditorOptions } from './chatOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { canceledName } from '../../../../base/common/errors.js';
+import { IChatRequestVariableEntry } from '../common/chatVariableEntries.js';
+import { ChatElicitationContentPart } from './chatContentParts/chatElicitationContentPart.js';
 
 const $ = dom.$;
+
+const COPILOT_USERNAME = 'GitHub Copilot';
 
 interface IChatListItemTemplate {
 	currentElement?: ChatTreeItem;
@@ -168,7 +172,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IConfigurationService configService: IConfigurationService,
+		@IConfigurationService private readonly configService: IConfigurationService,
 		@ILogService private readonly logService: ILogService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IThemeService private readonly themeService: IThemeService,
@@ -184,7 +188,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._toolEditorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
-		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event, undefined));
+		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event, undefined, undefined));
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
 		this._toolInvocationCodeBlockCollection = this._register(this.instantiationService.createInstance(CodeBlockModelCollection, 'tools'));
@@ -438,21 +442,20 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			this.renderAvatar(element, templateData);
 		}
 
+		templateData.username.textContent = element.username;
+		templateData.username.classList.toggle('hidden', element.username === COPILOT_USERNAME);
+		templateData.avatarContainer.classList.toggle('hidden', element.username === COPILOT_USERNAME);
+
 		dom.hide(templateData.requestHover);
 		dom.clearNode(templateData.detail);
 		if (isResponseVM(element)) {
 			this.renderDetail(element, templateData);
 		}
 
+		// hack @joaomoreno
+		templateData.rowContainer.parentElement?.parentElement?.parentElement?.classList.toggle('request', isRequestVM(element));
 		templateData.rowContainer.classList.toggle(mostRecentResponseClassName, index === this.delegate.getListLength() - 1);
 		templateData.rowContainer.classList.toggle('confirmation-message', isRequestVM(element) && !!element.confirmation);
-
-		if (isRequestVM(element)) {
-			templateData.rowContainer.tabIndex = -1;
-		} else {
-			templateData.rowContainer.tabIndex = 0;
-		}
-
 
 		// TODO: @justschen decide if we want to hide the header for requests or not
 		const shouldShowHeader = isResponseVM(element) && !this.rendererOptions.noHeader;
@@ -803,6 +806,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private getNextProgressiveRenderContent(element: IChatResponseViewModel): { content: IChatRendererContent[]; moreContentAvailable: boolean } {
 		const data = this.getDataForProgressiveRender(element);
 
+		// An unregistered setting for development- skip the word counting and smoothing, just render content as it comes in
+		const renderImmediately = this.configService.getValue<boolean>('chat.experimental.renderMarkdownImmediately') === true;
+
 		const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
 
 		this.traceLayout('getNextProgressiveRenderContent', `Want to render ${data.numWordsToRender} at ${data.rate} words/s, counting...`);
@@ -816,7 +822,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		let moreContentAvailable = false;
 		for (let i = 0; i < renderableResponse.length; i++) {
 			const part = renderableResponse[i];
-			if (part.kind === 'markdownContent') {
+			if (part.kind === 'markdownContent' && !renderImmediately) {
 				const wordCountResult = getNWords(part.content.value, numNeededWords);
 				this.traceLayout('getNextProgressiveRenderContent', `  Chunk ${i}: Want to render ${numNeededWords} words and found ${wordCountResult.returnedWordCount} words. Total words in chunk: ${wordCountResult.totalWordCount}`);
 				numNeededWords -= wordCountResult.returnedWordCount;
@@ -958,6 +964,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				return this.renderUndoStop(content);
 			} else if (content.kind === 'errorDetails') {
 				return this.renderChatErrorDetails(context, content, templateData);
+			} else if (content.kind === 'elicitation') {
+				return this.renderElicitation(context, content, templateData);
 			}
 
 			return this.renderNoContent(other => content.kind === other.kind);
@@ -1131,6 +1139,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return part;
 	}
 
+	private renderElicitation(context: IChatContentPartRenderContext, elicitation: IChatElicitationRequest, templateData: IChatListItemTemplate): IChatContentPart {
+		const part = this.instantiationService.createInstance(ChatElicitationContentPart, elicitation, context);
+		part.addDisposable(part.onDidChangeHeight(() => this.updateItemHeight(templateData)));
+		return part;
+	}
+
 	private renderAttachments(variables: IChatRequestVariableEntry[], contentReferences: ReadonlyArray<IChatContentReference> | undefined, templateData: IChatListItemTemplate) {
 		return this.instantiationService.createInstance(ChatAttachmentsContentPart, variables, contentReferences, undefined);
 	}
@@ -1152,6 +1166,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const markdownPart = templateData.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection, {});
 		if (isRequestVM(element)) {
 			markdownPart.domNode.tabIndex = 0;
+			markdownPart.addDisposable(dom.addDisposableListener(markdownPart.domNode, 'focus', () => {
+				dom.show(templateData.requestHover);
+			}));
+			markdownPart.addDisposable(dom.addDisposableListener(markdownPart.domNode, 'blur', () => {
+				dom.hide(templateData.requestHover);
+			}));
 		}
 
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {

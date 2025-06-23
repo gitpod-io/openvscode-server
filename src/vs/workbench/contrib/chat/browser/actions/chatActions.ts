@@ -59,7 +59,7 @@ import { CopilotUsageExtensionFeatureId } from '../../common/languageModelStats.
 import { ILanguageModelToolsService } from '../../common/languageModelToolsService.js';
 import { ChatViewId, IChatWidget, IChatWidgetService, showChatView, showCopilotView } from '../chat.js';
 import { IChatEditorOptions } from '../chatEditor.js';
-import { ChatEditorInput } from '../chatEditorInput.js';
+import { ChatEditorInput, shouldShowClearEditingSessionConfirmation, showClearEditingSessionConfirmation } from '../chatEditorInput.js';
 import { ChatViewPane } from '../chatViewPane.js';
 import { convertBufferToScreenshotVariable } from '../contrib/screenshot.js';
 import { clearChatEditor } from './chatClear.js';
@@ -146,7 +146,7 @@ abstract class OpenChatGlobalAction extends Action2 {
 
 		let switchToMode = opts?.mode ?? this.mode;
 		if (!switchToMode) {
-			switchToMode = opts?.query.startsWith('@') ? ChatMode.Ask : undefined;
+			switchToMode = opts?.query?.startsWith('@') ? ChatMode.Ask : undefined;
 		}
 		if (switchToMode && validateChatMode(switchToMode)) {
 			await this.handleSwitchToMode(switchToMode, chatWidget, instaService, commandService);
@@ -281,13 +281,21 @@ export function registerChatActions() {
 	registerAction2(class extends ModeOpenChatGlobalAction {
 		constructor() { super(ChatMode.Edit); }
 	});
-
 	registerAction2(class ToggleChatAction extends Action2 {
 		constructor() {
 			super({
 				id: TOGGLE_CHAT_ACTION_ID,
 				title: localize2('toggleChat', "Toggle Chat"),
-				category: CHAT_CATEGORY
+				category: CHAT_CATEGORY,
+				f1: true,
+				keybinding: {
+					weight: KeybindingWeight.WorkbenchContrib,
+					primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyI,
+					when: ContextKeyExpr.and(
+						ChatContextKeys.Setup.hidden.negate(),
+						ChatContextKeys.Setup.disabled.negate()
+					)
+				}
 			});
 		}
 
@@ -818,17 +826,12 @@ const defaultChat = {
 	completionsMenuCommand: product.defaultChatAgent?.completionsMenuCommand ?? '',
 };
 
-// Add next to the command center if command center is disabled
+// Add next to the command center if command center is enabled
 MenuRegistry.appendMenuItem(MenuId.CommandCenter, {
 	submenu: MenuId.ChatTitleBarMenu,
 	title: localize('title4', "Copilot"),
 	icon: Codicon.copilot,
 	when: ContextKeyExpr.and(
-		ChatContextKeys.supported,
-		ContextKeyExpr.and(
-			ChatContextKeys.Setup.hidden.negate(),
-			ChatContextKeys.Setup.disabled.negate()
-		),
 		ContextKeyExpr.has('config.chat.commandCenter.enabled')
 	),
 	order: 10001 // to the right of command center
@@ -841,11 +844,6 @@ MenuRegistry.appendMenuItem(MenuId.TitleBar, {
 	group: 'navigation',
 	icon: Codicon.copilot,
 	when: ContextKeyExpr.and(
-		ChatContextKeys.supported,
-		ContextKeyExpr.and(
-			ChatContextKeys.Setup.hidden.negate(),
-			ChatContextKeys.Setup.disabled.negate()
-		),
 		ContextKeyExpr.has('config.chat.commandCenter.enabled'),
 		ContextKeyExpr.has('config.window.commandCenter').negate(),
 	),
@@ -859,12 +857,7 @@ registerAction2(class ToggleCopilotControl extends ToggleTitleBarConfigAction {
 			localize('toggle.chatControl', 'Copilot Controls'),
 			localize('toggle.chatControlsDescription', "Toggle visibility of the Copilot Controls in title bar"), 5,
 			ContextKeyExpr.and(
-				ContextKeyExpr.and(
-					ChatContextKeys.Setup.hidden.negate(),
-					ChatContextKeys.Setup.disabled.negate()
-				),
-				IsCompactTitleBarContext.negate(),
-				ChatContextKeys.supported
+				IsCompactTitleBarContext.negate()
 			)
 		);
 	}
@@ -899,7 +892,7 @@ export class CopilotTitleBarMenuRendering extends Disposable implements IWorkben
 
 			let primaryActionId = TOGGLE_CHAT_ACTION_ID;
 			let primaryActionTitle = localize('toggleChat', "Toggle Chat");
-			let primaryActionIcon = Codicon.copilot;
+			let primaryActionIcon = Codicon.game;
 			if (chatSentiment.installed && !chatSentiment.disabled) {
 				if (signedOut) {
 					primaryActionId = CHAT_SETUP_ACTION_ID;
@@ -990,49 +983,30 @@ export interface IClearEditingSessionConfirmationOptions {
 	messageOverride?: string;
 }
 
-export async function showClearEditingSessionConfirmation(editingSession: IChatEditingSession, dialogService: IDialogService, options?: IClearEditingSessionConfirmationOptions): Promise<boolean> {
-	const defaultPhrase = localize('chat.startEditing.confirmation.pending.message.default', "Starting a new chat will end your current edit session.");
-	const defaultTitle = localize('chat.startEditing.confirmation.title', "Start new chat?");
-	const phrase = options?.messageOverride ?? defaultPhrase;
-	const title = options?.titleOverride ?? defaultTitle;
 
-	const currentEdits = editingSession.entries.get();
-	const undecidedEdits = currentEdits.filter((edit) => edit.state.get() === ModifiedFileEntryState.Modified);
+// --- Chat Submenus in various Components
 
-	const { result } = await dialogService.prompt({
-		title,
-		message: phrase + ' ' + localize('chat.startEditing.confirmation.pending.message.2', "Do you want to keep pending edits to {0} files?", undecidedEdits.length),
-		type: 'info',
-		cancelButton: true,
-		buttons: [
-			{
-				label: localize('chat.startEditing.confirmation.acceptEdits', "Keep & Continue"),
-				run: async () => {
-					await editingSession.accept();
-					return true;
-				}
-			},
-			{
-				label: localize('chat.startEditing.confirmation.discardEdits', "Undo & Continue"),
-				run: async () => {
-					await editingSession.reject();
-					return true;
-				}
-			}
-		],
-	});
+const menuContext = ContextKeyExpr.true(); // Always show Copilot menus
 
-	return Boolean(result);
-}
+const title = localize('copilot', "Copilot");
 
-export function shouldShowClearEditingSessionConfirmation(editingSession: IChatEditingSession): boolean {
-	const currentEdits = editingSession.entries.get();
-	const currentEditCount = currentEdits.length;
+MenuRegistry.appendMenuItem(MenuId.EditorContext, {
+	submenu: MenuId.ChatTextEditorMenu,
+	group: '1_copilot',
+	title,
+	when: menuContext
+});
 
-	if (currentEditCount) {
-		const undecidedEdits = currentEdits.filter((edit) => edit.state.get() === ModifiedFileEntryState.Modified);
-		return !!undecidedEdits.length;
-	}
+MenuRegistry.appendMenuItem(MenuId.ExplorerContext, {
+	submenu: MenuId.ChatExplorerMenu,
+	group: '5_copilot',
+	title,
+	when: menuContext
+});
 
-	return false;
-}
+MenuRegistry.appendMenuItem(MenuId.TerminalInstanceContext, {
+	submenu: MenuId.ChatTerminalMenu,
+	group: '2_copilot',
+	title,
+	when: menuContext
+});

@@ -216,6 +216,28 @@ export const startEntries: GettingStartedStartEntryContent = [
 
 const Button = (title: string, href: string) => `[${title}](${href})`;
 
+const CopilotStepTitle = localize('gettingStarted.copilotSetup.title', "Use AI features with Copilot for free");
+const CopilotDescription = localize({ key: 'gettingStarted.copilotSetup.description', comment: ['{Locked="["}', '{Locked="]({0})"}'] }, "You can use [Copilot]({0}) to generate code across multiple files, fix errors, ask questions about your code and much more using natural language.", product.defaultChatAgent?.documentationUrl ?? '');
+const CopilotSignedOutButton = Button(localize('setupCopilotButton.signIn', "Set up Copilot"), `command:workbench.action.chat.triggerSetup`);
+const CopilotSignedInButton = Button(localize('setupCopilotButton.setup', "Set up Copilot"), `command:workbench.action.chat.triggerSetup`);
+const CopilotCompleteButton = Button(localize('setupCopilotButton.chatWithCopilot', "Chat with Copilot"), 'command:workbench.action.chat.open');
+
+function createCopilotSetupStep(id: string, button: string, when: string, includeTerms: boolean): BuiltinGettingStartedStep {
+	const description = includeTerms ?
+		`${CopilotDescription}\n\n${button}` :
+		`${CopilotDescription}\n${button}`;
+
+	return {
+		id,
+		title: CopilotStepTitle,
+		description,
+		when: `${when} && !chatSetupHidden`,
+		media: {
+			type: 'svg', altText: 'VS Code Copilot multi file edits', path: 'multi-file-edits.svg'
+		},
+	};
+}
+
 export const walkthroughs: GettingStartedWalkthroughContent = [
 	{
 		id: 'Setup',
@@ -229,6 +251,9 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		content: {
 			type: 'steps',
 			steps: [
+				createCopilotSetupStep('CopilotSetupSignedOut', CopilotSignedOutButton, 'chatEntitlementSignedOut', true),
+				createCopilotSetupStep('CopilotSetupComplete', CopilotCompleteButton, 'chatSetupInstalled && !chatSetupDisabled && (chatPlanPro || chatPlanProPlus || chatPlanBusiness || chatPlanEnterprise || chatPlanFree)', false),
+				createCopilotSetupStep('CopilotSetupSignedIn', CopilotSignedInButton, '!chatEntitlementSignedOut && (!chatSetupInstalled || chatSetupDisabled || chatPlanCanSignUp)', true),
 				{
 					id: 'pickColorTheme',
 					title: localize('gettingStarted.pickColor.title', "Choose your theme"),
@@ -395,16 +420,15 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					description: localize('gettingStarted.commandPalette.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in VS Code.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
 					media: { type: 'svg', altText: 'Command Palette overlay for searching and executing commands.', path: 'commandPalette.svg' },
 				},
-				// Hidden in favor of copilot entry
-				// {
-				// 	id: 'pickAFolderTask-WebWeb',
-				// 	title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
-				// 	description: localize('gettingStarted.setup.OpenFolderWeb.description.interpolated', "You're all set to start coding. You can open a local project or a remote repository to get your files into VS Code.\n{0}\n{1}", Button(localize('openFolder', "Open Folder"), 'command:workbench.action.addRootFolder'), Button(localize('openRepository', "Open Repository"), 'command:remoteHub.openRepository')),
-				// 	when: 'workspaceFolderCount == 0',
-				// 	media: {
-				// 		type: 'svg', altText: 'Explorer view showing buttons for opening folder and cloning repository.', path: 'openFolder.svg'
-				// 	}
-				// },
+				{
+					id: 'pickAFolderTask-WebWeb',
+					title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
+					description: localize('gettingStarted.setup.OpenFolderWeb.description.interpolated', "You're all set to start coding. You can open a local project or a remote repository to get your files into VS Code.\n{0}\n{1}", Button(localize('openFolder', "Open Folder"), 'command:workbench.action.addRootFolder'), Button(localize('openRepository', "Open Repository"), 'command:remoteHub.openRepository')),
+					when: 'workspaceFolderCount == 0',
+					media: {
+						type: 'svg', altText: 'Explorer view showing buttons for opening folder and cloning repository.', path: 'openFolder.svg'
+					}
+				},
 				{
 					id: 'quickOpenWeb',
 					title: localize('gettingStarted.quickOpen.title', "Quickly navigate between your files"),
@@ -706,16 +730,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 						type: 'svg', altText: 'Language extensions', path: 'languages.svg'
 					},
 				},
-				{
-					id: 'newSettingsAndSync',
-					title: localize('newgettingStarted.settings.title', "Customize every aspect of VS Code"),
-					description: localize('newgettingStarted.settingsAndSync.description.interpolated', "[Back up and sync](command:workbench.userDataSync.actions.turnOn) settings across all your devices.\n{0}", Button(localize('tweakSettings', "Open Settings"), 'command:toSide:workbench.action.openSettings')),
-					when: 'syncStatus != uninitialized',
-					completionEvents: ['onEvent:sync-enabled'],
-					media: {
-						type: 'svg', altText: 'VS Code Settings', path: 'settings.svg'
-					},
-				},
+
 			]
 		}
 	}

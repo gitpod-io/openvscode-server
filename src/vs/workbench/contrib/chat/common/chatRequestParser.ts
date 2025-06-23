@@ -12,7 +12,7 @@ import { IChatSlashCommandService } from './chatSlashCommands.js';
 import { IChatVariablesService, IDynamicVariable } from './chatVariables.js';
 import { ChatAgentLocation, ChatMode } from './constants.js';
 import { IToolData, ToolSet } from './languageModelToolsService.js';
-import { IPromptsService } from './promptSyntax/service/types.js';
+import { IPromptsService } from './promptSyntax/service/promptsService.js';
 
 const agentReg = /^@([\w_\-\.]+)(?=(\s|$|\b))/i; // An @-agent
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
@@ -103,7 +103,7 @@ export class ChatRequestParser {
 
 	private tryToParseAgent(message: string, fullMessage: string, offset: number, position: IPosition, parts: Array<IParsedChatRequestPart>, location: ChatAgentLocation, context: IChatParserContext | undefined): ChatRequestAgentPart | undefined {
 		const nextAgentMatch = message.match(agentReg);
-		if (!nextAgentMatch || context?.mode !== undefined && context.mode !== ChatMode.Ask) {
+		if (!nextAgentMatch) {
 			return;
 		}
 
@@ -125,6 +125,10 @@ export class ChatRequestParser {
 			context.selectedAgent :
 			agents.find((a) => a.locations.includes(location));
 		if (!agent) {
+			return;
+		}
+
+		if (context?.mode && !agent.modes.includes(context.mode)) {
 			return;
 		}
 

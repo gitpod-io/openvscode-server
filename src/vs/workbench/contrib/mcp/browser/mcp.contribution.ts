@@ -33,10 +33,11 @@ import { IMcpRegistry } from '../common/mcpRegistryTypes.js';
 import { McpResourceFilesystem } from '../common/mcpResourceFilesystem.js';
 import { McpSamplingService } from '../common/mcpSamplingService.js';
 import { McpService } from '../common/mcpService.js';
-import { HasInstalledMcpServersContext, IMcpSamplingService, IMcpService, IMcpWorkbenchService, InstalledMcpServersViewId, McpServersGalleryEnabledContext } from '../common/mcpTypes.js';
+import { HasInstalledMcpServersContext, IMcpElicitationService, IMcpSamplingService, IMcpService, IMcpWorkbenchService, InstalledMcpServersViewId, McpServersGalleryEnabledContext } from '../common/mcpTypes.js';
 import { McpAddContextContribution } from './mcpAddContextContribution.js';
-import { AddConfigurationAction, EditStoredInput, InstallFromActivation, ListMcpServerCommand, McpBrowseCommand, McpBrowseResourcesCommand, McpConfigureSamplingModels, MCPServerActionRendering, McpServerOptionsCommand, RemoveStoredInput, ResetMcpCachedTools, ResetMcpTrustCommand, RestartServer, ShowConfiguration, ShowOutput, StartServer, StopServer } from './mcpCommands.js';
+import { AddConfigurationAction, EditStoredInput, InstallFromActivation, ListMcpServerCommand, McpBrowseCommand, McpBrowseResourcesCommand, McpConfigureSamplingModels, MCPServerActionRendering, McpServerOptionsCommand, McpStartPromptingServerCommand, RemoveStoredInput, ResetMcpCachedTools, ResetMcpTrustCommand, RestartServer, ShowConfiguration, ShowOutput, StartServer, StopServer } from './mcpCommands.js';
 import { McpDiscovery } from './mcpDiscovery.js';
+import { McpElicitationService } from './mcpElicitationService.js';
 import { McpLanguageFeatures } from './mcpLanguageFeatures.js';
 import { McpResourceQuickAccess } from './mcpResourceQuickAccess.js';
 import { McpServerEditor } from './mcpServerEditor.js';
@@ -51,6 +52,7 @@ registerSingleton(IMcpWorkbenchService, McpWorkbenchService, InstantiationType.E
 registerSingleton(IMcpConfigPathsService, McpConfigPathsService, InstantiationType.Delayed);
 registerSingleton(IMcpDevModeDebugging, McpDevModeDebugging, InstantiationType.Delayed);
 registerSingleton(IMcpSamplingService, McpSamplingService, InstantiationType.Delayed);
+registerSingleton(IMcpElicitationService, McpElicitationService, InstantiationType.Delayed);
 
 mcpDiscoveryRegistry.register(new SyncDescriptor(RemoteNativeMpcDiscovery));
 mcpDiscoveryRegistry.register(new SyncDescriptor(ConfigMcpDiscovery));
@@ -79,6 +81,7 @@ registerAction2(ShowConfiguration);
 registerAction2(McpBrowseCommand);
 registerAction2(McpBrowseResourcesCommand);
 registerAction2(McpConfigureSamplingModels);
+registerAction2(McpStartPromptingServerCommand);
 
 registerWorkbenchContribution2('mcpActionRendering', MCPServerActionRendering, WorkbenchPhase.BlockRestore);
 registerWorkbenchContribution2('mcpAddContext', McpAddContextContribution, WorkbenchPhase.Eventually);
@@ -120,7 +123,7 @@ Registry.as<IQuickAccessRegistry>(QuickAccessExtensions.Quickaccess).registerQui
 	prefix: McpResourceQuickAccess.PREFIX,
 	placeholder: localize('mcp.quickaccess.placeholder', "Filter to an MCP resource"),
 	helpEntries: [{
-		description: localize('mcp.quickaccess.add', "Add Server"),
+		description: localize('mcp.quickaccess.add', "MCP Server Resources"),
 		commandId: McpCommandIds.AddConfiguration
 	}]
 });

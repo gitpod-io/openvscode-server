@@ -1736,7 +1736,7 @@ export class SearchView extends ViewPane {
 			const noResultsMessage = nls.localize('noResultsFallback', "No results found. ");
 			dom.append(messageEl, noResultsMessage);
 
-			let aiName = 'Copilot';
+			let aiName = 'Gopi';
 			try {
 				aiName = (await this.searchService.getAIName()) || aiName;
 			} catch (e) {
@@ -2095,7 +2095,7 @@ export class SearchView extends ViewPane {
 		if (!aiSearchPromise) {
 			this.viewModel.searchResult.setAIQueryUsingTextQuery();
 			aiSearchPromise = this._pendingSemanticSearchPromise = this.viewModel.aiSearch(result => {
-				if (isAIKeyword(result)) {
+				if (result && isAIKeyword(result)) {
 					this.updateKeywordSuggestionUI(result);
 					return;
 				}
