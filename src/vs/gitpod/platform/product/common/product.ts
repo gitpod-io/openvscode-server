@@ -39,6 +39,7 @@ export function addCustomGitpodProductProperties(product: IProductConfiguration)
 			resourceUrlTemplate: `${openvsxUrl}/vscode/unpkg/{publisher}/{name}/{version}/{path}`, // Hardcoded for now until open-vsx proxy is fixed
 			controlUrl: `https://ide.${baseHost}/code/marketplace.json`,
 			nlsBaseUrl: '',
+			mcpUrl: '',
 		},
 		'configurationSync.store': {
 			url: `https://${baseHost}/code-sync`,
