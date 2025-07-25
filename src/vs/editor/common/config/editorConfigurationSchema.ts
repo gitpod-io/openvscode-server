@@ -111,6 +111,7 @@ const editorConfiguration: IConfigurationNode = {
 			description: nls.localize('editor.experimental.asyncTokenizationVerification', "Controls whether async tokenization should be verified against legacy background tokenization. Might slow down tokenization. For debugging only."),
 			tags: ['experimental'],
 		},
+		// Gitpod: disable telemetry
 		// 'editor.experimental.treeSitterTelemetry': {
 		// 	type: 'boolean',
 		// 	default: false,
