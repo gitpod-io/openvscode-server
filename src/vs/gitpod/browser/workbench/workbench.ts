@@ -825,7 +825,7 @@ async function doStart(): Promise<IDisposable> {
 						// override it as a temporary network error
 						e = new RemoteAuthorityResolverError('WebSocket closed', RemoteAuthorityResolverErrorCode.TemporarilyNotAvailable, e);
 					}
-					onError.fire(e);
+					onError.fire(e as any as RemoteAuthorityResolverError);
 				});
 				return {
 					onData: socket.onData,
