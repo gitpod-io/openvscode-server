@@ -64,6 +64,7 @@ class MockProductService implements IProductService {
 	get urlProtocol() { return 'test-vscode'; }
 	get extensionAllowedProposedApi() { return []; }
 	get extensionProperties() { return {}; }
+	get segmentKey() { return ''; }
 }
 
 suite('CoreExperimentationService', () => {
