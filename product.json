@@ -40,6 +40,9 @@
 	"nodejsRepository": "https://nodejs.org",
 	"urlProtocol": "openvscode-server",
 	"embedderIdentifier": "openvscode-server",
+	"accountsActivity": {
+		"defaultVisible": false
+	},
 	"webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
 	"extensionRecommendations": {
 		"muhammad-sammy.csharp": {
@@ -49,9 +52,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"csharp"
-					],
+					"languages": ["csharp"],
 					"important": true
 				},
 				{
@@ -66,9 +67,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"python"
-					],
+					"languages": ["python"],
 					"important": true
 				},
 				{
@@ -82,9 +81,7 @@
 					"pathGlob": "{**/*.py}",
 					"contentPattern": "^#\\s*%%$",
 					"important": true,
-					"whenInstalled": [
-						"ms-python.python"
-					]
+					"whenInstalled": ["ms-python.python"]
 				},
 				{
 					"pathGlob": "{**/*.ipynb}"
@@ -98,9 +95,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"go"
-					],
+					"languages": ["go"],
 					"important": true
 				}
 			]
@@ -110,20 +105,12 @@
 				{
 					"pathGlob": "{**/*.java}",
 					"important": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java",
-						"Oracle.oracle-java"
-					]
+					"whenNotInstalled": ["ASF.apache-netbeans-java", "Oracle.oracle-java"]
 				},
 				{
-					"languages": [
-						"java"
-					],
+					"languages": ["java"],
 					"important": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java",
-						"Oracle.oracle-java"
-					]
+					"whenNotInstalled": ["ASF.apache-netbeans-java", "Oracle.oracle-java"]
 				}
 			]
 		},
@@ -134,9 +121,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"powershell"
-					],
+					"languages": ["powershell"],
 					"important": true
 				},
 				{
@@ -151,9 +136,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"dockerfile"
-					],
+					"languages": ["dockerfile"],
 					"important": true
 				},
 				{
@@ -168,9 +151,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"vue"
-					],
+					"languages": ["vue"],
 					"important": true
 				}
 			]
@@ -182,9 +163,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"makefile"
-					],
+					"languages": ["makefile"],
 					"important": true
 				}
 			]
@@ -226,9 +205,7 @@
 				{
 					"pathGlob": "{**/*.bicep}",
 					"important": true,
-					"whenNotInstalled": [
-						"ms-azuretools.rad-vscode-bicep"
-					]
+					"whenNotInstalled": ["ms-azuretools.rad-vscode-bicep"]
 				}
 			]
 		},
@@ -271,9 +248,7 @@
 					"important": true
 				},
 				{
-					"languages": [
-						"r"
-					],
+					"languages": ["r"],
 					"important": true
 				}
 			]
@@ -578,9 +553,7 @@
 					"name": "Java",
 					"important": true,
 					"isExtensionPack": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
-					]
+					"whenNotInstalled": ["ASF.apache-netbeans-java"]
 				},
 				"vmware.vscode-boot-dev-pack": {
 					"name": "Spring Boot Extension Pack",
@@ -596,9 +569,7 @@
 					"name": "Java",
 					"important": true,
 					"isExtensionPack": true,
-					"whenNotInstalled": [
-						"ASF.apache-netbeans-java"
-					]
+					"whenNotInstalled": ["ASF.apache-netbeans-java"]
 				}
 			}
 		},
@@ -749,267 +720,85 @@
 		"workbench.action.openIssueReporter"
 	],
 	"extensionKeywords": {
-		"md": [
-			"Markdown"
-		],
-		"js": [
-			"JavaScript"
-		],
-		"jsx": [
-			"JavaScript"
-		],
-		"es6": [
-			"JavaScript"
-		],
-		"html": [
-			"Html"
-		],
-		"ts": [
-			"TypeScript"
-		],
-		"tsx": [
-			"TypeScript"
-		],
-		"css": [
-			"CSS"
-		],
-		"scss": [
-			"SASS"
-		],
-		"txt": [
-			"Text"
-		],
-		"php": [
-			"PHP"
-		],
-		"php3": [
-			"PHP"
-		],
-		"php4": [
-			"PHP"
-		],
-		"ph3": [
-			"PHP"
-		],
-		"ph4": [
-			"PHP"
-		],
-		"xml": [
-			"XML"
-		],
-		"py": [
-			"Python"
-		],
-		"pyc": [
-			"Python"
-		],
-		"pyd": [
-			"Python"
-		],
-		"pyo": [
-			"Python"
-		],
-		"pyw": [
-			"Python"
-		],
-		"pyz": [
-			"Python"
-		],
-		"java": [
-			"Java"
-		],
-		"class": [
-			"Java"
-		],
-		"jar": [
-			"Java"
-		],
-		"c": [
-			"c",
-			"objective c",
-			"objective-c"
-		],
-		"m": [
-			"objective c",
-			"objective-c"
-		],
-		"mm": [
-			"objective c",
-			"objective-c"
-		],
-		"cpp": [
-			"cpp",
-			"c plus plus",
-			"c",
-			"c++"
-		],
-		"cc": [
-			"cpp",
-			"c plus plus",
-			"c",
-			"c++"
-		],
-		"cxx": [
-			"cpp",
-			"c plus plus",
-			"c++"
-		],
-		"hh": [
-			"cpp",
-			"c plus plus",
-			"c++"
-		],
-		"hpp": [
-			"cpp",
-			"c++"
-		],
-		"h": [
-			"cpp",
-			"c plus plus",
-			"c++",
-			"c",
-			"objective c",
-			"objective-c"
-		],
-		"sql": [
-			"sql"
-		],
-		"sh": [
-			"bash"
-		],
-		"bash": [
-			"bash"
-		],
-		"zsh": [
-			"bash",
-			"zshell"
-		],
-		"cs": [
-			"c#",
-			"csharp"
-		],
-		"csproj": [
-			"c#",
-			"csharp"
-		],
-		"sln": [
-			"c#",
-			"csharp"
-		],
-		"go": [
-			"go"
-		],
-		"sty": [
-			"latex"
-		],
-		"tex": [
-			"latex"
-		],
-		"ps": [
-			"powershell"
-		],
-		"ps1": [
-			"powershell"
-		],
-		"rs": [
-			"rust"
-		],
-		"rslib": [
-			"rust"
-		],
-		"hs": [
-			"haskell"
-		],
-		"lhs": [
-			"haskell"
-		],
-		"scm": [
-			"scheme"
-		],
-		"ss": [
-			"scheme"
-		],
-		"clj": [
-			"clojure"
-		],
-		"cljs": [
-			"clojure"
-		],
-		"cljc": [
-			"clojure"
-		],
-		"edn": [
-			"clojure"
-		],
-		"erl": [
-			"erlang"
-		],
-		"hrl": [
-			"erlang"
-		],
-		"scala": [
-			"scala"
-		],
-		"sc": [
-			"scala"
-		],
-		"pl": [
-			"perl"
-		],
-		"pm": [
-			"perl"
-		],
-		"t": [
-			"perl"
-		],
-		"pod": [
-			"perl"
-		],
-		"groovy": [
-			"groovy"
-		],
-		"swift": [
-			"swift"
-		],
-		"rb": [
-			"ruby"
-		],
-		"rbw": [
-			"ruby"
-		],
-		"jl": [
-			"julia"
-		],
-		"f": [
-			"fortran"
-		],
-		"for": [
-			"fortran"
-		],
-		"f90": [
-			"fortran"
-		],
-		"f95": [
-			"fortran"
-		],
-		"coffee": [
-			"CoffeeScript"
-		],
-		"litcoffee": [
-			"CoffeeScript"
-		],
-		"yaml": [
-			"yaml"
-		],
-		"yml": [
-			"yaml"
-		],
-		"dart": [
-			"dart"
-		],
-		"json": [
-			"json"
-		]
+		"md": ["Markdown"],
+		"js": ["JavaScript"],
+		"jsx": ["JavaScript"],
+		"es6": ["JavaScript"],
+		"html": ["Html"],
+		"ts": ["TypeScript"],
+		"tsx": ["TypeScript"],
+		"css": ["CSS"],
+		"scss": ["SASS"],
+		"txt": ["Text"],
+		"php": ["PHP"],
+		"php3": ["PHP"],
+		"php4": ["PHP"],
+		"ph3": ["PHP"],
+		"ph4": ["PHP"],
+		"xml": ["XML"],
+		"py": ["Python"],
+		"pyc": ["Python"],
+		"pyd": ["Python"],
+		"pyo": ["Python"],
+		"pyw": ["Python"],
+		"pyz": ["Python"],
+		"java": ["Java"],
+		"class": ["Java"],
+		"jar": ["Java"],
+		"c": ["c", "objective c", "objective-c"],
+		"m": ["objective c", "objective-c"],
+		"mm": ["objective c", "objective-c"],
+		"cpp": ["cpp", "c plus plus", "c", "c++"],
+		"cc": ["cpp", "c plus plus", "c", "c++"],
+		"cxx": ["cpp", "c plus plus", "c++"],
+		"hh": ["cpp", "c plus plus", "c++"],
+		"hpp": ["cpp", "c++"],
+		"h": ["cpp", "c plus plus", "c++", "c", "objective c", "objective-c"],
+		"sql": ["sql"],
+		"sh": ["bash"],
+		"bash": ["bash"],
+		"zsh": ["bash", "zshell"],
+		"cs": ["c#", "csharp"],
+		"csproj": ["c#", "csharp"],
+		"sln": ["c#", "csharp"],
+		"go": ["go"],
+		"sty": ["latex"],
+		"tex": ["latex"],
+		"ps": ["powershell"],
+		"ps1": ["powershell"],
+		"rs": ["rust"],
+		"rslib": ["rust"],
+		"hs": ["haskell"],
+		"lhs": ["haskell"],
+		"scm": ["scheme"],
+		"ss": ["scheme"],
+		"clj": ["clojure"],
+		"cljs": ["clojure"],
+		"cljc": ["clojure"],
+		"edn": ["clojure"],
+		"erl": ["erlang"],
+		"hrl": ["erlang"],
+		"scala": ["scala"],
+		"sc": ["scala"],
+		"pl": ["perl"],
+		"pm": ["perl"],
+		"t": ["perl"],
+		"pod": ["perl"],
+		"groovy": ["groovy"],
+		"swift": ["swift"],
+		"rb": ["ruby"],
+		"rbw": ["ruby"],
+		"jl": ["julia"],
+		"f": ["fortran"],
+		"for": ["fortran"],
+		"f90": ["fortran"],
+		"f95": ["fortran"],
+		"coffee": ["CoffeeScript"],
+		"litcoffee": ["CoffeeScript"],
+		"yaml": ["yaml"],
+		"yml": ["yaml"],
+		"dart": ["dart"],
+		"json": ["json"]
 	},
 	"extensionAllowedBadgeProviders": [
 		"api.bintray.com",
@@ -1059,49 +848,20 @@
 		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
 	],
 	"extensionKind": {
-		"Shan.code-settings-sync": [
-			"ui"
-		],
-		"shalldie.background": [
-			"ui"
-		],
-		"techer.open-in-browser": [
-			"ui"
-		],
-		"CoenraadS.bracket-pair-colorizer-2": [
-			"ui"
-		],
-		"CoenraadS.bracket-pair-colorizer": [
-			"ui",
-			"workspace"
-		],
-		"hiro-sun.vscode-emacs": [
-			"ui",
-			"workspace"
-		],
-		"hnw.vscode-auto-open-markdown-preview": [
-			"ui",
-			"workspace"
-		],
-		"wayou.vscode-todo-highlight": [
-			"ui",
-			"workspace"
-		],
-		"aaron-bond.better-comments": [
-			"ui",
-			"workspace"
-		],
-		"vscodevim.vim": [
-			"ui"
-		],
-		"ollyhayes.colmak-vim": [
-			"ui"
-		]
+		"Shan.code-settings-sync": ["ui"],
+		"shalldie.background": ["ui"],
+		"techer.open-in-browser": ["ui"],
+		"CoenraadS.bracket-pair-colorizer-2": ["ui"],
+		"CoenraadS.bracket-pair-colorizer": ["ui", "workspace"],
+		"hiro-sun.vscode-emacs": ["ui", "workspace"],
+		"hnw.vscode-auto-open-markdown-preview": ["ui", "workspace"],
+		"wayou.vscode-todo-highlight": ["ui", "workspace"],
+		"aaron-bond.better-comments": ["ui", "workspace"],
+		"vscodevim.vim": ["ui"],
+		"ollyhayes.colmak-vim": ["ui"]
 	},
 	"extensionPointExtensionKind": {
-		"typescriptServerPlugins": [
-			"workspace"
-		]
+		"typescriptServerPlugins": ["workspace"]
 	},
 	"builtInExtensions": [
 		{
@@ -1163,7 +923,5 @@
 		"nlsBaseUrl": "",
 		"publisherUrl": ""
 	},
-	"linkProtectionTrustedDomains": [
-		"https://open-vsx.org"
-	]
+	"linkProtectionTrustedDomains": ["https://open-vsx.org"]
 }

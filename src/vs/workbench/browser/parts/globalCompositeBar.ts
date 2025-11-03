@@ -64,6 +64,7 @@ export class GlobalCompositeBar extends Disposable {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IStorageService private readonly storageService: IStorageService,
 		@IExtensionService private readonly extensionService: IExtensionService,
+		@IProductService private readonly productService: IProductService,
 	) {
 		super();
 
@@ -101,6 +102,15 @@ export class GlobalCompositeBar extends Disposable {
 			ariaLabel: localize('manage', "Manage"),
 			preventLoopNavigation: true
 		}));
+
+		// Initialize Accounts visibility default from product.json if unset
+		const existingPref = this.storageService.getBoolean(AccountsActivityActionViewItem.ACCOUNTS_VISIBILITY_PREFERENCE_KEY, StorageScope.PROFILE);
+		if (existingPref === undefined) {
+			const defaultVisible = (this.productService as unknown as { accountsActivity?: { defaultVisible?: boolean } }).accountsActivity?.defaultVisible;
+			if (defaultVisible === false) {
+				setAccountsActionVisible(this.storageService, false);
+			}
+		}
 
 		if (this.accountsVisibilityPreference) {
 			this.globalActivityActionBar.push(this.accountAction, { index: GlobalCompositeBar.ACCOUNTS_ACTION_INDEX });

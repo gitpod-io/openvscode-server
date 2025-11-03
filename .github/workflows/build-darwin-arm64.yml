@@ -1,0 +1,88 @@
+name: Build OpenVSCode Server - darwin-arm64
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g., 1.106.0)'
+        required: false
+        default: '1.106.0'
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build and Package darwin-arm64
+    runs-on: macos-14  # macos-14 uses Apple Silicon (arm64)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile with minification
+        run: npm run compile-build
+        timeout-minutes: 35
+
+      - name: Compile extensions
+        run: npm run compile-extensions-build
+        timeout-minutes: 5
+
+      - name: Package server
+        run: npm run gulp vscode-reh-darwin-arm64-min-ci
+        timeout-minutes: 2
+
+      - name: Prepare archive
+        run: |
+          cd ..
+          mv vscode-reh-darwin-arm64 openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64 || true
+
+          if [ ! -d "openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64" ]; then
+            echo "Directory not found, checking for alternative locations..."
+            find . -type d -name "*vscode-reh*" -o -name "*openvscode*" | head -5
+            exit 1
+          fi
+
+          tar --owner=0 --group=0 -czf openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64.tar.gz openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64
+          ls -lh openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64
+          path: ../openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64.tar.gz
+          retention-days: 30
+          compression-level: 0  # Already compressed with tar.gz
+
+      - name: Create Release (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ../openvscode-server-v${{ steps.version.outputs.version }}-darwin-arm64.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
