@@ -27,7 +27,7 @@ jobs:
           echo "Copilot is not allowed to modify package-lock.json or Cargo.lock files."
           echo "If you need to update dependencies, please do so manually or through authorized means."
           exit 1
-      - uses: octokit/request-action@dad4362715b7fb2ddedf9772c8670824af564f0d # v2.4.0
+      - uses: octokit/request-action@b91aabaa861c777dcdb14e2387e30eddf04619ae # v3.0.0
         id: get_permissions
         if: ${{ steps.lockfile_check.outputs.lockfiles_modified == 'true' && github.event.pull_request.user.login != 'Copilot' }}
         with:
