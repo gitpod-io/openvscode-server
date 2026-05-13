@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="OpenVSCodeServer.Kestrel/OpenVSCodeServer.Kestrel.csproj" />
+  <Project Path="OpenVSCodeServer.TestHost/OpenVSCodeServer.TestHost.csproj" />
+  <Project Path="OpenVSCodeServer.Tests/OpenVSCodeServer.Tests.csproj" />
+</Solution>
