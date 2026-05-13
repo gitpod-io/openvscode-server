@@ -56,19 +56,20 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 	public async Task HandleAsync(HttpContext context, PathString pathPrefix)
 	{
 		var upstream = await _process.ReadyUri.ConfigureAwait(false);
+		var token = _process.ResolvedConnectionToken;
 
 		if (context.WebSockets.IsWebSocketRequest)
 		{
-			await ProxyWebSocketAsync(context, upstream, pathPrefix).ConfigureAwait(false);
+			await ProxyWebSocketAsync(context, upstream, pathPrefix, token).ConfigureAwait(false);
 			return;
 		}
 
-		await ProxyHttpAsync(context, upstream, pathPrefix).ConfigureAwait(false);
+		await ProxyHttpAsync(context, upstream, pathPrefix, token).ConfigureAwait(false);
 	}
 
-	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix)
+	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix, string? connectionToken)
 	{
-		var targetUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: false);
+		var targetUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: false, connectionToken);
 
 		using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), targetUri);
 
@@ -145,7 +146,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		}
 	}
 
-	private async Task ProxyWebSocketAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix)
+	private async Task ProxyWebSocketAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix, string? connectionToken)
 	{
 		using var clientSocket = new ClientWebSocket();
 
@@ -174,7 +175,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			}
 		}
 
-		var wsUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: true);
+		var wsUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: true, connectionToken);
 
 		try
 		{
@@ -197,7 +198,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			.ConfigureAwait(false);
 	}
 
-	private static Uri BuildUpstreamUri(Uri upstreamRoot, HttpRequest request, PathString pathPrefix, bool websocket)
+	internal static Uri BuildUpstreamUri(Uri upstreamRoot, HttpRequest request, PathString pathPrefix, bool websocket, string? connectionToken = null)
 	{
 		// Strip the Kestrel-mount prefix so the upstream server (which serves at the root) sees a
 		// canonical path it understands. The child server is started with --server-base-path so
@@ -213,10 +214,16 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		}
 
 		var query = request.QueryString.Value ?? string.Empty;
+		if (query.StartsWith('?'))
+		{
+			query = query[1..];
+		}
+		query = MergeConnectionToken(query, connectionToken);
+
 		var builder = new UriBuilder(upstreamRoot)
 		{
 			Path = pathPrefix.HasValue ? pathPrefix.Value + (path == "/" ? string.Empty : path) : path,
-			Query = query.StartsWith('?') ? query[1..] : query,
+			Query = query,
 		};
 
 		if (websocket)
@@ -225,6 +232,61 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		}
 
 		return builder.Uri;
+	}
+
+	/// <summary>
+	/// Ensures the connection token (when configured) is present in the upstream query string,
+	/// without duplicating an existing one. Public-internal so tests can poke at it.
+	/// </summary>
+	internal static string MergeConnectionToken(string query, string? connectionToken)
+	{
+		if (string.IsNullOrEmpty(connectionToken))
+		{
+			return query;
+		}
+
+		// Upstream openvscode-server reads the token from the "tkn" query parameter.
+		const string tokenKey = "tkn";
+
+		if (HasQueryKey(query, tokenKey))
+		{
+			// Overwrite any caller-supplied value so the parent app stays the source of truth.
+			query = StripQueryKey(query, tokenKey);
+		}
+
+		var encoded = Uri.EscapeDataString(connectionToken);
+		return string.IsNullOrEmpty(query)
+			? $"{tokenKey}={encoded}"
+			: $"{query}&{tokenKey}={encoded}";
+	}
+
+	private static bool HasQueryKey(string query, string key)
+	{
+		foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+		{
+			var equals = part.IndexOf('=');
+			var partKey = equals < 0 ? part : part[..equals];
+			if (string.Equals(partKey, key, StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static string StripQueryKey(string query, string key)
+	{
+		var kept = new List<string>();
+		foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+		{
+			var equals = part.IndexOf('=');
+			var partKey = equals < 0 ? part : part[..equals];
+			if (!string.Equals(partKey, key, StringComparison.OrdinalIgnoreCase))
+			{
+				kept.Add(part);
+			}
+		}
+		return string.Join('&', kept);
 	}
 
 	private static async Task PumpAsync(WebSocket source, WebSocket destination, CancellationToken cancellationToken)

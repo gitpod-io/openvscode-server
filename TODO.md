@@ -53,8 +53,15 @@ Tracker for the OpenVSCode Server → Kestrel port. Tick items as they complete.
 
 ## Milestone 5 – Polish / future work
 
-- [ ] Connection-token support beyond `WithoutConnectionToken=true`.
+- [x] Connection-token support beyond `WithoutConnectionToken=true`. The proxy now
+      injects the configured (or auto-generated) `tkn=` parameter on every upstream
+      request so the parent ASP.NET Core app can authenticate the browser without
+      exposing the token to it.
 - [ ] Multi-platform asset selection at runtime (we already pick a single embedded archive — extend to musl/alpine and arm64 when the build script grows).
-- [ ] NuGet packaging metadata + README on nuget.org.
+- [x] NuGet packaging metadata + README on nuget.org. (`dotnet pack` now produces a
+      well-formed .nupkg with README, LICENSE, source link and symbol packages.)
 - [ ] Optional support for sharing one Node process between multiple Kestrel mounts.
-- [ ] Graceful child-process restart on crash.
+- [x] Graceful child-process restart on crash. The hosted service relaunches the
+      child on the original port with exponential back-off, capped by
+      `MaxRestartAttempts`; reset window prevents transient crashes accumulating
+      forever.

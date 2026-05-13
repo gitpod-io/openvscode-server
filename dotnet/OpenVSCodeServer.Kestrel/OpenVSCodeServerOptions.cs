@@ -81,6 +81,36 @@ public sealed class OpenVSCodeServerOptions
 	/// available. Disabled by default to avoid surprise network access in production.
 	/// </summary>
 	public OpenVSCodeServerDownloadOptions Download { get; } = new();
+
+	/// <summary>
+	/// When true (default), the hosted service watches the child node process and restarts it
+	/// with exponential backoff if it exits unexpectedly after a successful initial startup.
+	/// </summary>
+	public bool RestartOnCrash { get; set; } = true;
+
+	/// <summary>
+	/// Maximum number of automatic restart attempts after an unexpected child exit. Zero means
+	/// unlimited. The counter resets when a restart succeeds and the child stays alive for
+	/// longer than <see cref="RestartAttemptResetWindow"/>.
+	/// </summary>
+	public int MaxRestartAttempts { get; set; } = 5;
+
+	/// <summary>
+	/// Initial delay before the first restart attempt. Subsequent attempts double the delay up
+	/// to <see cref="RestartMaxDelay"/>.
+	/// </summary>
+	public TimeSpan RestartInitialDelay { get; set; } = TimeSpan.FromSeconds(1);
+
+	/// <summary>
+	/// Upper bound on the restart back-off.
+	/// </summary>
+	public TimeSpan RestartMaxDelay { get; set; } = TimeSpan.FromSeconds(30);
+
+	/// <summary>
+	/// If a restarted child stays alive at least this long, the retry counter resets to zero so
+	/// transient crashes don't accumulate forever.
+	/// </summary>
+	public TimeSpan RestartAttemptResetWindow { get; set; } = TimeSpan.FromMinutes(2);
 }
 
 /// <summary>
