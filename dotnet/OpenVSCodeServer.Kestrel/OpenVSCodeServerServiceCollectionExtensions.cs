@@ -34,6 +34,7 @@ public static class OpenVSCodeServerServiceCollectionExtensions
 
 		services.TryAddSingleton<OpenVSCodeServerDownloader>();
 		services.TryAddSingleton<EmbeddedDistribution>();
+		services.TryAddSingleton<OpenVSCodeServerMetrics>();
 		services.TryAddSingleton<OpenVSCodeServerProcess>();
 		services.TryAddSingleton<OpenVSCodeServerProxy>();
 

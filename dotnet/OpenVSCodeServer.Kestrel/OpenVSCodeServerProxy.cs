@@ -29,14 +29,24 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 
 	private readonly ILogger<OpenVSCodeServerProxy> _logger;
 	private readonly OpenVSCodeServerProcess _process;
+	private readonly OpenVSCodeServerMetrics? _metrics;
 	private readonly HttpMessageInvoker _httpClient;
 
 	public OpenVSCodeServerProxy(
 		ILogger<OpenVSCodeServerProxy> logger,
 		OpenVSCodeServerProcess process)
+		: this(logger, process, metrics: null)
+	{
+	}
+
+	public OpenVSCodeServerProxy(
+		ILogger<OpenVSCodeServerProxy> logger,
+		OpenVSCodeServerProcess process,
+		OpenVSCodeServerMetrics? metrics)
 	{
 		_logger = logger;
 		_process = process;
+		_metrics = metrics;
 		_httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 		{
 			AllowAutoRedirect = false,
@@ -79,6 +89,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString inboundPrefix, PathString upstreamPrefix, string? connectionToken)
 	{
 		var targetUri = BuildUpstreamUri(upstreamRoot, context.Request, inboundPrefix, websocket: false, connectionToken, upstreamPrefix);
+		var sw = System.Diagnostics.Stopwatch.StartNew();
 
 		using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), targetUri);
 
@@ -122,6 +133,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		{
 			_logger.LogError(ex, "Upstream request to openvscode-server failed: {Uri}", targetUri);
 			context.Response.StatusCode = StatusCodes.Status502BadGateway;
+			_metrics?.RecordHttpRequest(StatusCodes.Status502BadGateway, sw.Elapsed.TotalMilliseconds);
 			return;
 		}
 
@@ -152,6 +164,8 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			await upstream.Content
 				.CopyToAsync(context.Response.Body, context.RequestAborted)
 				.ConfigureAwait(false);
+
+			_metrics?.RecordHttpRequest((int)upstream.StatusCode, sw.Elapsed.TotalMilliseconds);
 		}
 	}
 
@@ -201,6 +215,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			.AcceptWebSocketAsync(clientSocket.SubProtocol)
 			.ConfigureAwait(false);
 
+		using var scope = _metrics?.TrackWebSocket();
 		await Task.WhenAll(
 			PumpAsync(serverSocket, clientSocket, context.RequestAborted),
 			PumpAsync(clientSocket, serverSocket, context.RequestAborted))

@@ -128,10 +128,14 @@ The upstream openvscode-server tree is preserved so the bundled distribution can
 ## Running the CLI
 
 ```bash
-dotnet run --project dotnet/OpenVSCodeServer.TestHost
+# 1. Stage an embedded distribution (skip if you have one already, or use --external-server-path)
+scripts/download-vscode-release.sh
+
+# 2. Launch the test host
+dotnet run --project dotnet/OpenVSCodeServer.TestHost -- --workspace ~/code
 ```
 
-Listens on `http://127.0.0.1:5000/ide` by default. Pass `--workspace`, `--external-server-path`, `--path-prefix`, or `--urls` to override defaults.
+Then open `http://127.0.0.1:5000/` in a browser. The landing page links straight into the editor at `/ide/`, where the workbench loads through the Kestrel reverse-proxy. Pass `--external-server-path`, `--path-prefix`, or the standard ASP.NET Core `--urls` flag to override defaults.
 
 ## Testing
 

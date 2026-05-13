@@ -27,11 +27,35 @@ var app = builder.Build();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }));
 
-app.MapGet("/", (HttpContext context) =>
-{
-	context.Response.Redirect(pathPrefix.TrimEnd('/') + "/");
-	return Task.CompletedTask;
-});
+// Tiny landing page that links straight into the workbench. Lets `dotnet run` + open
+// http://127.0.0.1:5000 land you on the editor in one click instead of having to remember
+// the mount prefix.
+var ideHref = pathPrefix.TrimEnd('/') + "/";
+var indexHtml = $@"<!doctype html>
+<html lang=""en"">
+  <head>
+    <meta charset=""utf-8"" />
+    <title>OpenVSCode Server – Kestrel test host</title>
+    <style>
+      body {{ font-family: system-ui, sans-serif; max-width: 40rem; margin: 4rem auto; padding: 0 1rem; color: #1a1a1a; }}
+      code {{ background: #f3f3f3; padding: 0 .25rem; border-radius: .25rem; }}
+      a.cta {{ display: inline-block; margin-top: 1.5rem; padding: .6rem 1rem; background: #007acc; color: white; border-radius: .25rem; text-decoration: none; }}
+      a.cta:hover {{ background: #005c99; }}
+      ul {{ line-height: 1.7; }}
+    </style>
+  </head>
+  <body>
+    <h1>OpenVSCode Server – Kestrel test host</h1>
+    <p>This page is served by <code>OpenVSCodeServer.TestHost</code>. The embedded VS Code is mounted at <code>{System.Net.WebUtility.HtmlEncode(ideHref)}</code>.</p>
+    <a class=""cta"" href=""{System.Net.WebUtility.HtmlEncode(ideHref)}"">Open the editor →</a>
+    <ul>
+      <li>Workspace: <code>{System.Net.WebUtility.HtmlEncode(workspace)}</code></li>
+      <li>Readiness probe: <a href=""/healthz"">/healthz</a></li>
+    </ul>
+  </body>
+</html>";
+
+app.MapGet("/", () => Results.Content(indexHtml, "text/html"));
 
 app.MapOpenVSCodeServer(pathPrefix);
 
