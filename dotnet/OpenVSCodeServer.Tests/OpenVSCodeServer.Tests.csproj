@@ -20,4 +20,8 @@
     <ProjectReference Include="..\OpenVSCodeServer.TestHost\OpenVSCodeServer.TestHost.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

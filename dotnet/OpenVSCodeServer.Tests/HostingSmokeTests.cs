@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,7 @@ namespace OpenVSCodeServer.Tests;
 
 public class HostingSmokeTests
 {
-	private static bool CanReachInstall(out string? reason)
+	internal static bool CanReachInstall(out string? reason)
 	{
 		if (EmbeddedDistribution.HasEmbeddedDistribution())
 		{
@@ -35,6 +36,28 @@ public class HostingSmokeTests
 		return false;
 	}
 
+	/// <summary>
+	/// Builds a WebApplicationBuilder that points Kestrel at an isolated ephemeral port. The
+	/// TestHost project's appsettings.json (copied into this assembly's output folder via the
+	/// project reference) pins Kestrel to a fixed port via the <c>Kestrel:Endpoints</c> section,
+	/// which would collide between tests; this helper overrides that JSON config with the supplied
+	/// ephemeral port so each test gets its own listener.
+	/// </summary>
+	internal static WebApplicationBuilder CreateIsolatedBuilder(int port)
+	{
+		var builder = WebApplication.CreateBuilder();
+
+		// Replace the JSON-defined Kestrel endpoint URL with the ephemeral one so we end up
+		// listening exclusively on the test-allocated port.
+		builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+		{
+			["Kestrel:Endpoints:Http:Url"] = $"http://127.0.0.1:{port}",
+		});
+
+		builder.Logging.SetMinimumLevel(LogLevel.Warning);
+		return builder;
+	}
+
 	[Fact]
 	public async Task Host_Boots_And_Serves_Workbench()
 	{
@@ -50,17 +73,7 @@ public class HostingSmokeTests
 		var port = AllocateFreePort();
 		var external = Environment.GetEnvironmentVariable("OPENVSCODE_EXTERNAL_PATH");
 
-		var builder = WebApplication.CreateBuilder();
-		// The TestHost project ships an appsettings.json that pins Kestrel to a fixed port; that
-		// file is copied into the test output folder via the project reference and would otherwise
-		// override UseUrls below. Bind Kestrel explicitly to bypass any configured endpoints.
-		builder.WebHost.ConfigureKestrel(opts =>
-		{
-			opts.ListenLocalhost(port);
-		});
-		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
-		builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
+		var builder = CreateIsolatedBuilder(port);
 		builder.Services.AddOpenVSCodeServer(options =>
 		{
 			options.ExternalServerPath = string.IsNullOrEmpty(external) ? null : external;
@@ -84,6 +97,24 @@ public class HostingSmokeTests
 			Assert.True(
 				workbench.IsSuccessStatusCode || workbench.StatusCode == HttpStatusCode.Redirect,
 				$"Unexpected status {(int)workbench.StatusCode} on /ide/");
+
+			// When we got a 200 the body should look like the VS Code workbench shell. We don't
+			// strictly require this (302 to the workbench is also valid) but assert it whenever
+			// the server served the HTML directly so a future regression is loud.
+			if (workbench.IsSuccessStatusCode)
+			{
+				var body = await workbench.Content.ReadAsStringAsync();
+				Assert.Contains("<html", body, StringComparison.OrdinalIgnoreCase);
+				// The workbench shell loads through a bootstrap script and exposes window.product
+				// inside an inline configuration JSON. Either marker is enough to catch a wholesale
+				// proxy regression that returns the wrong page.
+				var looksLikeWorkbench =
+					body.Contains("Visual Studio Code", StringComparison.OrdinalIgnoreCase)
+					|| body.Contains("workbench", StringComparison.OrdinalIgnoreCase)
+					|| body.Contains("vscode-server", StringComparison.OrdinalIgnoreCase);
+				Assert.True(looksLikeWorkbench,
+					"Workbench HTML did not contain any VS Code marker — the proxy may be returning the wrong page.");
+			}
 		}
 		finally
 		{
@@ -109,11 +140,7 @@ public class HostingSmokeTests
 		var port = AllocateFreePort();
 		var external = Environment.GetEnvironmentVariable("OPENVSCODE_EXTERNAL_PATH");
 
-		var builder = WebApplication.CreateBuilder();
-		builder.WebHost.ConfigureKestrel(opts => opts.ListenLocalhost(port));
-		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
-		builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
+		var builder = CreateIsolatedBuilder(port);
 		builder.Services.AddOpenVSCodeServer(options =>
 		{
 			options.ExternalServerPath = string.IsNullOrEmpty(external) ? null : external;
@@ -200,11 +227,7 @@ public class HostingSmokeTests
 		var port = AllocateFreePort();
 		var external = Environment.GetEnvironmentVariable("OPENVSCODE_EXTERNAL_PATH");
 
-		var builder = WebApplication.CreateBuilder();
-		builder.WebHost.ConfigureKestrel(opts => opts.ListenLocalhost(port));
-		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
-		builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
+		var builder = CreateIsolatedBuilder(port);
 		builder.Services.AddOpenVSCodeServer(options =>
 		{
 			options.ExternalServerPath = string.IsNullOrEmpty(external) ? null : external;
@@ -255,11 +278,7 @@ public class HostingSmokeTests
 		var port = AllocateFreePort();
 		var cacheDir = Directory.CreateTempSubdirectory("openvscode-download-smoke-").FullName;
 
-		var builder = WebApplication.CreateBuilder();
-		builder.WebHost.ConfigureKestrel(opts => opts.ListenLocalhost(port));
-		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
-		builder.Logging.SetMinimumLevel(LogLevel.Warning);
-
+		var builder = CreateIsolatedBuilder(port);
 		builder.Services.AddOpenVSCodeServer(options =>
 		{
 			options.WithoutConnectionToken = true;

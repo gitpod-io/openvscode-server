@@ -46,6 +46,75 @@ public class EmbeddedDistributionTests
 			Directory.Delete(tempRoot, recursive: true);
 		}
 	}
+
+	[Theory]
+	[InlineData("vscode-reh-web-linux-x64.tar.gz", "linux", true)]
+	[InlineData("vscode-reh-web-linux-x64.tar.gz", "x64", true)]
+	[InlineData("vscode-reh-web-linux-arm64.tar.gz", "arm", false)]
+	[InlineData("vscode-reh-web-linux-arm64.tar.gz", "arm64", true)]
+	[InlineData("vscode-reh-web-linux-armhf.tar.gz", "arm", false)]
+	[InlineData("vscode-reh-web-linux-armhf.tar.gz", "armhf", true)]
+	[InlineData("openvscode-server-v1.109.5-linux-x64.tar.gz", "linux", true)]
+	[InlineData("vscode-reh-web-alpine-x64.tar.gz", "alpine", true)]
+	[InlineData("vscode-reh-web-alpine-x64.tar.gz", "linux", false)]
+	[InlineData("foo-linuxbar-x64.tar.gz", "linux", false)]
+	public void HasToken_MatchesOnlyHyphenDelimitedSegments(string fileName, string token, bool expected)
+	{
+		Assert.Equal(expected, EmbeddedDistribution.HasToken(fileName, token));
+	}
+
+	[Fact]
+	public void SelectBestCandidate_PicksAlpineBeforeLinuxOnMusl()
+	{
+		var candidates = new (string Name, string FileName)[]
+		{
+			("res.vscode-reh-web-linux-x64.tar.gz", "vscode-reh-web-linux-x64.tar.gz"),
+			("res.vscode-reh-web-alpine-x64.tar.gz", "vscode-reh-web-alpine-x64.tar.gz"),
+		};
+
+		var picked = EmbeddedDistribution.SelectBestCandidate(candidates, ["alpine", "linux"], "x64");
+		Assert.Equal("res.vscode-reh-web-alpine-x64.tar.gz", picked?.ResourceName);
+	}
+
+	[Fact]
+	public void SelectBestCandidate_FallsBackToLinuxWhenAlpineMissing()
+	{
+		var candidates = new (string Name, string FileName)[]
+		{
+			("res.vscode-reh-web-linux-x64.tar.gz", "vscode-reh-web-linux-x64.tar.gz"),
+		};
+
+		var picked = EmbeddedDistribution.SelectBestCandidate(candidates, ["alpine", "linux"], "x64");
+		Assert.Equal("res.vscode-reh-web-linux-x64.tar.gz", picked?.ResourceName);
+	}
+
+	[Fact]
+	public void SelectBestCandidate_DistinguishesArm32FromArm64()
+	{
+		var candidates = new (string Name, string FileName)[]
+		{
+			("res.vscode-reh-web-linux-arm64.tar.gz", "vscode-reh-web-linux-arm64.tar.gz"),
+			("res.vscode-reh-web-linux-armhf.tar.gz", "vscode-reh-web-linux-armhf.tar.gz"),
+		};
+
+		var arm32 = EmbeddedDistribution.SelectBestCandidate(candidates, ["linux"], "armhf");
+		Assert.Equal("res.vscode-reh-web-linux-armhf.tar.gz", arm32?.ResourceName);
+
+		var arm64 = EmbeddedDistribution.SelectBestCandidate(candidates, ["linux"], "arm64");
+		Assert.Equal("res.vscode-reh-web-linux-arm64.tar.gz", arm64?.ResourceName);
+	}
+
+	[Fact]
+	public void SelectBestCandidate_FallsBackToArchOnly_WhenPlatformMismatched()
+	{
+		var candidates = new (string Name, string FileName)[]
+		{
+			("res.something-mystery-x64.tar.gz", "something-mystery-x64.tar.gz"),
+		};
+
+		var picked = EmbeddedDistribution.SelectBestCandidate(candidates, ["linux"], "x64");
+		Assert.Equal("res.something-mystery-x64.tar.gz", picked?.ResourceName);
+	}
 }
 
 /// <summary>

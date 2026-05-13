@@ -65,9 +65,26 @@ public sealed class OpenVSCodeServerOptions
 
 	/// <summary>
 	/// Path prefix that Kestrel exposes the IDE under (e.g. <c>/ide</c>). Set automatically by
-	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/>.
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/> on the
+	/// first call; later mounts share the same backing process but have their own routes — see
+	/// <see cref="AdditionalMountPrefixes"/>.
 	/// </summary>
 	public string PathPrefix { get; internal set; } = "/";
+
+	/// <summary>
+	/// Tracks whether <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/>
+	/// has already established the canonical prefix. Internal — external callers shouldn't override.
+	/// </summary>
+	internal bool PathPrefixSet { get; set; }
+
+	/// <summary>
+	/// Additional Kestrel mount points layered onto the same backing Node process. The first
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/> call sets
+	/// <see cref="PathPrefix"/> (which becomes <c>--server-base-path</c>); subsequent calls with a
+	/// different prefix add to this collection. They are reachable through the reverse proxy but
+	/// the workbench HTML will reference the canonical prefix in its absolute URLs.
+	/// </summary>
+	public IList<string> AdditionalMountPrefixes { get; } = new List<string>();
 
 	/// <summary>
 	/// Environment variables to set on the child process (in addition to the inherited environment).
