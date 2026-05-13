@@ -9,8 +9,9 @@ namespace OpenVSCodeServer.Kestrel;
 public sealed class OpenVSCodeServerOptions
 {
 	/// <summary>
-	/// Workspace folder opened by VS Code when the user first connects.
-	/// Defaults to the current working directory of the host process.
+	/// Workspace folder opened by VS Code when the user first connects. Translates to the
+	/// upstream <c>--default-folder</c> flag. When null the upstream server applies its own
+	/// default (an empty workbench).
 	/// </summary>
 	public string? WorkspaceFolder { get; set; }
 

@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 
 namespace OpenVSCodeServer.Kestrel;
@@ -45,6 +46,31 @@ public static class OpenVSCodeServerServiceCollectionExtensions
 		}
 
 		return services;
+	}
+
+	/// <summary>
+	/// Adds an <see cref="IHealthCheck"/> that reports <see cref="HealthStatus.Healthy"/> once the
+	/// embedded openvscode-server has emitted its "Web UI available" banner. Use this to wire a
+	/// readiness probe into the ASP.NET Core health-check pipeline without writing a custom
+	/// endpoint.
+	/// </summary>
+	/// <param name="builder">The health-checks builder returned by <c>AddHealthChecks()</c>.</param>
+	/// <param name="name">Logical health-check name. Defaults to <c>"openvscode-server"</c>.</param>
+	/// <param name="failureStatus">Status to report when the child is not yet ready or has
+	/// crashed. Defaults to <see cref="HealthStatus.Unhealthy"/>.</param>
+	/// <param name="tags">Optional tag set, e.g. <c>["ready"]</c> for filtering.</param>
+	public static IHealthChecksBuilder AddOpenVSCodeServerCheck(
+		this IHealthChecksBuilder builder,
+		string name = "openvscode-server",
+		HealthStatus? failureStatus = null,
+		IEnumerable<string>? tags = null)
+	{
+		ArgumentNullException.ThrowIfNull(builder);
+
+		return builder.AddCheck<OpenVSCodeServerHealthCheck>(
+			name,
+			failureStatus,
+			tags ?? Array.Empty<string>());
 	}
 
 	private sealed class HostedServiceMarker;
