@@ -20,10 +20,19 @@ internal sealed class EmbeddedDistribution
 	private const string ResourceNamespace = "OpenVSCodeServer.Kestrel.EmbeddedAssets.";
 
 	private readonly ILogger<EmbeddedDistribution> _logger;
+	private readonly OpenVSCodeServerDownloader? _downloader;
 
 	public EmbeddedDistribution(ILogger<EmbeddedDistribution> logger)
+		: this(logger, downloader: null)
+	{
+	}
+
+	public EmbeddedDistribution(
+		ILogger<EmbeddedDistribution> logger,
+		OpenVSCodeServerDownloader? downloader)
 	{
 		_logger = logger;
+		_downloader = downloader;
 	}
 
 	/// <summary>
@@ -39,11 +48,25 @@ internal sealed class EmbeddedDistribution
 			return options.ExternalServerPath!;
 		}
 
-		var (resourceName, _) = FindEmbeddedResource()
-			?? throw new InvalidOperationException(
-				"No embedded openvscode-server archive was found and OpenVSCodeServerOptions.ExternalServerPath was not set. "
-				+ "Run scripts/build-vscode-release.sh to produce one, or point ExternalServerPath at an existing install.");
+		var embedded = FindEmbeddedResource();
+		if (embedded is not null)
+		{
+			return MaterializeFromEmbedded(embedded.Value.ResourceName, options);
+		}
 
+		if (options.Download.Enabled)
+		{
+			return MaterializeFromDownload(options);
+		}
+
+		throw new InvalidOperationException(
+			"No embedded openvscode-server archive was found and OpenVSCodeServerOptions.ExternalServerPath was not set. "
+			+ "Either run scripts/build-vscode-release.sh / scripts/download-vscode-release.sh to embed an archive, "
+			+ "set ExternalServerPath, or enable OpenVSCodeServerOptions.Download.Enabled to fetch one at runtime.");
+	}
+
+	private string MaterializeFromEmbedded(string resourceName, OpenVSCodeServerOptions options)
+	{
 		var asm = typeof(EmbeddedDistribution).Assembly;
 		using var stream = asm.GetManifestResourceStream(resourceName)
 			?? throw new InvalidOperationException($"Embedded resource '{resourceName}' could not be opened.");
@@ -51,6 +74,27 @@ internal sealed class EmbeddedDistribution
 		var hash = ComputeSha256(stream);
 		stream.Position = 0;
 
+		return MaterializeFromStream(stream, hash, resourceName, options);
+	}
+
+	private string MaterializeFromDownload(OpenVSCodeServerOptions options)
+	{
+		if (_downloader is null)
+		{
+			throw new InvalidOperationException(
+				"Download is enabled but no OpenVSCodeServerDownloader is registered. "
+				+ "Ensure AddOpenVSCodeServer registers the downloader (it does by default).");
+		}
+
+		var path = _downloader.EnsureDownloaded(options.Download);
+		using var stream = File.OpenRead(path);
+		var hash = ComputeSha256(stream);
+		stream.Position = 0;
+		return MaterializeFromStream(stream, hash, $"downloaded:{Path.GetFileName(path)}", options);
+	}
+
+	private string MaterializeFromStream(Stream stream, string hash, string sourceLabel, OpenVSCodeServerOptions options)
+	{
 		var extractionRoot = !string.IsNullOrEmpty(options.ExtractionDirectory)
 			? options.ExtractionDirectory!
 			: Path.Combine(Path.GetTempPath(), "openvscode-server-" + hash[..16]);
@@ -72,7 +116,7 @@ internal sealed class EmbeddedDistribution
 		}
 		Directory.CreateDirectory(installRoot);
 
-		_logger.LogInformation("Extracting embedded openvscode-server ({Resource}) to {Path}", resourceName, installRoot);
+		_logger.LogInformation("Extracting openvscode-server ({Source}) to {Path}", sourceLabel, installRoot);
 		ExtractTarGz(stream, installRoot);
 		MakeRootBinariesExecutable(installRoot);
 

@@ -6,6 +6,23 @@
     <AssemblyName>OpenVSCodeServer.Kestrel</AssemblyName>
     <RootNamespace>OpenVSCodeServer.Kestrel</RootNamespace>
     <IsPackable>true</IsPackable>
+
+    <Authors>OpenVSCodeServer.Kestrel contributors</Authors>
+    <Company>OpenVSCodeServer.Kestrel contributors</Company>
+    <Product>OpenVSCodeServer.Kestrel</Product>
+    <Copyright>Copyright (c) Microsoft Corporation. All rights reserved.</Copyright>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/theolivenbaum/openvscode-server</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/theolivenbaum/openvscode-server</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>vscode;openvscode-server;ide;kestrel;aspnetcore;reverse-proxy</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +36,8 @@
 
   <ItemGroup>
     <None Include="EmbeddedAssets\README.md" Condition="Exists('EmbeddedAssets\README.md')" />
+    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" Visible="false" />
   </ItemGroup>
 
 </Project>

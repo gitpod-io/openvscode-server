@@ -31,6 +31,7 @@ public static class OpenVSCodeServerServiceCollectionExtensions
 
 		services.AddOptions<OpenVSCodeServerOptions>().Configure(configure);
 
+		services.TryAddSingleton<OpenVSCodeServerDownloader>();
 		services.TryAddSingleton<EmbeddedDistribution>();
 		services.TryAddSingleton<OpenVSCodeServerProcess>();
 		services.TryAddSingleton<OpenVSCodeServerProxy>();
