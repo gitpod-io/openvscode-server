@@ -74,4 +74,58 @@ public sealed class OpenVSCodeServerOptions
 	/// </summary>
 	public IDictionary<string, string?> EnvironmentOverrides { get; } =
 		new Dictionary<string, string?>(StringComparer.Ordinal);
+
+	/// <summary>
+	/// Controls the runtime downloader that fetches a pre-built openvscode-server distribution
+	/// from GitHub when neither <see cref="ExternalServerPath"/> nor an embedded archive is
+	/// available. Disabled by default to avoid surprise network access in production.
+	/// </summary>
+	public OpenVSCodeServerDownloadOptions Download { get; } = new();
+}
+
+/// <summary>
+/// Options for the runtime distribution downloader.
+/// </summary>
+public sealed class OpenVSCodeServerDownloadOptions
+{
+	/// <summary>
+	/// When true, <see cref="EmbeddedDistribution.Materialize"/> will fetch a pre-built tarball
+	/// from <see cref="BaseUrl"/> if no embedded asset or <see cref="OpenVSCodeServerOptions.ExternalServerPath"/>
+	/// is available. Disabled by default.
+	/// </summary>
+	public bool Enabled { get; set; }
+
+	/// <summary>
+	/// openvscode-server release tag to fetch (e.g. <c>v1.109.5</c>). The leading <c>v</c> is
+	/// optional. Defaults to <see cref="OpenVSCodeServerDownloader.DefaultVersion"/>.
+	/// </summary>
+	public string Version { get; set; } = OpenVSCodeServerDownloader.DefaultVersion;
+
+	/// <summary>
+	/// Optional full override URL. When set, <see cref="Version"/>, <see cref="BaseUrl"/> and the
+	/// detected platform/arch are ignored.
+	/// </summary>
+	public string? Url { get; set; }
+
+	/// <summary>
+	/// Root URL containing the release tag folders. Defaults to the gitpod-io GitHub release URL.
+	/// </summary>
+	public string BaseUrl { get; set; } = OpenVSCodeServerDownloader.DefaultBaseUrl;
+
+	/// <summary>
+	/// Expected SHA-256 (hex) of the downloaded archive. When set, the downloader refuses to use
+	/// the file unless the hash matches. Strongly recommended for production deployments.
+	/// </summary>
+	public string? Sha256 { get; set; }
+
+	/// <summary>
+	/// Directory used to cache the downloaded tarball. Defaults to a sub-folder of
+	/// <see cref="Path.GetTempPath"/>.
+	/// </summary>
+	public string? CacheDirectory { get; set; }
+
+	/// <summary>
+	/// Maximum time allowed for the download to complete.
+	/// </summary>
+	public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(10);
 }

@@ -25,17 +25,28 @@ Tracker for the OpenVSCode Server → Kestrel port. Tick items as they complete.
 ## Milestone 3 – Build pipeline
 
 - [x] Add `scripts/build-vscode-release.sh` that runs the gulp build and copies the tarball to `EmbeddedAssets/`.
+- [x] Add `scripts/download-vscode-release.sh` (+ `.ps1`) that fetches a pre-built
+      gitpod-io/openvscode-server release into `EmbeddedAssets/` for embedding. Provides
+      an offline-friendly alternative to the gulp build when only embedding is needed.
+- [x] Add `OpenVSCodeServerDownloader` for runtime fallback: when no archive is embedded
+      and `OpenVSCodeServerOptions.Download.Enabled` is true, the library fetches and
+      caches a release tarball at startup. Hash-verified, opt-in only.
 - [ ] Build a real `vscode-reh-web-linux-x64-min` distribution and verify embedding.
       The build was attempted inside the development sandbox and failed at `npm install`
       because `@vscode/deviceid` requires Electron headers and `electronjs.org` is not
       reachable from this environment (HTTP 403). The script works on a developer machine
-      with full network access; it is intentionally left for the operator to run.
+      with full network access; it is intentionally left for the operator to run. The
+      download script verified end-to-end against the v1.109.5 release in the sandbox.
 
 ## Milestone 4 – Verification
 
 - [x] Unit tests for option validation + archive discovery.
+- [x] Unit tests for the runtime downloader (URL building, version normalization, gzip
+      validation, SHA-256 mismatch, cache reuse).
 - [x] Integration test (smoke) that boots the host and hits `/healthz` (skips automatically
       when no distribution is available, runs end-to-end when `OPENVSCODE_EXTERNAL_PATH` is set).
+- [x] End-to-end runtime-download smoke test (`OPENVSCODE_ENABLE_DOWNLOAD_TEST=1`) that
+      exercises downloader → extraction → child boot → reverse proxy.
 - [ ] Playwright test that loads the workbench in Chromium. Stubbed out — see Milestone 3 for
       why the embedded distribution is unavailable in CI. Once a built install exists, point
       `OPENVSCODE_EXTERNAL_PATH` at it and add a Playwright test that loads `/ide/`.

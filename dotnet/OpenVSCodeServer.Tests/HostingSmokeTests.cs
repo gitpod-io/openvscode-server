@@ -51,6 +51,13 @@ public class HostingSmokeTests
 		var external = Environment.GetEnvironmentVariable("OPENVSCODE_EXTERNAL_PATH");
 
 		var builder = WebApplication.CreateBuilder();
+		// The TestHost project ships an appsettings.json that pins Kestrel to a fixed port; that
+		// file is copied into the test output folder via the project reference and would otherwise
+		// override UseUrls below. Bind Kestrel explicitly to bypass any configured endpoints.
+		builder.WebHost.ConfigureKestrel(opts =>
+		{
+			opts.ListenLocalhost(port);
+		});
 		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
 		builder.Logging.SetMinimumLevel(LogLevel.Warning);
 
@@ -81,6 +88,66 @@ public class HostingSmokeTests
 		finally
 		{
 			await app.StopAsync();
+		}
+	}
+
+	[Fact]
+	public async Task Host_Boots_Via_RuntimeDownload_When_Enabled()
+	{
+		// Two opt-ins required: the runtime downloader has to be enabled in options, and the test
+		// itself only runs when the operator has explicitly allowed network access. Otherwise we
+		// soft-skip — there is no embedded archive in CI and we don't want a transient GitHub
+		// outage to fail every PR run.
+		if (Environment.GetEnvironmentVariable("OPENVSCODE_ENABLE_DOWNLOAD_TEST") != "1")
+		{
+			Assert.True(true, "Set OPENVSCODE_ENABLE_DOWNLOAD_TEST=1 to exercise the runtime downloader path.");
+			return;
+		}
+
+		if (!OperatingSystem.IsLinux())
+		{
+			// The gitpod-io release only ships Linux artifacts at the time of writing.
+			Assert.True(true, "Runtime download test only runs on Linux.");
+			return;
+		}
+
+		var port = AllocateFreePort();
+		var cacheDir = Directory.CreateTempSubdirectory("openvscode-download-smoke-").FullName;
+
+		var builder = WebApplication.CreateBuilder();
+		builder.WebHost.ConfigureKestrel(opts => opts.ListenLocalhost(port));
+		builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
+		builder.Logging.SetMinimumLevel(LogLevel.Warning);
+
+		builder.Services.AddOpenVSCodeServer(options =>
+		{
+			options.WithoutConnectionToken = true;
+			options.StartupTimeout = TimeSpan.FromMinutes(3);
+			options.Download.Enabled = true;
+			options.Download.CacheDirectory = cacheDir;
+		});
+
+		using var app = builder.Build();
+		app.MapGet("/healthz", () => Microsoft.AspNetCore.Http.Results.Ok());
+		app.MapOpenVSCodeServer("/ide");
+
+		try
+		{
+			await app.StartAsync();
+			try
+			{
+				using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+				var health = await http.GetAsync($"http://127.0.0.1:{port}/healthz");
+				Assert.Equal(HttpStatusCode.OK, health.StatusCode);
+			}
+			finally
+			{
+				await app.StopAsync();
+			}
+		}
+		finally
+		{
+			Directory.Delete(cacheDir, recursive: true);
 		}
 	}
 
