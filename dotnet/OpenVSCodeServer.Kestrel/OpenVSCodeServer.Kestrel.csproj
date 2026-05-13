@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Embed and reverse-proxy the OpenVSCode Server through an ASP.NET Core / Kestrel host.</Description>
+    <PackageId>OpenVSCodeServer.Kestrel</PackageId>
+    <AssemblyName>OpenVSCodeServer.Kestrel</AssemblyName>
+    <RootNamespace>OpenVSCodeServer.Kestrel</RootNamespace>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embed every packaged distribution found in EmbeddedAssets. -->
+    <EmbeddedResource Include="EmbeddedAssets\*.tar.gz" Condition="Exists('EmbeddedAssets')" LogicalName="OpenVSCodeServer.Kestrel.EmbeddedAssets.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="EmbeddedAssets\README.md" Condition="Exists('EmbeddedAssets\README.md')" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# Embedded distribution artefacts are produced by scripts/build-vscode-release.sh; keep the
+# README placeholder but exclude tarballs from source control.
+OpenVSCodeServer.Kestrel/EmbeddedAssets/*.tar.gz

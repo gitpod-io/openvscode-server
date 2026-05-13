@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>OpenVSCodeServer.TestHost</AssemblyName>
+    <RootNamespace>OpenVSCodeServer.TestHost</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenVSCodeServer.Kestrel\OpenVSCodeServer.Kestrel.csproj" />
+  </ItemGroup>
+
+</Project>
