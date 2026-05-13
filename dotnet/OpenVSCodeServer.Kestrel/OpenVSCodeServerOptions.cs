@@ -128,6 +128,58 @@ public sealed class OpenVSCodeServerOptions
 	/// transient crashes don't accumulate forever.
 	/// </summary>
 	public TimeSpan RestartAttemptResetWindow { get; set; } = TimeSpan.FromMinutes(2);
+
+	/// <summary>
+	/// Asserts that the options are internally consistent. Called automatically by the hosted
+	/// service before launching the child process so misconfigurations fail at startup with a
+	/// clear message instead of producing opaque downstream errors.
+	/// </summary>
+	internal void Validate()
+	{
+		if (Port is { } port && (port < 0 || port > 65535))
+		{
+			throw new ArgumentOutOfRangeException(nameof(Port), port,
+				"Port must be in the range 0–65535 (use null to allocate an ephemeral port).");
+		}
+
+		if (StartupTimeout <= TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(StartupTimeout), StartupTimeout,
+				"StartupTimeout must be positive.");
+		}
+
+		if (MaxRestartAttempts < 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(MaxRestartAttempts), MaxRestartAttempts,
+				"MaxRestartAttempts must be non-negative (use 0 for unlimited).");
+		}
+
+		if (RestartInitialDelay < TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(RestartInitialDelay), RestartInitialDelay,
+				"RestartInitialDelay cannot be negative.");
+		}
+
+		if (RestartMaxDelay < RestartInitialDelay)
+		{
+			throw new ArgumentException(
+				$"RestartMaxDelay ({RestartMaxDelay}) must be >= RestartInitialDelay ({RestartInitialDelay}).",
+				nameof(RestartMaxDelay));
+		}
+
+		if (!WithoutConnectionToken && string.IsNullOrEmpty(ConnectionToken))
+		{
+			// We auto-generate one in this case — fine, but warn loud if the caller passed an
+			// empty string, which is almost certainly a bug.
+			if (ConnectionToken is { Length: 0 })
+			{
+				throw new ArgumentException(
+					"ConnectionToken is set to an empty string. Either set WithoutConnectionToken=true, "
+					+ "supply a non-empty token, or leave the token unset to let the library auto-generate one.",
+					nameof(ConnectionToken));
+			}
+		}
+	}
 }
 
 /// <summary>

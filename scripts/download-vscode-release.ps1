@@ -13,10 +13,20 @@ param(
     [string]$Arch,
     [string]$Sha256,
     [string]$OutputDir,
-    [switch]$KeepExisting
+    [switch]$KeepExisting,
+    [switch]$AllLinux
 )
 
 $ErrorActionPreference = 'Stop'
+
+if ($AllLinux) {
+    if ($Platform -or $Arch) {
+        throw '-AllLinux is mutually exclusive with -Platform and -Arch.'
+    }
+    if ($Sha256) {
+        throw '-Sha256 cannot be combined with -AllLinux (per-arch hashes differ).'
+    }
+}
 
 if (-not $Platform) {
     $Platform = if ($IsLinux)   { 'linux' }
@@ -60,53 +70,79 @@ $baseUrl = if ($env:OPENVSCODE_DOWNLOAD_BASE_URL) {
     'https://github.com/gitpod-io/openvscode-server/releases/download'
 }
 
-$archiveName = "openvscode-server-$versionNum-$Platform-$Arch.tar.gz"
-$archiveUrl = "$baseUrl/$tag/$archiveName"
-
-Write-Host "==> Fetching $archiveName"
-Write-Host "    URL:    $archiveUrl"
-Write-Host "    Output: $OutputDir/$archiveName"
-
 if (-not (Test-Path $OutputDir)) {
     New-Item -ItemType Directory -Path $OutputDir | Out-Null
 }
 
+# Compute the list of (platform, arch) pairs to fetch.
+$targets = if ($AllLinux) {
+    @(
+        @{ Platform = 'linux'; Arch = 'x64' },
+        @{ Platform = 'linux'; Arch = 'arm64' },
+        @{ Platform = 'linux'; Arch = 'armhf' }
+    )
+} else {
+    @(@{ Platform = $Platform; Arch = $Arch })
+}
+
+$keepNames = $targets | ForEach-Object { "openvscode-server-$versionNum-$($_.Platform)-$($_.Arch).tar.gz" }
+
 if (-not $KeepExisting) {
     Get-ChildItem -Path $OutputDir -File `
         -Include 'vscode-reh-web-*.tar.gz', 'openvscode-server-*.tar.gz' `
-        | Where-Object { $_.Name -ne $archiveName } `
+        | Where-Object { $keepNames -notcontains $_.Name } `
         | ForEach-Object {
             Write-Host "    removing $($_.Name)"
             Remove-Item $_.FullName
         }
 }
 
-$tmpFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetRandomFileName() + '.tar.gz')
-try {
-    # Invoke-WebRequest streams to disk; -UseBasicParsing avoids the IE engine dep.
-    Invoke-WebRequest -Uri $archiveUrl -OutFile $tmpFile -UseBasicParsing
+function Invoke-FetchOne {
+    param(
+        [string]$Platform,
+        [string]$Arch
+    )
 
-    # Verify gzip magic bytes (1f 8b).
-    $bytes = [System.IO.File]::ReadAllBytes($tmpFile) | Select-Object -First 2
-    if ($bytes[0] -ne 0x1f -or $bytes[1] -ne 0x8b) {
-        throw "Downloaded file is not a gzip archive (header: $([BitConverter]::ToString($bytes)))."
-    }
+    $archiveName = "openvscode-server-$versionNum-$Platform-$Arch.tar.gz"
+    $archiveUrl = "$baseUrl/$tag/$archiveName"
 
-    if ($Sha256) {
-        $actual = (Get-FileHash -Path $tmpFile -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($actual -ne $Sha256.ToLowerInvariant()) {
-            throw "SHA-256 mismatch. expected=$Sha256 actual=$actual"
+    Write-Host "==> Fetching $archiveName"
+    Write-Host "    URL:    $archiveUrl"
+    Write-Host "    Output: $OutputDir/$archiveName"
+
+    $tmpFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetRandomFileName() + '.tar.gz')
+    try {
+        # Invoke-WebRequest streams to disk; -UseBasicParsing avoids the IE engine dep.
+        Invoke-WebRequest -Uri $archiveUrl -OutFile $tmpFile -UseBasicParsing
+
+        # Verify gzip magic bytes (1f 8b).
+        $bytes = [System.IO.File]::ReadAllBytes($tmpFile) | Select-Object -First 2
+        if ($bytes[0] -ne 0x1f -or $bytes[1] -ne 0x8b) {
+            throw "Downloaded file for $Platform-$Arch is not a gzip archive (header: $([BitConverter]::ToString($bytes)))."
         }
-        Write-Host "    SHA-256 OK ($actual)"
+
+        if ($Sha256) {
+            $actual = (Get-FileHash -Path $tmpFile -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $Sha256.ToLowerInvariant()) {
+                throw "SHA-256 mismatch. expected=$Sha256 actual=$actual"
+            }
+            Write-Host "    SHA-256 OK ($actual)"
+        }
+
+        $target = Join-Path $OutputDir $archiveName
+        Move-Item -Force -Path $tmpFile -Destination $target
+
+        $size = (Get-Item $target).Length / 1MB
+        Write-Host ("    Done. {0} ({1:N1} MiB)." -f $archiveName, $size)
     }
-
-    $target = Join-Path $OutputDir $archiveName
-    Move-Item -Force -Path $tmpFile -Destination $target
-
-    $size = (Get-Item $target).Length / 1MB
-    Write-Host ("==> Done. {0} ({1:N1} MiB) staged in {2}" -f $archiveName, $size, $OutputDir)
-    Write-Host "    Run 'dotnet build dotnet/OpenVSCodeServer.slnx' to embed it."
+    finally {
+        if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force }
+    }
 }
-finally {
-    if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force }
+
+foreach ($t in $targets) {
+    Invoke-FetchOne -Platform $t.Platform -Arch $t.Arch
 }
+
+Write-Host "==> All requested archives staged in $OutputDir"
+Write-Host "    Run 'dotnet build dotnet/OpenVSCodeServer.slnx' to embed them."

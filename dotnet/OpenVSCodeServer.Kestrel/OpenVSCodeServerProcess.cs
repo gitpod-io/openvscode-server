@@ -82,6 +82,7 @@ internal sealed class OpenVSCodeServerProcess : IHostedService, IAsyncDisposable
 
 	public async Task StartAsync(CancellationToken cancellationToken)
 	{
+		_options.Validate();
 		_installRoot = _distribution.Materialize(_options);
 		_boundPort = _options.Port ?? AllocateEphemeralPort(_options.Host);
 		_shutdownCts = new CancellationTokenSource();

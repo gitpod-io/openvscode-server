@@ -93,11 +93,13 @@ Things worth doing next, in rough priority order:
    `vscode-reh-web-linux-x64-min` tarball into a release artifact, then verify the embedded
    build path produces the same end-to-end result as the downloaded release (which the
    integration tests already exercise).
-2. **Multi-arch / multi-OS release artifacts.** The downloader + `EmbeddedDistribution`
-   selection now handles musl, glibc, arm64, armhf, x64, ia32, darwin and win32, but the
-   release pipeline only stages a single linux-x64 tarball. Extending the download/build
-   scripts to produce a NuGet package per RID (or a single fat package that embeds several
-   archives) is mostly mechanical at this point.
+2. **Multi-arch / multi-OS release artifacts.** Partial: `download-vscode-release.sh /
+   .ps1` now accepts `--all-linux` (`-AllLinux` in PowerShell) and stages all three Linux
+   archives gitpod-io publishes (x64, arm64, armhf) in one pass. A "fat" build of the
+   library with all three embedded was verified end-to-end (49 tests, including the live
+   workbench smoke). Still pending: darwin/win32 staging (requires the gulp build on the
+   target platform, or upstream publishing those archives) and a release pipeline that
+   emits per-RID NuGet packages rather than one fat package.
 3. **Headless Playwright test.** Add a `Microsoft.Playwright` test project gated on an env
    var that loads `/ide/` in a headless Chromium and waits for `monaco-editor` to mount.
    Catches JS-bundle regressions that slip past the HTML-marker check.
