@@ -101,6 +101,12 @@ public sealed class OpenVSCodeServerOptions
 	public OpenVSCodeServerDownloadOptions Download { get; } = new();
 
 	/// <summary>
+	/// Tunables for the per-request session feature exposed by
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServerSessions"/>.
+	/// </summary>
+	public VSCodeSessionOptions Sessions { get; } = new();
+
+	/// <summary>
 	/// When true (default), the hosted service watches the child node process and restarts it
 	/// with exponential backoff if it exits unexpectedly after a successful initial startup.
 	/// </summary>
@@ -228,4 +234,24 @@ public sealed class OpenVSCodeServerDownloadOptions
 	/// Maximum time allowed for the download to complete.
 	/// </summary>
 	public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(10);
+}
+
+/// <summary>
+/// Options governing the per-request session feature surfaced via
+/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServerSessions"/>.
+/// </summary>
+public sealed class VSCodeSessionOptions
+{
+	/// <summary>
+	/// Filesystem path under which each session's temporary workspace folder is created. When
+	/// null, defaults to <c>${TEMP}/openvscode-sessions</c>. The directory is created if missing.
+	/// </summary>
+	public string? RootDirectory { get; set; }
+
+	/// <summary>
+	/// Quiet period after the last filesystem event before <see cref="IVSCodeFiles.SaveAsync"/> is
+	/// invoked. Tune larger for noisier workspaces (formatters, language-server scratch files),
+	/// smaller for tighter save latency. Defaults to 500ms.
+	/// </summary>
+	public TimeSpan SaveDebounce { get; set; } = TimeSpan.FromMilliseconds(500);
 }

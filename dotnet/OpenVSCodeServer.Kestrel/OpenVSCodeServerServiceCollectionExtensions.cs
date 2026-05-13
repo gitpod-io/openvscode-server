@@ -50,6 +50,33 @@ public static class OpenVSCodeServerServiceCollectionExtensions
 	}
 
 	/// <summary>
+	/// Registers an <see cref="IVSCodeFiles"/> implementation that drives the per-session workspace
+	/// folder. Required before
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServerSessions"/>
+	/// can be used. The implementation is registered with scoped lifetime so it can pull in scoped
+	/// services such as <c>DbContext</c> or auth context safely.
+	/// </summary>
+	public static IServiceCollection AddVSCodeFiles<TImplementation>(this IServiceCollection services)
+		where TImplementation : class, IVSCodeFiles
+	{
+		ArgumentNullException.ThrowIfNull(services);
+
+		// Ensure the options instance is bound even when AddVSCodeFiles is called in isolation
+		// (e.g. in unit tests that don't want the full Node-process hosted service).
+		services.AddOptions<OpenVSCodeServerOptions>();
+		services.AddScoped<IVSCodeFiles, TImplementation>();
+		services.TryAddSingleton<VSCodeSessionManager>();
+
+		if (!services.Any(d => d.ImplementationType == typeof(VSCodeSessionManagerMarker)))
+		{
+			services.AddSingleton<VSCodeSessionManagerMarker>();
+			services.AddHostedService(sp => sp.GetRequiredService<VSCodeSessionManager>());
+		}
+
+		return services;
+	}
+
+	/// <summary>
 	/// Adds an <see cref="IHealthCheck"/> that reports <see cref="HealthStatus.Healthy"/> once the
 	/// embedded openvscode-server has emitted its "Web UI available" banner. Use this to wire a
 	/// readiness probe into the ASP.NET Core health-check pipeline without writing a custom
@@ -75,4 +102,5 @@ public static class OpenVSCodeServerServiceCollectionExtensions
 	}
 
 	private sealed class HostedServiceMarker;
+	private sealed class VSCodeSessionManagerMarker;
 }
