@@ -144,42 +144,152 @@ internal sealed class EmbeddedDistribution
 			return null;
 		}
 
-		var platformToken = GetPlatformToken();
-		var archToken = GetArchToken();
+		return SelectBestCandidate(candidates, GetRuntimePlatformTokens(), GetArchToken());
+	}
 
-		var preferred = candidates.FirstOrDefault(c =>
-			c.FileName.Contains(platformToken, StringComparison.Ordinal) &&
-			c.FileName.Contains(archToken, StringComparison.Ordinal));
-		if (preferred.Name is not null)
+	/// <summary>
+	/// Picks the archive that best matches the current platform/architecture from a set of
+	/// candidates. The platform tokens are tried in order (e.g. ["alpine", "linux"] for a musl
+	/// host) and the first arch-matching candidate wins. Falls back to the first arch-matching
+	/// candidate when no platform token matches, and finally to the first candidate of any kind.
+	/// </summary>
+	internal static (string ResourceName, string FileName)? SelectBestCandidate(
+		IReadOnlyList<(string Name, string FileName)> candidates,
+		IReadOnlyList<string> platformTokensInPreferenceOrder,
+		string archToken)
+	{
+		// Arch is matched by surrounding hyphens so "arm" doesn't match "arm64" and vice versa.
+		bool ArchMatches(string fileName) => HasToken(fileName, archToken);
+
+		foreach (var plat in platformTokensInPreferenceOrder)
 		{
-			return preferred;
+			foreach (var c in candidates)
+			{
+				if (HasToken(c.FileName, plat) && ArchMatches(c.FileName))
+				{
+					return c;
+				}
+			}
 		}
 
-		// Fall back to the first archive we find — better than failing outright on exotic RIDs.
+		// Lenient fallback: arch match only. Useful when a single linux-x64 tarball is embedded on
+		// a glibc host that happens to report differently (e.g. nested containers).
+		foreach (var c in candidates)
+		{
+			if (ArchMatches(c.FileName))
+			{
+				return c;
+			}
+		}
+
+		// Last resort: don't fail outright — return whatever is embedded and let runtime fail loud
+		// if it's incompatible.
 		return candidates[0];
 	}
 
-	private static string GetPlatformToken()
+	/// <summary>
+	/// Returns whether <paramref name="fileName"/> contains <paramref name="token"/> as a
+	/// distinct hyphen-delimited segment (so "arm" doesn't match "arm64").
+	/// </summary>
+	internal static bool HasToken(string fileName, string token)
 	{
-		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		if (string.IsNullOrEmpty(token))
 		{
-			return "linux";
+			return false;
 		}
+
+		var span = fileName.AsSpan();
+		var start = 0;
+		while (start < span.Length)
+		{
+			var idx = span[start..].IndexOf(token, StringComparison.Ordinal);
+			if (idx < 0)
+			{
+				return false;
+			}
+			var abs = start + idx;
+			var before = abs == 0 || span[abs - 1] is '-' or '.';
+			var afterIdx = abs + token.Length;
+			var after = afterIdx >= span.Length || span[afterIdx] is '-' or '.';
+			if (before && after)
+			{
+				return true;
+			}
+			start = abs + 1;
+		}
+		return false;
+	}
+
+	/// <summary>
+	/// Returns the platform tokens recognised in archive file names, in preference order.
+	/// Musl-libc hosts (Alpine etc.) get "alpine" before "linux"; macOS gets "darwin"; Windows
+	/// gets "win32". The fallback chain lets a single linux glibc tarball still be picked up on
+	/// an Alpine host with a clear runtime failure later if it really is incompatible.
+	/// </summary>
+	internal static IReadOnlyList<string> GetRuntimePlatformTokens()
+	{
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
 		{
-			return "darwin";
+			return ["darwin"];
 		}
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 		{
-			return "win32";
+			return ["win32"];
 		}
-		return "linux";
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+		{
+			return IsMuslLibc() ? ["alpine", "linux"] : ["linux"];
+		}
+		return ["linux"];
+	}
+
+	private static bool IsMuslLibc()
+	{
+		// Cheapest reliable signals: a musl ld.so on the system, /etc/alpine-release on Alpine,
+		// or "alpine"/"musl" markers in /etc/os-release. Any one is enough.
+		try
+		{
+			if (File.Exists("/etc/alpine-release"))
+			{
+				return true;
+			}
+
+			const string libDir = "/lib";
+			if (Directory.Exists(libDir))
+			{
+				foreach (var entry in Directory.EnumerateFiles(libDir, "ld-musl-*"))
+				{
+					_ = entry; // suppress unused
+					return true;
+				}
+			}
+
+			if (File.Exists("/etc/os-release"))
+			{
+				foreach (var line in File.ReadLines("/etc/os-release"))
+				{
+					if (line.Contains("alpine", StringComparison.OrdinalIgnoreCase)
+						|| line.Contains("musl", StringComparison.OrdinalIgnoreCase))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		catch
+		{
+			// Best effort; if probing fails we assume glibc.
+		}
+		return false;
 	}
 
 	private static string GetArchToken() => RuntimeInformation.OSArchitecture switch
 	{
 		Architecture.X64 => "x64",
 		Architecture.Arm64 => "arm64",
+		// Gitpod-io publishes 32-bit ARM archives as "armhf"; the local gulp build also names
+		// them that way. Map Architecture.Arm (32-bit) to the same token.
+		Architecture.Arm => "armhf",
 		Architecture.X86 => "ia32",
 		_ => "x64",
 	};

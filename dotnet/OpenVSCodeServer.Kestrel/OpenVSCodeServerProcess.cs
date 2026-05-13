@@ -25,6 +25,7 @@ internal sealed class OpenVSCodeServerProcess : IHostedService, IAsyncDisposable
 	private readonly ILogger<OpenVSCodeServerProcess> _logger;
 	private readonly EmbeddedDistribution _distribution;
 	private readonly OpenVSCodeServerOptions _options;
+	private readonly OpenVSCodeServerMetrics? _metrics;
 	private readonly TaskCompletionSource<Uri> _readyTcs =
 		new(TaskCreationOptions.RunContinuationsAsynchronously);
 	private readonly object _stateLock = new();
@@ -43,10 +44,20 @@ internal sealed class OpenVSCodeServerProcess : IHostedService, IAsyncDisposable
 		ILogger<OpenVSCodeServerProcess> logger,
 		EmbeddedDistribution distribution,
 		IOptions<OpenVSCodeServerOptions> options)
+		: this(logger, distribution, options, metrics: null)
+	{
+	}
+
+	public OpenVSCodeServerProcess(
+		ILogger<OpenVSCodeServerProcess> logger,
+		EmbeddedDistribution distribution,
+		IOptions<OpenVSCodeServerOptions> options,
+		OpenVSCodeServerMetrics? metrics)
 	{
 		_logger = logger;
 		_distribution = distribution;
 		_options = options.Value;
+		_metrics = metrics;
 		ResolvedConnectionToken = ResolveConnectionToken(_options);
 	}
 
@@ -82,6 +93,7 @@ internal sealed class OpenVSCodeServerProcess : IHostedService, IAsyncDisposable
 
 	public async Task StartAsync(CancellationToken cancellationToken)
 	{
+		_options.Validate();
 		_installRoot = _distribution.Materialize(_options);
 		_boundPort = _options.Port ?? AllocateEphemeralPort(_options.Host);
 		_shutdownCts = new CancellationTokenSource();
@@ -402,6 +414,7 @@ internal sealed class OpenVSCodeServerProcess : IHostedService, IAsyncDisposable
 			try
 			{
 				Launch();
+				_metrics?.RecordChildRestart();
 				return;
 			}
 			catch (Exception ex)

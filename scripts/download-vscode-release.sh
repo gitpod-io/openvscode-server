@@ -14,13 +14,18 @@ usage() {
     cat <<EOF
 Usage: $0 [--version <vX.Y.Z>] [--platform <plat>] [--arch <arch>] [--sha256 <hex>]
           [--output-dir <dir>] [--keep-existing]
+       $0 --all-linux [--version <vX.Y.Z>] [--output-dir <dir>] [--keep-existing]
 
 Options:
   --version       openvscode-server tag (default: pinned in this script)
   --platform      linux | darwin | win32  (default: detected from host)
   --arch          x64 | arm64 | armhf     (default: detected from host)
+  --all-linux     Fetch every Linux archive (x64, arm64, armhf) the upstream
+                  publishes. Implies --keep-existing for archives that match
+                  the pattern. Mutually exclusive with --platform/--arch.
   --sha256        Expected SHA-256 of the archive. When provided the script
-                  refuses to install the file unless the hash matches.
+                  refuses to install the file unless the hash matches. Only
+                  valid when downloading a single archive (no --all-linux).
   --output-dir    Target directory for the archive
                   (default: dotnet/OpenVSCodeServer.Kestrel/EmbeddedAssets)
   --keep-existing Do not delete other architectures' archives in the output
@@ -67,6 +72,7 @@ ARCH=""
 EXPECTED_SHA=""
 OUTPUT_DIR=""
 KEEP_EXISTING=0
+ALL_LINUX=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -76,10 +82,22 @@ while [[ $# -gt 0 ]]; do
         --sha256) EXPECTED_SHA="$2"; shift 2 ;;
         --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
         --keep-existing) KEEP_EXISTING=1; shift ;;
+        --all-linux) ALL_LINUX=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
     esac
 done
+
+if [[ "${ALL_LINUX}" -eq 1 ]]; then
+    if [[ -n "${PLATFORM}" || -n "${ARCH}" ]]; then
+        echo "ERROR: --all-linux is mutually exclusive with --platform and --arch." >&2
+        exit 1
+    fi
+    if [[ -n "${EXPECTED_SHA}" ]]; then
+        echo "ERROR: --sha256 cannot be combined with --all-linux (per-arch hashes differ)." >&2
+        exit 1
+    fi
+fi
 
 VERSION="${VERSION:-$DEFAULT_VERSION}"
 PLATFORM="${PLATFORM:-$(detect_platform)}"
@@ -97,67 +115,97 @@ ROOT_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 OUTPUT_DIR="${OUTPUT_DIR:-${ROOT_DIR}/dotnet/OpenVSCodeServer.Kestrel/EmbeddedAssets}"
 
 BASE_URL="${OPENVSCODE_DOWNLOAD_BASE_URL:-https://github.com/gitpod-io/openvscode-server/releases/download}"
-ARCHIVE_NAME="openvscode-server-${VERSION_NUM}-${PLATFORM}-${ARCH}.tar.gz"
-ARCHIVE_URL="${BASE_URL}/${TAG}/${ARCHIVE_NAME}"
-
-echo "==> Fetching ${ARCHIVE_NAME}"
-echo "    URL:    ${ARCHIVE_URL}"
-echo "    Output: ${OUTPUT_DIR}/${ARCHIVE_NAME}"
 
 mkdir -p "${OUTPUT_DIR}"
 
+# Compute the list of archives to fetch up-front so a single cleanup pass can preserve all of
+# them. For the single-archive path the list has one entry.
+TARGETS=()
+if [[ "${ALL_LINUX}" -eq 1 ]]; then
+    for a in x64 arm64 armhf; do
+        TARGETS+=("linux:${a}")
+    done
+else
+    TARGETS+=("${PLATFORM}:${ARCH}")
+fi
+
+KEEP_NAMES=()
+for t in "${TARGETS[@]}"; do
+    KEEP_NAMES+=("openvscode-server-${VERSION_NUM}-${t/:/-}.tar.gz")
+done
+
 if [[ "${KEEP_EXISTING}" -eq 0 ]]; then
+    # Build a `-not -name X -not -name Y` clause so the cleanup pass keeps every archive we are
+    # about to (re)stage.
+    PRUNE_ARGS=()
+    for n in "${KEEP_NAMES[@]}"; do
+        PRUNE_ARGS+=(! -name "${n}")
+    done
     find "${OUTPUT_DIR}" -maxdepth 1 -type f \
         \( -name 'vscode-reh-web-*.tar.gz' -o -name 'openvscode-server-*.tar.gz' \) \
-        ! -name "${ARCHIVE_NAME}" -print -delete || true
+        "${PRUNE_ARGS[@]}" -print -delete || true
 fi
 
-TMP_FILE="$(mktemp -t openvscode-download-XXXXXX.tar.gz)"
-trap 'rm -f "${TMP_FILE}"' EXIT
+fetch_one() {
+    local platform="$1" arch="$2"
+    local archive_name="openvscode-server-${VERSION_NUM}-${platform}-${arch}.tar.gz"
+    local archive_url="${BASE_URL}/${TAG}/${archive_name}"
 
-# Use curl when available, otherwise fall back to wget; both are universal on
-# Linux and on macOS, and the script is not used on plain Windows shells.
-if command -v curl >/dev/null 2>&1; then
-    curl --fail --location --progress-bar --output "${TMP_FILE}" "${ARCHIVE_URL}"
-elif command -v wget >/dev/null 2>&1; then
-    wget --quiet --show-progress --output-document "${TMP_FILE}" "${ARCHIVE_URL}"
-else
-    echo "ERROR: neither curl nor wget is available." >&2
-    exit 1
-fi
+    echo "==> Fetching ${archive_name}"
+    echo "    URL:    ${archive_url}"
+    echo "    Output: ${OUTPUT_DIR}/${archive_name}"
 
-# Sanity-check the download. A 404 from GitHub still produces an HTML body, so
-# verify the first bytes look like a gzip header (1f 8b).
-HEADER=$(head -c 2 "${TMP_FILE}" | od -An -tx1 | tr -d ' \n')
-if [[ "${HEADER}" != "1f8b" ]]; then
-    echo "ERROR: downloaded file is not a gzip archive (got header '${HEADER}')." >&2
-    echo "First bytes of the response:" >&2
-    head -c 256 "${TMP_FILE}" >&2 || true
-    echo >&2
-    exit 1
-fi
+    local tmp_file
+    tmp_file="$(mktemp -t openvscode-download-XXXXXX.tar.gz)"
+    # shellcheck disable=SC2064  # we want $tmp_file to be expanded now
+    trap "rm -f '${tmp_file}'" RETURN
 
-if [[ -n "${EXPECTED_SHA}" ]]; then
-    if command -v sha256sum >/dev/null 2>&1; then
-        ACTUAL_SHA=$(sha256sum "${TMP_FILE}" | awk '{print $1}')
-    elif command -v shasum >/dev/null 2>&1; then
-        ACTUAL_SHA=$(shasum -a 256 "${TMP_FILE}" | awk '{print $1}')
+    if command -v curl >/dev/null 2>&1; then
+        curl --fail --location --progress-bar --output "${tmp_file}" "${archive_url}"
+    elif command -v wget >/dev/null 2>&1; then
+        wget --quiet --show-progress --output-document "${tmp_file}" "${archive_url}"
     else
-        echo "ERROR: no sha256sum/shasum available to verify --sha256." >&2
-        exit 1
+        echo "ERROR: neither curl nor wget is available." >&2
+        return 1
     fi
-    if [[ "${ACTUAL_SHA}" != "${EXPECTED_SHA}" ]]; then
-        echo "ERROR: SHA-256 mismatch." >&2
-        echo "  expected: ${EXPECTED_SHA}" >&2
-        echo "  actual:   ${ACTUAL_SHA}" >&2
-        exit 1
+
+    local header
+    header=$(head -c 2 "${tmp_file}" | od -An -tx1 | tr -d ' \n')
+    if [[ "${header}" != "1f8b" ]]; then
+        echo "ERROR: downloaded file for ${platform}-${arch} is not a gzip archive (got header '${header}')." >&2
+        head -c 256 "${tmp_file}" >&2 || true
+        echo >&2
+        return 1
     fi
-    echo "    SHA-256 OK (${ACTUAL_SHA})"
-fi
 
-mv "${TMP_FILE}" "${OUTPUT_DIR}/${ARCHIVE_NAME}"
-trap - EXIT
+    if [[ -n "${EXPECTED_SHA}" ]]; then
+        local actual_sha
+        if command -v sha256sum >/dev/null 2>&1; then
+            actual_sha=$(sha256sum "${tmp_file}" | awk '{print $1}')
+        elif command -v shasum >/dev/null 2>&1; then
+            actual_sha=$(shasum -a 256 "${tmp_file}" | awk '{print $1}')
+        else
+            echo "ERROR: no sha256sum/shasum available to verify --sha256." >&2
+            return 1
+        fi
+        if [[ "${actual_sha}" != "${EXPECTED_SHA}" ]]; then
+            echo "ERROR: SHA-256 mismatch." >&2
+            echo "  expected: ${EXPECTED_SHA}" >&2
+            echo "  actual:   ${actual_sha}" >&2
+            return 1
+        fi
+        echo "    SHA-256 OK (${actual_sha})"
+    fi
 
-SIZE=$(du -h "${OUTPUT_DIR}/${ARCHIVE_NAME}" | cut -f1)
-echo "==> Done. ${ARCHIVE_NAME} (${SIZE}) staged in ${OUTPUT_DIR}"
-echo "    Run 'dotnet build dotnet/OpenVSCodeServer.slnx' to embed it."
+    mv "${tmp_file}" "${OUTPUT_DIR}/${archive_name}"
+    local size
+    size=$(du -h "${OUTPUT_DIR}/${archive_name}" | cut -f1)
+    echo "    Done. ${archive_name} (${size})."
+}
+
+for t in "${TARGETS[@]}"; do
+    fetch_one "${t%%:*}" "${t##*:}"
+done
+
+echo "==> All requested archives staged in ${OUTPUT_DIR}"
+echo "    Run 'dotnet build dotnet/OpenVSCodeServer.slnx' to embed them."

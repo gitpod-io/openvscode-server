@@ -29,14 +29,24 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 
 	private readonly ILogger<OpenVSCodeServerProxy> _logger;
 	private readonly OpenVSCodeServerProcess _process;
+	private readonly OpenVSCodeServerMetrics? _metrics;
 	private readonly HttpMessageInvoker _httpClient;
 
 	public OpenVSCodeServerProxy(
 		ILogger<OpenVSCodeServerProxy> logger,
 		OpenVSCodeServerProcess process)
+		: this(logger, process, metrics: null)
+	{
+	}
+
+	public OpenVSCodeServerProxy(
+		ILogger<OpenVSCodeServerProxy> logger,
+		OpenVSCodeServerProcess process,
+		OpenVSCodeServerMetrics? metrics)
 	{
 		_logger = logger;
 		_process = process;
+		_metrics = metrics;
 		_httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 		{
 			AllowAutoRedirect = false,
@@ -54,22 +64,32 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 	}
 
 	public async Task HandleAsync(HttpContext context, PathString pathPrefix)
+		=> await HandleAsync(context, pathPrefix, upstreamPrefix: pathPrefix).ConfigureAwait(false);
+
+	/// <summary>
+	/// Forwards <paramref name="context"/> upstream. <paramref name="inboundPrefix"/> is the
+	/// Kestrel-mount prefix to strip from the request path; <paramref name="upstreamPrefix"/> is
+	/// the prefix the child server understands (its <c>--server-base-path</c>). These differ only
+	/// for secondary mounts of the same backing process.
+	/// </summary>
+	public async Task HandleAsync(HttpContext context, PathString inboundPrefix, PathString upstreamPrefix)
 	{
 		var upstream = await _process.ReadyUri.ConfigureAwait(false);
 		var token = _process.ResolvedConnectionToken;
 
 		if (context.WebSockets.IsWebSocketRequest)
 		{
-			await ProxyWebSocketAsync(context, upstream, pathPrefix, token).ConfigureAwait(false);
+			await ProxyWebSocketAsync(context, upstream, inboundPrefix, upstreamPrefix, token).ConfigureAwait(false);
 			return;
 		}
 
-		await ProxyHttpAsync(context, upstream, pathPrefix, token).ConfigureAwait(false);
+		await ProxyHttpAsync(context, upstream, inboundPrefix, upstreamPrefix, token).ConfigureAwait(false);
 	}
 
-	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix, string? connectionToken)
+	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString inboundPrefix, PathString upstreamPrefix, string? connectionToken)
 	{
-		var targetUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: false, connectionToken);
+		var targetUri = BuildUpstreamUri(upstreamRoot, context.Request, inboundPrefix, websocket: false, connectionToken, upstreamPrefix);
+		var sw = System.Diagnostics.Stopwatch.StartNew();
 
 		using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), targetUri);
 
@@ -113,6 +133,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		{
 			_logger.LogError(ex, "Upstream request to openvscode-server failed: {Uri}", targetUri);
 			context.Response.StatusCode = StatusCodes.Status502BadGateway;
+			_metrics?.RecordHttpRequest(StatusCodes.Status502BadGateway, sw.Elapsed.TotalMilliseconds);
 			return;
 		}
 
@@ -143,10 +164,12 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			await upstream.Content
 				.CopyToAsync(context.Response.Body, context.RequestAborted)
 				.ConfigureAwait(false);
+
+			_metrics?.RecordHttpRequest((int)upstream.StatusCode, sw.Elapsed.TotalMilliseconds);
 		}
 	}
 
-	private async Task ProxyWebSocketAsync(HttpContext context, Uri upstreamRoot, PathString pathPrefix, string? connectionToken)
+	private async Task ProxyWebSocketAsync(HttpContext context, Uri upstreamRoot, PathString inboundPrefix, PathString upstreamPrefix, string? connectionToken)
 	{
 		using var clientSocket = new ClientWebSocket();
 
@@ -175,7 +198,7 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			}
 		}
 
-		var wsUri = BuildUpstreamUri(upstreamRoot, context.Request, pathPrefix, websocket: true, connectionToken);
+		var wsUri = BuildUpstreamUri(upstreamRoot, context.Request, inboundPrefix, websocket: true, connectionToken, upstreamPrefix);
 
 		try
 		{
@@ -192,17 +215,19 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 			.AcceptWebSocketAsync(clientSocket.SubProtocol)
 			.ConfigureAwait(false);
 
+		using var scope = _metrics?.TrackWebSocket();
 		await Task.WhenAll(
 			PumpAsync(serverSocket, clientSocket, context.RequestAborted),
 			PumpAsync(clientSocket, serverSocket, context.RequestAborted))
 			.ConfigureAwait(false);
 	}
 
-	internal static Uri BuildUpstreamUri(Uri upstreamRoot, HttpRequest request, PathString pathPrefix, bool websocket, string? connectionToken = null)
+	internal static Uri BuildUpstreamUri(Uri upstreamRoot, HttpRequest request, PathString pathPrefix, bool websocket, string? connectionToken = null, PathString upstreamPrefix = default)
 	{
-		// Strip the Kestrel-mount prefix so the upstream server (which serves at the root) sees a
-		// canonical path it understands. The child server is started with --server-base-path so
-		// any URLs it emits already include the prefix.
+		// Strip the inbound mount prefix to recover the request relative to the IDE root, then
+		// re-add the upstream prefix (which is what the child server registered as
+		// --server-base-path). The two prefixes differ only when this mount is a secondary one
+		// layered onto the same backing process.
 		var path = request.Path.Value ?? string.Empty;
 		if (pathPrefix.HasValue && path.StartsWith(pathPrefix.Value!, StringComparison.Ordinal))
 		{
@@ -220,9 +245,13 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		}
 		query = MergeConnectionToken(query, connectionToken);
 
+		// Default upstreamPrefix to the inbound one for the single-mount case so existing
+		// callers (and tests) keep working without specifying it.
+		var canonical = upstreamPrefix.HasValue ? upstreamPrefix : pathPrefix;
+
 		var builder = new UriBuilder(upstreamRoot)
 		{
-			Path = pathPrefix.HasValue ? pathPrefix.Value + (path == "/" ? string.Empty : path) : path,
+			Path = canonical.HasValue ? canonical.Value + (path == "/" ? string.Empty : path) : path,
 			Query = query,
 		};
 

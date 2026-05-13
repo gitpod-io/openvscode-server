@@ -81,4 +81,44 @@ public class ProxyConnectionTokenTests
 		Assert.Equal("/ide/socket", uri.AbsolutePath);
 		Assert.Equal("?tkn=abc", uri.Query);
 	}
+
+	[Fact]
+	public void BuildUpstreamUri_SecondaryMount_RewritesToCanonicalPrefix()
+	{
+		// Mount under /legacy but upstream knows itself as /ide.
+		var ctx = new DefaultHttpContext();
+		ctx.Request.Path = "/legacy/some/file";
+		ctx.Request.QueryString = new QueryString("?x=1");
+
+		var uri = OpenVSCodeServerProxy.BuildUpstreamUri(
+			new Uri("http://127.0.0.1:7000/"),
+			ctx.Request,
+			"/legacy",
+			websocket: false,
+			connectionToken: null,
+			upstreamPrefix: "/ide");
+
+		Assert.Equal("http", uri.Scheme);
+		Assert.Equal("/ide/some/file", uri.AbsolutePath);
+		Assert.Equal("?x=1", uri.Query);
+	}
+
+	[Fact]
+	public void BuildUpstreamUri_SecondaryMount_HandlesRoot()
+	{
+		var ctx = new DefaultHttpContext();
+		ctx.Request.Path = "/legacy/";
+
+		var uri = OpenVSCodeServerProxy.BuildUpstreamUri(
+			new Uri("http://127.0.0.1:7000/"),
+			ctx.Request,
+			"/legacy",
+			websocket: false,
+			connectionToken: null,
+			upstreamPrefix: "/ide");
+
+		// Bare-root requests collapse to the canonical prefix without a trailing slash; the
+		// upstream server treats /ide and /ide/ identically.
+		Assert.Equal("/ide", uri.AbsolutePath);
+	}
 }

@@ -9,8 +9,9 @@ namespace OpenVSCodeServer.Kestrel;
 public sealed class OpenVSCodeServerOptions
 {
 	/// <summary>
-	/// Workspace folder opened by VS Code when the user first connects.
-	/// Defaults to the current working directory of the host process.
+	/// Workspace folder opened by VS Code when the user first connects. Translates to the
+	/// upstream <c>--default-folder</c> flag. When null the upstream server applies its own
+	/// default (an empty workbench).
 	/// </summary>
 	public string? WorkspaceFolder { get; set; }
 
@@ -65,9 +66,26 @@ public sealed class OpenVSCodeServerOptions
 
 	/// <summary>
 	/// Path prefix that Kestrel exposes the IDE under (e.g. <c>/ide</c>). Set automatically by
-	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/>.
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/> on the
+	/// first call; later mounts share the same backing process but have their own routes — see
+	/// <see cref="AdditionalMountPrefixes"/>.
 	/// </summary>
 	public string PathPrefix { get; internal set; } = "/";
+
+	/// <summary>
+	/// Tracks whether <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/>
+	/// has already established the canonical prefix. Internal — external callers shouldn't override.
+	/// </summary>
+	internal bool PathPrefixSet { get; set; }
+
+	/// <summary>
+	/// Additional Kestrel mount points layered onto the same backing Node process. The first
+	/// <see cref="OpenVSCodeServerEndpointRouteBuilderExtensions.MapOpenVSCodeServer"/> call sets
+	/// <see cref="PathPrefix"/> (which becomes <c>--server-base-path</c>); subsequent calls with a
+	/// different prefix add to this collection. They are reachable through the reverse proxy but
+	/// the workbench HTML will reference the canonical prefix in its absolute URLs.
+	/// </summary>
+	public IList<string> AdditionalMountPrefixes { get; } = new List<string>();
 
 	/// <summary>
 	/// Environment variables to set on the child process (in addition to the inherited environment).
@@ -111,6 +129,58 @@ public sealed class OpenVSCodeServerOptions
 	/// transient crashes don't accumulate forever.
 	/// </summary>
 	public TimeSpan RestartAttemptResetWindow { get; set; } = TimeSpan.FromMinutes(2);
+
+	/// <summary>
+	/// Asserts that the options are internally consistent. Called automatically by the hosted
+	/// service before launching the child process so misconfigurations fail at startup with a
+	/// clear message instead of producing opaque downstream errors.
+	/// </summary>
+	internal void Validate()
+	{
+		if (Port is { } port && (port < 0 || port > 65535))
+		{
+			throw new ArgumentOutOfRangeException(nameof(Port), port,
+				"Port must be in the range 0–65535 (use null to allocate an ephemeral port).");
+		}
+
+		if (StartupTimeout <= TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(StartupTimeout), StartupTimeout,
+				"StartupTimeout must be positive.");
+		}
+
+		if (MaxRestartAttempts < 0)
+		{
+			throw new ArgumentOutOfRangeException(nameof(MaxRestartAttempts), MaxRestartAttempts,
+				"MaxRestartAttempts must be non-negative (use 0 for unlimited).");
+		}
+
+		if (RestartInitialDelay < TimeSpan.Zero)
+		{
+			throw new ArgumentOutOfRangeException(nameof(RestartInitialDelay), RestartInitialDelay,
+				"RestartInitialDelay cannot be negative.");
+		}
+
+		if (RestartMaxDelay < RestartInitialDelay)
+		{
+			throw new ArgumentException(
+				$"RestartMaxDelay ({RestartMaxDelay}) must be >= RestartInitialDelay ({RestartInitialDelay}).",
+				nameof(RestartMaxDelay));
+		}
+
+		if (!WithoutConnectionToken && string.IsNullOrEmpty(ConnectionToken))
+		{
+			// We auto-generate one in this case — fine, but warn loud if the caller passed an
+			// empty string, which is almost certainly a bug.
+			if (ConnectionToken is { Length: 0 })
+			{
+				throw new ArgumentException(
+					"ConnectionToken is set to an empty string. Either set WithoutConnectionToken=true, "
+					+ "supply a non-empty token, or leave the token unset to let the library auto-generate one.",
+					nameof(ConnectionToken));
+			}
+		}
+	}
 }
 
 /// <summary>
