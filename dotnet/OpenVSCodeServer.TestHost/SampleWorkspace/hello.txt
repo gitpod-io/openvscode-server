@@ -1,0 +1,4 @@
+Hello from the sample workspace!
+
+This file lives inside the per-session temp folder created by VSCodeSessionManager. Saves are
+debounced and reported back to SampleVSCodeFiles.SaveAsync — check the test host's stdout.

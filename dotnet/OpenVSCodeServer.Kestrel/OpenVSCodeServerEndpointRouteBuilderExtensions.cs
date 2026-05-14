@@ -27,7 +27,7 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 	/// <c>--server-base-path</c> — secondary mounts work for raw API/WebSocket traffic where the
 	/// browser does not need the upstream to emit absolute URLs.</para>
 	/// </summary>
-	public static IEndpointConventionBuilder MapOpenVSCodeServer(
+	public static IOpenVSCodeServerEndpointBuilder MapOpenVSCodeServer(
 		this IEndpointRouteBuilder endpoints,
 		string pathPrefix = "/")
 	{
@@ -55,7 +55,7 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 		var route = pathPrefix == "/" ? "/{**catchall}" : pathPrefix + "/{**catchall}";
 		var capturedPrefix = pathPrefix;
 
-		return endpoints.MapMethods(
+		var inner = endpoints.MapMethods(
 			route,
 			new[] { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" },
 			async (HttpContext context, OpenVSCodeServerProxy proxy, IOptions<OpenVSCodeServerOptions> opts) =>
@@ -70,6 +70,8 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 				await proxy.HandleAsync(context, inboundPrefix, upstreamPrefix);
 			})
 			.WithDisplayName($"OpenVSCode Server ({pathPrefix})");
+
+		return new OpenVSCodeServerEndpointBuilder(endpoints, inner);
 	}
 
 	/// <summary>
@@ -108,10 +110,27 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 		group.MapGet("/{sessionId}", GetSession)
 			.WithDisplayName("OpenVSCode Server – get session");
 
+		group.MapPost("/{sessionId}/heartbeat", HeartbeatSession)
+			.WithDisplayName("OpenVSCode Server – heartbeat session");
+
 		group.MapDelete("/{sessionId}", EndSessionAsync)
 			.WithDisplayName("OpenVSCode Server – end session");
 
 		return group;
+	}
+
+	private static IResult HeartbeatSession(
+		string sessionId,
+		VSCodeSessionManager manager)
+	{
+		var session = manager.Get(sessionId);
+		if (session is null)
+		{
+			return Results.NotFound();
+		}
+
+		session.Touch();
+		return Results.NoContent();
 	}
 
 	private static async Task<IResult> CreateSessionAsync(
@@ -145,9 +164,14 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 		IOptions<OpenVSCodeServerOptions> opts)
 	{
 		var session = manager.Get(sessionId);
-		return session is null
-			? Results.NotFound()
-			: Results.Json(BuildResponse(session, opts.Value), SessionJson.Options);
+		if (session is null)
+		{
+			return Results.NotFound();
+		}
+
+		// Treat a GET as activity so polling clients keep their session alive.
+		session.Touch();
+		return Results.Json(BuildResponse(session, opts.Value), SessionJson.Options);
 	}
 
 	private static async Task<IResult> EndSessionAsync(

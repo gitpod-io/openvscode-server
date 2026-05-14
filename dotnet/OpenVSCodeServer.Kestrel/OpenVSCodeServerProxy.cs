@@ -30,6 +30,8 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 	private readonly ILogger<OpenVSCodeServerProxy> _logger;
 	private readonly OpenVSCodeServerProcess _process;
 	private readonly OpenVSCodeServerMetrics? _metrics;
+	private readonly VSCodeSessionManager? _sessionManager;
+	private readonly bool _refreshOnTraffic;
 	private readonly HttpMessageInvoker _httpClient;
 
 	public OpenVSCodeServerProxy(
@@ -43,10 +45,22 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		ILogger<OpenVSCodeServerProxy> logger,
 		OpenVSCodeServerProcess process,
 		OpenVSCodeServerMetrics? metrics)
+		: this(logger, process, metrics, sessionManager: null, options: null)
+	{
+	}
+
+	public OpenVSCodeServerProxy(
+		ILogger<OpenVSCodeServerProxy> logger,
+		OpenVSCodeServerProcess process,
+		OpenVSCodeServerMetrics? metrics,
+		VSCodeSessionManager? sessionManager,
+		Microsoft.Extensions.Options.IOptions<OpenVSCodeServerOptions>? options)
 	{
 		_logger = logger;
 		_process = process;
 		_metrics = metrics;
+		_sessionManager = sessionManager;
+		_refreshOnTraffic = options?.Value.Sessions.RefreshOnProxyTraffic ?? true;
 		_httpClient = new HttpMessageInvoker(new SocketsHttpHandler
 		{
 			AllowAutoRedirect = false,
@@ -77,6 +91,8 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		var upstream = await _process.ReadyUri.ConfigureAwait(false);
 		var token = _process.ResolvedConnectionToken;
 
+		RefreshSessionIfPresent(context.Request);
+
 		if (context.WebSockets.IsWebSocketRequest)
 		{
 			await ProxyWebSocketAsync(context, upstream, inboundPrefix, upstreamPrefix, token).ConfigureAwait(false);
@@ -84,6 +100,27 @@ internal sealed class OpenVSCodeServerProxy : IAsyncDisposable
 		}
 
 		await ProxyHttpAsync(context, upstream, inboundPrefix, upstreamPrefix, token).ConfigureAwait(false);
+	}
+
+	private void RefreshSessionIfPresent(HttpRequest request)
+	{
+		if (!_refreshOnTraffic || _sessionManager is null)
+		{
+			return;
+		}
+
+		if (!request.Query.TryGetValue("folder", out var folder) || folder.Count == 0)
+		{
+			return;
+		}
+
+		var workspace = folder.ToString();
+		if (string.IsNullOrEmpty(workspace))
+		{
+			return;
+		}
+
+		_sessionManager.TouchByWorkspaceFolder(workspace);
 	}
 
 	private async Task ProxyHttpAsync(HttpContext context, Uri upstreamRoot, PathString inboundPrefix, PathString upstreamPrefix, string? connectionToken)

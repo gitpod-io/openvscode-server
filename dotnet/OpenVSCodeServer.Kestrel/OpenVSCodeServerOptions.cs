@@ -254,4 +254,34 @@ public sealed class VSCodeSessionOptions
 	/// smaller for tighter save latency. Defaults to 500ms.
 	/// </summary>
 	public TimeSpan SaveDebounce { get; set; } = TimeSpan.FromMilliseconds(500);
+
+	/// <summary>
+	/// How long a session may sit idle (no proxy traffic, no <c>GET /sessions/{id}</c>, no
+	/// heartbeat call) before the manager calls <see cref="IVSCodeFiles.SaveAsync"/> and tears it
+	/// down. Defaults to 30 minutes. Set to <see cref="TimeSpan.Zero"/> to disable idle GC and
+	/// keep sessions alive until the process shuts down or the caller invokes
+	/// <c>DELETE /sessions/{id}</c>.
+	/// </summary>
+	public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromMinutes(30);
+
+	/// <summary>
+	/// How often the idle sweeper wakes up to evict expired sessions. Defaults to one minute,
+	/// clamped to no more than <see cref="IdleTimeout"/>. Ignored when <see cref="IdleTimeout"/>
+	/// is <see cref="TimeSpan.Zero"/>.
+	/// </summary>
+	public TimeSpan IdleSweepInterval { get; set; } = TimeSpan.FromMinutes(1);
+
+	/// <summary>
+	/// When true (default), <see cref="OpenVSCodeServerProxy"/> inspects every inbound request
+	/// for a <c>?folder=&lt;workspace&gt;</c> query parameter and refreshes the matching session's
+	/// last-seen timestamp. Disable if you prefer to refresh strictly via the heartbeat endpoint.
+	/// </summary>
+	public bool RefreshOnProxyTraffic { get; set; } = true;
+
+	/// <summary>
+	/// When true (default), the manager scans <see cref="RootDirectory"/> on startup and removes
+	/// any sub-directories left behind by a previous run that crashed before disposing its
+	/// sessions. The temp folders are leaks otherwise — nothing else cleans them up.
+	/// </summary>
+	public bool CleanOrphansOnStartup { get; set; } = true;
 }

@@ -108,6 +108,70 @@ app.MapHealthChecks("/healthz/ready",
 
 The check returns `Healthy` once the child has emitted its "Web UI available" banner and exposes the upstream URL in the result data; it returns `Unhealthy` while the child is starting and surfaces the underlying exception on a startup failure.
 
+## Per-session workspaces
+
+When the host wants every visitor to see their own private workspace (a tenant-scoped sandbox, a per-document scratch folder, a CTF-style throwaway environment), register an `IVSCodeFiles` implementation that bridges the in-memory workspace folder to the host's source of truth. The library handles temp-folder lifecycle, file-watching, debounced save callbacks, idle GC, and orphan cleanup; the host implements two methods.
+
+```csharp
+public sealed class MyVSCodeFiles : IVSCodeFiles
+{
+    public Task InitializeAsync(VSCodeSessionContext ctx, CancellationToken ct)
+    {
+        // ctx.WorkspaceFolder is an empty temp folder owned by the library.
+        // Populate it from durable storage (db, blob, git checkout, …).
+        File.WriteAllText(Path.Combine(ctx.WorkspaceFolder, "README.md"), "hello");
+        return Task.CompletedTask;
+    }
+
+    public Task SaveAsync(VSCodeSessionContext ctx,
+        IReadOnlyCollection<VSCodeFileChange> changes, CancellationToken ct)
+    {
+        // Called on debounced FileSystemWatcher batches + once more on session end.
+        // changes[i].RelativePath is forward-slash, relative to ctx.WorkspaceFolder.
+        foreach (var c in changes) Console.WriteLine($"{c.Kind} {c.RelativePath}");
+        return Task.CompletedTask;
+    }
+}
+```
+
+Wire it up alongside the proxy with the fluent `.WithSessions()` shortcut:
+
+```csharp
+builder.Services.AddOpenVSCodeServer(options =>
+{
+    options.WithoutConnectionToken = true;
+    options.Sessions.SaveDebounce = TimeSpan.FromMilliseconds(500);
+    options.Sessions.IdleTimeout  = TimeSpan.FromMinutes(30);
+});
+
+builder.Services.AddVSCodeFiles<MyVSCodeFiles>();
+
+var app = builder.Build();
+
+app.MapOpenVSCodeServer("/ide")
+   .WithSessions("/sessions");
+```
+
+That exposes:
+
+- `POST /sessions` → creates a session, runs `InitializeAsync`, returns `{ sessionId, workspaceFolder, ideUrl }`. The `ideUrl` is `/ide/?folder=<temp-folder>`, ready to redirect the browser to.
+- `GET /sessions/{id}` → returns the same metadata for a live session (and refreshes its last-seen timestamp), or 404.
+- `POST /sessions/{id}/heartbeat` → bumps the session's idle timer; useful for long-running tabs.
+- `DELETE /sessions/{id}` → drains pending changes, calls `SaveAsync` one last time, deletes the temp folder, returns 204.
+
+Sessions also self-evict after `Sessions.IdleTimeout` (default 30 min); the sweeper looks at every active session every `Sessions.IdleSweepInterval` (default 1 min) and ends any that haven't seen traffic. Proxy traffic with a matching `?folder=` query refreshes the timer automatically, so users actively editing a workbench tab don't get evicted. Set `IdleTimeout` to `TimeSpan.Zero` to disable idle GC entirely.
+
+`CleanOrphansOnStartup` (default `true`) wipes any leftover session folders under `Sessions.RootDirectory` on host startup. This handles temp leaks from prior crashed processes — there's nothing else cleaning those folders up.
+
+### File-watcher trade-off
+
+The library arms a recursive `FileSystemWatcher` on each session folder so saves can be reported back without the IDE having to call out. Two caveats are worth knowing:
+
+- **Buffer overruns.** A user pasting a huge tree (or an extension regenerating thousands of files at once) can overflow the OS watch buffer; the library logs a warning and may miss intermediate events. The final flush on `DELETE /sessions/{id}` re-walks the directory tree as a backstop for the durable save.
+- **macOS / FUSE / network mounts.** `FileSystemWatcher` semantics are weaker on non-local filesystems. Set `Sessions.RootDirectory` to a local SSD-backed path; defaults to `${TEMP}/openvscode-sessions`.
+
+If your application has a stronger source of truth than the watcher (e.g. the IDE saves through a custom protocol you already intercept), you can ignore `SaveAsync` and rely on the final flush; the temp folder still gets cleaned up regardless.
+
 ## Repository layout
 
 ```
