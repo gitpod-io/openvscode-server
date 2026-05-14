@@ -1,0 +1,140 @@
+# Azure DevOps pipeline that builds and publishes the OpenVSCodeServer.Kestrel NuGet package.
+#
+# The library embeds pre-built openvscode-server distributions as managed resources.
+# Because upstream (gitpod-io/openvscode-server) only publishes Linux artifacts, the
+# pipeline runs on Linux and stages the x64/arm64/armhf Linux archives via the
+# scripts/download-vscode-release.sh helper before packing.
+#
+# Required pipeline secrets / service connections:
+#   nuget-curiosity-org   service connection used to push *.nupkg / *.snupkg
+#
+# Optional variables (can be set as pipeline variables, no secrets needed):
+#   openVSCodeVersion     openvscode-server tag to embed, e.g. v1.109.5
+#                         (defaults to the version pinned in download-vscode-release.sh)
+
+variables:
+  buildConfiguration: 'Release'
+  dotnetSdkVersion: '10.x'
+  packageProject: 'dotnet/OpenVSCodeServer.Kestrel/OpenVSCodeServer.Kestrel.csproj'
+  testProject:    'dotnet/OpenVSCodeServer.Tests/OpenVSCodeServer.Tests.csproj'
+  artifactStagingPackages: '$(Build.ArtifactStagingDirectory)/packages'
+
+trigger:
+  branches:
+    include:
+      - main
+      - master
+      - claude/add-azure-devops-pipeline-Ubsv2
+  tags:
+    include:
+      - 'v*'
+
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- checkout: self
+  submodules: false
+  persistCredentials: false
+
+- task: Bash@3
+  displayName: 'Set build version'
+  inputs:
+    targetType: 'inline'
+    script: |
+      set -euo pipefail
+      DATE=$(date -u +%Y.%-m)
+      BUILD_VERSION="${DATE}.$(Build.BuildId)"
+      echo "Using build version: ${BUILD_VERSION}"
+      echo "##vso[task.setvariable variable=buildVersion]${BUILD_VERSION}"
+      echo "##vso[build.updatebuildnumber]${BUILD_VERSION}"
+
+- task: UseDotNet@2
+  displayName: 'Install .NET $(dotnetSdkVersion) SDK'
+  inputs:
+    packageType: sdk
+    version: $(dotnetSdkVersion)
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+    includePreviewVersions: true
+
+- task: Bash@3
+  displayName: 'Download openvscode-server Linux distributions'
+  inputs:
+    targetType: 'inline'
+    workingDirectory: '$(Build.SourcesDirectory)'
+    script: |
+      set -euo pipefail
+      chmod +x scripts/download-vscode-release.sh
+      VERSION_ARG=""
+      if [ -n "${OPENVSCODE_VERSION:-}" ]; then
+        VERSION_ARG="--version ${OPENVSCODE_VERSION}"
+      fi
+      scripts/download-vscode-release.sh --all-linux ${VERSION_ARG}
+      echo "Staged archives:"
+      ls -lh dotnet/OpenVSCodeServer.Kestrel/EmbeddedAssets/
+  env:
+    # Optional override: set the openVSCodeVersion pipeline variable to pin a tag.
+    OPENVSCODE_VERSION: $(openVSCodeVersion)
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: 'restore'
+    projects: |
+      $(packageProject)
+      $(testProject)
+    feedsToUse: 'select'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build ($(buildConfiguration))'
+  inputs:
+    command: 'build'
+    projects: '$(packageProject)'
+    arguments: '--configuration $(buildConfiguration) --no-restore /p:Version=$(buildVersion)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
+  inputs:
+    command: 'test'
+    projects: '$(testProject)'
+    arguments: '--configuration $(buildConfiguration) --no-restore --logger trx --results-directory $(Agent.TempDirectory)/TestResults'
+    publishTestResults: true
+  continueOnError: false
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
+  inputs:
+    command: 'pack'
+    packagesToPack: '$(packageProject)'
+    configuration: '$(buildConfiguration)'
+    nobuild: true
+    includesymbols: true
+    versioningScheme: 'byEnvVar'
+    versionEnvVar: 'buildVersion'
+    outputDir: '$(artifactStagingPackages)'
+
+- task: Bash@3
+  displayName: 'List packed artifacts'
+  inputs:
+    targetType: 'inline'
+    script: |
+      set -euo pipefail
+      ls -lh "$(artifactStagingPackages)"
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifacts (packages)'
+  inputs:
+    PathtoPublish: '$(artifactStagingPackages)'
+    ArtifactName: 'nuget'
+    publishLocation: 'Container'
+
+- task: NuGetCommand@2
+  displayName: 'Push OpenVSCodeServer.Kestrel to nuget.org'
+  condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'), startsWith(variables['Build.SourceBranch'], 'refs/tags/v')))
+  inputs:
+    command: 'push'
+    packagesToPush: '$(artifactStagingPackages)/*.nupkg;!$(artifactStagingPackages)/*.symbols.nupkg'
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'nuget-curiosity-org'
