@@ -1,6 +1,8 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See LICENSE.txt for license information.
 
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -70,6 +72,101 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 			.WithDisplayName($"OpenVSCode Server ({pathPrefix})");
 	}
 
+	/// <summary>
+	/// Adds the session-management HTTP endpoints under <paramref name="pathPrefix"/>:
+	/// <list type="bullet">
+	///   <item><c>POST {prefix}</c> — creates a new session, runs
+	///   <see cref="IVSCodeFiles.InitializeAsync"/>, and returns
+	///   <c>{ sessionId, workspaceFolder, ideUrl }</c>.</item>
+	///   <item><c>GET {prefix}/{id}</c> — returns the same metadata for a live session, or 404.</item>
+	///   <item><c>DELETE {prefix}/{id}</c> — flushes pending changes, runs a final
+	///   <see cref="IVSCodeFiles.SaveAsync"/>, removes the temp folder, and returns 204. Returns
+	///   404 if no such session exists.</item>
+	/// </list>
+	/// <para>The <c>ideUrl</c> in the response is built from the prefix passed to the first
+	/// <see cref="MapOpenVSCodeServer"/> call, with a <c>?folder=</c> query string pointing at the
+	/// session's temporary workspace folder. Make sure <see cref="MapOpenVSCodeServer"/> is called
+	/// before this method so the canonical mount prefix is known.</para>
+	/// <para>Throws at request time if no <see cref="IVSCodeFiles"/> implementation was registered
+	/// via <see cref="OpenVSCodeServerServiceCollectionExtensions.AddVSCodeFiles{T}"/>.</para>
+	/// </summary>
+	public static IEndpointConventionBuilder MapOpenVSCodeServerSessions(
+		this IEndpointRouteBuilder endpoints,
+		string pathPrefix = "/sessions")
+	{
+		ArgumentNullException.ThrowIfNull(endpoints);
+		ArgumentException.ThrowIfNullOrEmpty(pathPrefix);
+
+		pathPrefix = NormalizePathPrefix(pathPrefix);
+		var basePath = pathPrefix == "/" ? string.Empty : pathPrefix;
+
+		var group = endpoints.MapGroup(basePath);
+
+		group.MapPost("/", CreateSessionAsync)
+			.WithDisplayName("OpenVSCode Server – create session");
+
+		group.MapGet("/{sessionId}", GetSession)
+			.WithDisplayName("OpenVSCode Server – get session");
+
+		group.MapDelete("/{sessionId}", EndSessionAsync)
+			.WithDisplayName("OpenVSCode Server – end session");
+
+		return group;
+	}
+
+	private static async Task<IResult> CreateSessionAsync(
+		HttpContext context,
+		VSCodeSessionManager manager,
+		IOptions<OpenVSCodeServerOptions> opts)
+	{
+		CreateSessionRequest? body = null;
+		if (context.Request.ContentLength > 0
+			|| (context.Request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) ?? false))
+		{
+			try
+			{
+				body = await context.Request.ReadFromJsonAsync<CreateSessionRequest>(
+					SessionJson.Options, context.RequestAborted).ConfigureAwait(false);
+			}
+			catch (JsonException ex)
+			{
+				return Results.BadRequest(new { error = "invalid_json", message = ex.Message });
+			}
+		}
+
+		var session = await manager.CreateAsync(body?.State, context.RequestAborted).ConfigureAwait(false);
+
+		return Results.Json(BuildResponse(session, opts.Value), SessionJson.Options, statusCode: StatusCodes.Status201Created);
+	}
+
+	private static IResult GetSession(
+		string sessionId,
+		VSCodeSessionManager manager,
+		IOptions<OpenVSCodeServerOptions> opts)
+	{
+		var session = manager.Get(sessionId);
+		return session is null
+			? Results.NotFound()
+			: Results.Json(BuildResponse(session, opts.Value), SessionJson.Options);
+	}
+
+	private static async Task<IResult> EndSessionAsync(
+		string sessionId,
+		HttpContext context,
+		VSCodeSessionManager manager)
+	{
+		var removed = await manager.EndAsync(sessionId, context.RequestAborted).ConfigureAwait(false);
+		return removed ? Results.NoContent() : Results.NotFound();
+	}
+
+	private static CreateSessionResponse BuildResponse(VSCodeSession session, OpenVSCodeServerOptions options)
+	{
+		var mount = options.PathPrefix is { Length: > 0 } prefix ? prefix : "/";
+		var ideBase = mount == "/" ? "/" : mount + "/";
+		var ideUrl = ideBase + "?folder=" + Uri.EscapeDataString(session.WorkspaceFolder);
+		return new CreateSessionResponse(session.SessionId, session.WorkspaceFolder, ideUrl);
+	}
+
 	private static string NormalizePathPrefix(string pathPrefix)
 	{
 		if (!pathPrefix.StartsWith('/'))
@@ -78,5 +175,21 @@ public static class OpenVSCodeServerEndpointRouteBuilderExtensions
 		}
 		pathPrefix = pathPrefix.TrimEnd('/');
 		return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+	}
+
+	private sealed record CreateSessionRequest(
+		[property: JsonPropertyName("state")] Dictionary<string, string>? State);
+
+	private sealed record CreateSessionResponse(
+		[property: JsonPropertyName("sessionId")] string SessionId,
+		[property: JsonPropertyName("workspaceFolder")] string WorkspaceFolder,
+		[property: JsonPropertyName("ideUrl")] string IdeUrl);
+
+	private static class SessionJson
+	{
+		public static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+		{
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+		};
 	}
 }
