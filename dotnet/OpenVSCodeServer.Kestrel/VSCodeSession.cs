@@ -23,6 +23,7 @@ internal sealed class VSCodeSession : IAsyncDisposable
 	private CancellationTokenSource? _flushCts;
 	private Task? _flushTask;
 	private DateTime _lastEventUtc;
+	private long _lastSeenTicks;
 	private bool _watcherEnabled;
 	private bool _disposed;
 
@@ -43,12 +44,32 @@ internal sealed class VSCodeSession : IAsyncDisposable
 		_rootServices = rootServices;
 		_logger = logger;
 		_debounce = debounce;
+		_lastSeenTicks = DateTime.UtcNow.Ticks;
 	}
 
 	public VSCodeSessionContext Context { get; }
 
 	public string SessionId => Context.SessionId;
 	public string WorkspaceFolder => Context.WorkspaceFolder;
+
+	/// <summary>
+	/// Last time this session received traffic (proxy request, HTTP GET on the session endpoint,
+	/// or explicit heartbeat). The idle sweeper compares this against
+	/// <see cref="VSCodeSessionOptions.IdleTimeout"/> to decide when to evict the session.
+	/// </summary>
+	public DateTime LastSeenUtc
+	{
+		get => new DateTime(Interlocked.Read(ref _lastSeenTicks), DateTimeKind.Utc);
+	}
+
+	/// <summary>
+	/// Bumps <see cref="LastSeenUtc"/> to the current UTC time. Safe to call from any thread; the
+	/// proxy and HTTP endpoints poke this on every interaction with the session.
+	/// </summary>
+	public void Touch()
+	{
+		Interlocked.Exchange(ref _lastSeenTicks, DateTime.UtcNow.Ticks);
+	}
 
 	/// <summary>
 	/// Test-only window onto the watcher's pending-change buffer so integration tests can wait for

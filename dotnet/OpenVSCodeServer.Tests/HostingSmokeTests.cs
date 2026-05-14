@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE.txt for license information.
 
 using System.Net;
+using System.Net.Http.Json;
 using System.Net.Sockets;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -213,6 +215,109 @@ public class HostingSmokeTests
 		}
 		pkill.WaitForExit(5000);
 		return pkill.ExitCode == 0;
+	}
+
+	[Fact]
+	public async Task Host_Boots_Sessions_Endpoint_And_Workbench_Loads_Session_Folder()
+	{
+		// End-to-end smoke: spin the real Node child up, POST /sessions to create a session-scoped
+		// workspace, then GET /ide/?folder=<workspace> and assert the workbench HTML comes back.
+		// Verifies the ?folder= round-trip against actual upstream behaviour, not just our DTO
+		// shape.
+		if (!CanReachInstall(out var skip))
+		{
+			Assert.True(true, skip);
+			return;
+		}
+
+		var port = AllocateFreePort();
+		var external = Environment.GetEnvironmentVariable("OPENVSCODE_EXTERNAL_PATH");
+		var sessionsRoot = Directory.CreateTempSubdirectory("openvscode-smoke-sessions-").FullName;
+
+		var builder = CreateIsolatedBuilder(port);
+		builder.Services.AddOpenVSCodeServer(options =>
+		{
+			options.ExternalServerPath = string.IsNullOrEmpty(external) ? null : external;
+			options.WithoutConnectionToken = true;
+			options.StartupTimeout = TimeSpan.FromMinutes(2);
+			options.Sessions.RootDirectory = sessionsRoot;
+			options.Sessions.SaveDebounce = TimeSpan.FromMilliseconds(100);
+			options.Sessions.IdleTimeout = TimeSpan.Zero;            // keep GC out of the test
+			options.Sessions.CleanOrphansOnStartup = false;          // don't touch the temp dir
+		});
+		builder.Services.AddSingleton<SeedingFiles>();
+		builder.Services.AddVSCodeFiles<SeedingFiles>();
+		builder.Services.AddScoped<IVSCodeFiles>(sp => sp.GetRequiredService<SeedingFiles>());
+
+		using var app = builder.Build();
+		app.MapOpenVSCodeServer("/ide").WithSessions("/sessions");
+
+		await app.StartAsync();
+		try
+		{
+			using var http = new HttpClient
+			{
+				BaseAddress = new Uri($"http://127.0.0.1:{port}"),
+				Timeout = TimeSpan.FromSeconds(60),
+			};
+
+			var createResp = await http.PostAsJsonAsync("/sessions", new
+			{
+				state = new { source = "hosting-smoke" },
+			});
+			Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
+
+			var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+			var workspaceFolder = created.GetProperty("workspaceFolder").GetString();
+			var ideUrl = created.GetProperty("ideUrl").GetString();
+
+			Assert.False(string.IsNullOrEmpty(workspaceFolder));
+			Assert.True(Directory.Exists(workspaceFolder));
+			Assert.True(File.Exists(Path.Combine(workspaceFolder!, "session-readme.md")),
+				"SeedingFiles should have written its seed file into the session workspace.");
+			Assert.NotNull(ideUrl);
+			Assert.StartsWith("/ide/?folder=", ideUrl);
+
+			// Follow the returned ideUrl through the actual reverse proxy. The upstream server has
+			// to understand the ?folder= query and render the workbench HTML; the proxy must
+			// forward it without mangling the path.
+			var workbench = await http.GetAsync(ideUrl);
+			Assert.True(
+				workbench.IsSuccessStatusCode || workbench.StatusCode == HttpStatusCode.Redirect,
+				$"Unexpected status {(int)workbench.StatusCode} on {ideUrl}.");
+
+			if (workbench.IsSuccessStatusCode)
+			{
+				var body = await workbench.Content.ReadAsStringAsync();
+				Assert.Contains("<html", body, StringComparison.OrdinalIgnoreCase);
+				var looksLikeWorkbench =
+					body.Contains("Visual Studio Code", StringComparison.OrdinalIgnoreCase)
+					|| body.Contains("workbench", StringComparison.OrdinalIgnoreCase)
+					|| body.Contains("vscode-server", StringComparison.OrdinalIgnoreCase);
+				Assert.True(looksLikeWorkbench,
+					"Workbench HTML did not contain any VS Code marker — the proxy may be returning the wrong page for ?folder=.");
+			}
+		}
+		finally
+		{
+			await app.StopAsync();
+			try { Directory.Delete(sessionsRoot, recursive: true); } catch { /* best effort */ }
+		}
+	}
+
+	internal sealed class SeedingFiles : IVSCodeFiles
+	{
+		public Task InitializeAsync(VSCodeSessionContext context, CancellationToken cancellationToken)
+		{
+			File.WriteAllText(Path.Combine(context.WorkspaceFolder, "session-readme.md"),
+				$"# session {context.SessionId}\n\nseeded for smoke test.\n");
+			return Task.CompletedTask;
+		}
+
+		public Task SaveAsync(
+			VSCodeSessionContext context,
+			IReadOnlyCollection<VSCodeFileChange> changes,
+			CancellationToken cancellationToken) => Task.CompletedTask;
 	}
 
 	[Fact]

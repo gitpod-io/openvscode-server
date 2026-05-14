@@ -11,4 +11,8 @@
     <ProjectReference Include="..\OpenVSCodeServer.Kestrel\OpenVSCodeServer.Kestrel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="SampleWorkspace\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

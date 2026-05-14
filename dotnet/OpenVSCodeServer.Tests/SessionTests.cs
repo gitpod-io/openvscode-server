@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Channels;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -206,6 +207,196 @@ public class SessionTests
 		{
 			await app.StopAsync();
 		}
+	}
+
+	[Fact]
+	public async Task TouchByWorkspaceFolder_refreshes_last_seen()
+	{
+		await using var sp = BuildServices();
+		var manager = sp.GetRequiredService<VSCodeSessionManager>();
+		var session = await manager.CreateAsync(state: null, CancellationToken.None);
+
+		var initial = session.LastSeenUtc;
+		// Sleep long enough that the resolution of UtcNow can't fool the assertion.
+		await Task.Delay(30);
+
+		var touched = manager.TouchByWorkspaceFolder(session.WorkspaceFolder);
+		Assert.True(touched);
+		Assert.True(session.LastSeenUtc > initial,
+			$"LastSeenUtc should advance after TouchByWorkspaceFolder; was {initial:o}, now {session.LastSeenUtc:o}.");
+
+		Assert.False(manager.TouchByWorkspaceFolder("/no/such/folder"));
+	}
+
+	[Fact]
+	public async Task EvictIdleAsync_removes_sessions_past_idle_timeout()
+	{
+		await using var sp = BuildServices();
+		var manager = sp.GetRequiredService<VSCodeSessionManager>();
+		var session = await manager.CreateAsync(state: null, CancellationToken.None);
+		var folder = session.WorkspaceFolder;
+
+		// Use a very large idle timeout to confirm the fresh session survives.
+		await manager.EvictIdleAsync(TimeSpan.FromMinutes(30), CancellationToken.None);
+		Assert.NotNull(manager.Get(session.SessionId));
+
+		// Now sleep long enough that the session is considered idle, and sweep with a tight
+		// timeout. The session should be evicted and its folder removed.
+		await Task.Delay(75);
+		await manager.EvictIdleAsync(TimeSpan.FromMilliseconds(50), CancellationToken.None);
+
+		Assert.Null(manager.Get(session.SessionId));
+		Assert.False(Directory.Exists(folder));
+	}
+
+	[Fact]
+	public async Task CleanOrphans_removes_leftover_session_folders_on_start()
+	{
+		// Seed the configured root with two leftover directories before the manager starts; they
+		// should be removed by the orphan sweep that runs in StartAsync.
+		var root = Path.Combine(Path.GetTempPath(), "openvscode-orphan-" + Guid.NewGuid().ToString("N"));
+		Directory.CreateDirectory(root);
+		var leftoverA = Path.Combine(root, "session-old-a");
+		var leftoverB = Path.Combine(root, "session-old-b");
+		Directory.CreateDirectory(leftoverA);
+		Directory.CreateDirectory(leftoverB);
+		File.WriteAllText(Path.Combine(leftoverA, "stale.txt"), "junk");
+
+		var services = new ServiceCollection();
+		services.AddLogging(b => b.SetMinimumLevel(LogLevel.Warning));
+		services.AddSingleton<RecordingVSCodeFiles>();
+		services.AddVSCodeFiles<RecordingVSCodeFiles>();
+		services.AddScoped<IVSCodeFiles>(sp => sp.GetRequiredService<RecordingVSCodeFiles>());
+		services.Configure<OpenVSCodeServerOptions>(o =>
+		{
+			o.Sessions.RootDirectory = root;
+			o.Sessions.IdleTimeout = TimeSpan.Zero; // disable sweeper for the test
+			o.Sessions.CleanOrphansOnStartup = true;
+		});
+
+		await using var sp = services.BuildServiceProvider();
+		var manager = sp.GetRequiredService<VSCodeSessionManager>();
+
+		await manager.StartAsync(CancellationToken.None);
+		try
+		{
+			Assert.False(Directory.Exists(leftoverA), "Orphan folder A should have been removed.");
+			Assert.False(Directory.Exists(leftoverB), "Orphan folder B should have been removed.");
+		}
+		finally
+		{
+			await manager.StopAsync(CancellationToken.None);
+			try { Directory.Delete(root, recursive: true); } catch { /* best-effort */ }
+		}
+	}
+
+	[Fact]
+	public async Task Http_heartbeat_refreshes_last_seen()
+	{
+		var port = AllocateFreePort();
+		var builder = WebApplication.CreateBuilder();
+		builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+		{
+			["Kestrel:Endpoints:Http:Url"] = $"http://127.0.0.1:{port}",
+		});
+		builder.Logging.SetMinimumLevel(LogLevel.Warning);
+
+		builder.Services.AddOptions<OpenVSCodeServerOptions>().Configure(o =>
+		{
+			o.PathPrefix = "/ide";
+			o.PathPrefixSet = true;
+			o.Sessions.SaveDebounce = TimeSpan.FromMilliseconds(50);
+			o.Sessions.IdleTimeout = TimeSpan.Zero;
+		});
+		builder.Services.AddSingleton<RecordingVSCodeFiles>();
+		builder.Services.AddVSCodeFiles<RecordingVSCodeFiles>();
+		builder.Services.AddScoped<IVSCodeFiles>(sp => sp.GetRequiredService<RecordingVSCodeFiles>());
+
+		using var app = builder.Build();
+		app.MapOpenVSCodeServerSessions("/sessions");
+		await app.StartAsync();
+		try
+		{
+			using var http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}") };
+
+			var createResp = await http.PostAsJsonAsync("/sessions", new { });
+			Assert.Equal(HttpStatusCode.Created, createResp.StatusCode);
+			var created = await createResp.Content.ReadFromJsonAsync<JsonElement>();
+			var sessionId = created.GetProperty("sessionId").GetString()!;
+
+			var manager = app.Services.GetRequiredService<VSCodeSessionManager>();
+			var session = manager.Get(sessionId)!;
+			var before = session.LastSeenUtc;
+			await Task.Delay(30);
+
+			var hbResp = await http.PostAsync($"/sessions/{sessionId}/heartbeat", content: null);
+			Assert.Equal(HttpStatusCode.NoContent, hbResp.StatusCode);
+			Assert.True(session.LastSeenUtc > before);
+
+			var missing = await http.PostAsync("/sessions/does-not-exist/heartbeat", content: null);
+			Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+		}
+		finally
+		{
+			await app.StopAsync();
+		}
+	}
+
+	[Fact]
+	public async Task WithSessions_chains_session_endpoints_off_MapOpenVSCodeServer()
+	{
+		// Make sure the fluent .WithSessions() shortcut on MapOpenVSCodeServer is equivalent to
+		// calling MapOpenVSCodeServerSessions directly — the session endpoints should be reachable
+		// without the consumer having to remember the second call.
+		var port = AllocateFreePort();
+		var builder = WebApplication.CreateBuilder();
+		builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+		{
+			["Kestrel:Endpoints:Http:Url"] = $"http://127.0.0.1:{port}",
+		});
+		builder.Logging.SetMinimumLevel(LogLevel.Warning);
+
+		// Suppress the real hosted Node process. We only care that the routes are wired up.
+		builder.Services.AddOptions<OpenVSCodeServerOptions>().Configure(o =>
+		{
+			o.PathPrefix = "/ide";
+			o.PathPrefixSet = true;
+			o.Sessions.SaveDebounce = TimeSpan.FromMilliseconds(50);
+			o.Sessions.IdleTimeout = TimeSpan.Zero;
+		});
+		builder.Services.AddSingleton<RecordingVSCodeFiles>();
+		builder.Services.AddVSCodeFiles<RecordingVSCodeFiles>();
+		builder.Services.AddScoped<IVSCodeFiles>(sp => sp.GetRequiredService<RecordingVSCodeFiles>());
+
+		using var app = builder.Build();
+		// MapOpenVSCodeServer would normally also wire the proxy, but we don't need a real proxy
+		// for this routing-only test — just make sure WithSessions adds the /sessions endpoints.
+		var endpoints = (IEndpointRouteBuilder)app;
+		endpoints.MapOpenVSCodeServerSessions("/sessions-only"); // sanity baseline
+		// Use WithSessions through the fluent builder to add /sessions.
+		var dummy = new DummyEndpointBuilder();
+		new OpenVSCodeServerEndpointBuilder(endpoints, dummy).WithSessions("/sessions");
+
+		await app.StartAsync();
+		try
+		{
+			using var http = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{port}") };
+			var resp = await http.PostAsJsonAsync("/sessions", new { });
+			Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
+
+			var baseline = await http.PostAsJsonAsync("/sessions-only", new { });
+			Assert.Equal(HttpStatusCode.Created, baseline.StatusCode);
+		}
+		finally
+		{
+			await app.StopAsync();
+		}
+	}
+
+	private sealed class DummyEndpointBuilder : Microsoft.AspNetCore.Builder.IEndpointConventionBuilder
+	{
+		public void Add(Action<Microsoft.AspNetCore.Builder.EndpointBuilder> convention) { }
+		public void Finally(Action<Microsoft.AspNetCore.Builder.EndpointBuilder> finallyConvention) { }
 	}
 
 	[Fact]
