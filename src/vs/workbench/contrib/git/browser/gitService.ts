@@ -3,23 +3,28 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Sequencer } from '../../../../base/common/async.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { BugIndicatingError } from '../../../../base/common/errors.js';
 import { Disposable, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { ResourceMap } from '../../../../base/common/map.js';
 import { URI } from '../../../../base/common/uri.js';
-import { IGitService, IGitExtensionDelegate, GitRef, GitRefQuery, IGitRepository } from '../common/gitService.js';
+import { IGitService, IGitExtensionDelegate, GitRef, GitRefQuery, IGitRepository, GitRepositoryState, GitDiffChange } from '../common/gitService.js';
+import { ISettableObservable, observableValueOpts } from '../../../../base/common/observable.js';
+import { structuralEquals } from '../../../../base/common/equals.js';
+import { AutoOpenBarrier } from '../../../../base/common/async.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
 
 export class GitService extends Disposable implements IGitService {
 	declare readonly _serviceBrand: undefined;
 
 	private _delegate: IGitExtensionDelegate | undefined;
-	private readonly _openRepositorySequencer = new Sequencer();
+	private _delegateBarrier = new AutoOpenBarrier(10_000);
 
-	private readonly _repositories = new ResourceMap<IGitRepository>();
 	get repositories(): Iterable<IGitRepository> {
-		return this._repositories.values();
+		return this._delegate?.repositories ?? [];
+	}
+
+	constructor(@ILogService private readonly logService: ILogService) {
+		super();
 	}
 
 	setDelegate(delegate: IGitExtensionDelegate): IDisposable {
@@ -27,56 +32,61 @@ export class GitService extends Disposable implements IGitService {
 		// extension can only run in one extension host process per
 		// window.
 		if (this._delegate) {
-			throw new BugIndicatingError('GitService delegate is already set.');
+			this.logService.error('[GitService][setDelegate] GitExtension delegate is already set.');
+			throw new BugIndicatingError('GitExtension delegate is already set.');
 		}
 
 		this._delegate = delegate;
+		this._delegateBarrier.open();
 
 		return toDisposable(() => {
-			this._repositories.clear();
 			this._delegate = undefined;
 		});
 	}
 
 	async openRepository(uri: URI): Promise<IGitRepository | undefined> {
-		return this._openRepositorySequencer.queue(async () => {
-			if (!this._delegate) {
-				return undefined;
-			}
+		// We need to wait for the delegate to be set before we can open a repository.
+		// At the moment we are waiting for 10 seconds before we automatically open the
+		// barrier.
+		await this._delegateBarrier.wait();
 
-			// Check whether we have an opened repository for the uri
-			let repository = this._repositories.get(uri);
-			if (repository) {
-				return repository;
-			}
+		if (!this._delegate) {
+			this.logService.warn('[GitService][openRepository] GitExtension delegate is not set after 10 seconds. Cannot open repository.');
+			return undefined;
+		}
 
-			// Open the repository to get the repository root
-			const root = await this._delegate.openRepository(uri);
-			if (!root) {
-				return undefined;
-			}
-
-			const rootUri = URI.revive(root);
-
-			// Check whether we have an opened repository for the root
-			repository = this._repositories.get(rootUri);
-			if (repository) {
-				return repository;
-			}
-
-			// Create a new repository
-			repository = new GitRepository(this._delegate, rootUri);
-			this._repositories.set(rootUri, repository);
-
-			return repository;
-		});
+		return this._delegate.openRepository(uri);
 	}
 }
 
-export class GitRepository implements IGitRepository {
-	constructor(private readonly delegate: IGitExtensionDelegate, readonly rootUri: URI) { }
+export class GitRepository extends Disposable implements IGitRepository {
+	readonly rootUri: URI;
+
+	readonly state: ISettableObservable<GitRepositoryState>;
+	updateState(state: GitRepositoryState): void {
+		this.state.set(state, undefined);
+	}
+
+	constructor(
+		rootUri: URI,
+		initialState: GitRepositoryState,
+		private readonly delegate: IGitExtensionDelegate
+	) {
+		super();
+
+		this.rootUri = rootUri;
+		this.state = observableValueOpts({ owner: this, equalsFn: structuralEquals }, initialState);
+	}
 
 	async getRefs(query: GitRefQuery, token?: CancellationToken): Promise<GitRef[]> {
 		return this.delegate.getRefs(this.rootUri, query, token);
+	}
+
+	async diffBetweenWithStats(ref1: string, ref2: string, path?: string): Promise<GitDiffChange[]> {
+		return this.delegate.diffBetweenWithStats(this.rootUri, ref1, ref2, path);
+	}
+
+	async diffBetweenWithStats2(ref: string, path?: string): Promise<GitDiffChange[]> {
+		return this.delegate.diffBetweenWithStats2(this.rootUri, ref, path);
 	}
 }

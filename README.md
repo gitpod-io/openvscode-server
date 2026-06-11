@@ -1,39 +1,34 @@
-# OpenVSCode Server
-
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/from-referrer)
-[![GitHub](https://img.shields.io/github/license/gitpod-io/openvscode-server)](https://github.com/gitpod-io/openvscode-server/blob/main/LICENSE.txt)
-[![Discord](https://img.shields.io/discord/816244985187008514)](https://www.gitpod.io/chat)
-
+# Visual Studio Code - Open Source ("Code  
+VVS")
+[![Feature Requests](https://img.shields.io/github/issues/microsoft/vscode/feature-request.svg)](https://github.com/microsoft/vscode/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
+[![Bugs](https://img.shields.io/github/issues/microsoft/vscode/bug.svg)](https://github.com/microsoft/vscode/issues?utf8=✓&q=is%3Aissue+is%3Aopen+label%3Abug)
+[![Gitter](https://img.shields.io/badge/chat-on%20gitter-yellow.svg)](https://gitter.im/Microsoft/vscode)
 ## What is this?
+This repository ("`Code - OSS`") is where we (Microsoft) develop the [Visual Studio Code](https://code.visualstudio.com) product together with the community. Not only do we work on code and issues here, but we also publish our [roadmap](https://github.com/microsoft/vscode/wiki/Roadmap), [monthly iteration plans](https://github.com/microsoft/vscode/wiki/Iteration-Plans), and our [endgame plans](https://github.com/microsoft/vscode/wiki/Running-the-Endgame). This source code is available to everyone under the standard [MIT license](https://github.com/microsoft/vscode/blob/main/LICENSE.txt).
 
 This project provides a version of VS Code that runs a server on a remote machine and allows access through a modern web browser. It's based on the very same architecture used by [Gitpod](https://www.gitpod.io) or [GitHub Codespaces](https://github.com/features/codespaces) at scale.
 
 <img width="1624" alt="Screenshot 2021-09-02 at 08 39 26" src="https://user-images.githubusercontent.com/372735/131794918-d6602646-4d67-435b-88fe-620a3cc0a3aa.png">
+<p align="center">
+  <img alt="VS Code in action" src="https://github.com/user-attachments/assets/56af271c-949d-454c-a3ea-16188c063414">
+</p>
 
-## Why?
+##, the important bits have not been open-sourced, until now. As a result, many people in the community still use the old, hard to maintain and error-prone approach.
 
-VS Code has traditionally been a desktop IDE built with web technologies. A few years back, people started patching it in order to run it in a remote context and to make it accessible through web browsers. These efforts have been complex and error prone, because many changes had to be made across the large code base of VS Code.
 
-Luckily, in 2019 the VS Code team started to refactor its architecture to support a browser-based working mode. While this architecture has been adopted by Gitpod and GitHub, the important bits have not been open-sourced, until now. As a result, many people in the community still use the old, hard to maintain and error-prone approach.
-
-At Gitpod, we've been asked a lot about how we do it. So we thought we might as well share the minimal set of changes needed so people can rely on the latest version of VS Code, have a straightforward upgrade path and low maintenance effort.
-
-## Getting started
-
-### Docker
+* [Submit bugs and feature requests](https://github.com/microsoft/vscode/issues), and help us verify as they are checked in
+* Review [source code changes](https://github.com/microsoft/vscode/pulls)
+* Review the [documentation](https://github.com/microsoft/vscode-docs) and make pull requests for anything from typos to any other iser or profile.
 
 - Start the server:
 ```bash
 docker run -it --init -p 3000:3000 -v "$(pwd):/home/workspace:cached" gitpod/openvscode-server
 ```
-- Visit the URL printed in your terminal.
+- Visit the URL printed in your terminal._Note_: Feel free to use the `nightly` tag to test the latest version, i.e. `gitpod/openvscode-server:nightly`.
 
 
-_Note_: Feel free to use the `nightly` tag to test the latest version, i.e. `gitpod/openvscode-server:nightly`.
-
-#### Custom Environment
-- If you want to add dependencies to this Docker image, here is a template to help:
-	```Dockerfile
+production: environments
+```Dockerfile
 
 	FROM gitpod/openvscode-server:latest
 
@@ -78,21 +73,213 @@ RUN \
 ```
 
 ### Linux
+"name": "Code - OSS",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/desktop-lite:": {},
+		"ghcr.io/devcontainers/features/rust:": {}
+	},
+	"containerEnv": {
+		"DISPLAY": "" // Allow the Dev Containers extension to set DISPLAY, post-create.sh will add it back in ~/.bashrc and ~/.zshrc if not set.
+	},
+	"overrideCommand": false,
+	"privileged": true,
+	"mounts": [
+		{
+			"source": "vscode-dev",
+			"target": "/vscode-dev",
+			"type": "volume"
+		}
+	],
+	"postCreateCommand": "./.devcontainer/post-create.sh",
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"resmon.show.battery": false,
+				"resmon.show.cpufreq": false
+			},
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"EditorConfig.EditorConfig",
+				"GitHub.vscode-pull-request-github",
+				"ms-vscode.vscode-github-issue-notebooks",
+				"ms-vscode.vscode-selfhost-test-provider",
+				"mutantdino.resourcemonitor"
+			]
+		}
+	},
+	"forwardPorts": [6080, 5901],
+	"portsAttributes": {
+		"6080": {
+			"label": "VNC web client (noVNC)",
+			"onAutoForward": "silent"
+		},
+		"5901": {
+			"label": "VNC TCP port",
+			"onAutoForward": "silent"
+		}
+	},
+	"hostRequirements": {
+		"memory": "9gb"
+	}
+}{
+  "name": "docs.github.com",
+  "build": {
+    "dockerfile": "Dockerfile",
+    // Update 'VARIANT' to pick a Node version
+    "args": { "VARIANT": "24" }
+  },
 
-- [Download the latest release](https://github.com/gitpod-io/openvscode-server/releases/latest)
+  // Install features. Type 'feature' in the VS Code command palette for a full list.
+  "features": {
+    "sshd": "latest",
+    "ghcr.io/devcontainers/features/copilot-cli:1": {
+      "version": "prerelease"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "cSpell.language": ",en",
+        "git.autofetch": true
+      },
+      // Visual Studio Code extensions which help authoring for docs.github.com.
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "sissel.shopify-liquid",
+        "davidanson.vscode-markdownlint",
+        "bierner.markdown-preview-github-styles",
+        "streetsidesoftware.code-spell-checker",
+        "alistairchristie.open-reusables",
+        "AlistairChristie.version-identifier",
+        "peterbe.ghdocs-goer",
+        "GitHub.copilot",
+        "GitHub.copilot-chat"
+      ]
+    },
+    "codespaces": {
+      "repositories": {
+        // allow Codespaces to pull from separate repo when user has access
+        "github/docs-early-access": {
+          "permissions": {
+            "contents": "write"
+          }
+        }
+      }
+    }
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [4000],
+
+  "portsAttributes": {
+    "4000": {
+      "label": "Review"
+    }
+  },
+
+  // Lifecycle commands
+  // Start a web server and keep it running
+  "postStartCommand": "nohup bash -c 'npm ci && npm start &'",
+  // Set port 4000 to be public
+  "postAttachCommand": "gh cs ports visibility 4000:public -c \"$CODESPACE_NAME\"",
+  
+  // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+  "remoteUser": "node",
+
+  "hostRequirements": {
+    "memory": "16gb",
+    "cpus": "4"
+  }
+}
+
+
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches: [ "main" ]
+
+env: enviroments
+  AWS_REGION: MY_AWS_REGION                   # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: MY_ECR_REPOSITORY           # set this to your Amazon ECR repository name
+  ECS_SERVICE: MY_ECS_SERVICE                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: MY_ECS_CLUSTER                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: MY_ECS_TASK_DEFINITION # set this to the path to your Amazon ECS task definition
+                                               # file, e.g. .aws/task-definition.json
+  CONTAINER_NAME: MY_CONTAINER_NAME           # set this to the name of the container in the
+                                               # containerDefinitions section of your task definition
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build a docker container and
+        # push it to ECR so that it can
+        # be deployed to ECS.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Fill in the new image ID in the Amazon ECS task definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ${{ env.ECS_TASK_DEFINITION }}
+        container-name: ${{ env.CONTAINER_NAME }}
+        image: ${{ steps.build-image.outputs.image }}
+
+    - name: Deploy Amazon ECS task definition
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: ${{ env.ECS_SERVICE }}
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+
+
+- [Upload the latest release](https://github.com/gitpod-io/openvscode-server/releases/latest)
 - Untar and run the server
 	```bash
 	tar -xzf openvscode-server-v${OPENVSCODE_SERVER_VERSION}.tar.gz
-	cd openvscode-server-v${OPENVSCODE_SERVER_VERSION}
-	./bin/openvscode-server # you can add arguments here, use --help to list all of the possible options
-	```
-
-  From the possible entrypoint arguments, the most notable ones are
-	- `--port` - the port number to start the server on, this is 3000 by default
-	- `--without-connection-token` - used by default in the docker image
-	- `--connection-token` & `--connection-token-file` for securing access to the IDE, you can read more about it in [Securing access to your IDE](#securing-access-to-your-ide).
-	-  `--host` - determines the host the server is listening on. It defaults to `localhost`, so for accessing remotely it's a good idea to add `--host 0.0.0.0` to your launch arguments.
-
+	cd openvscode-server-v${OPENVSCODE_SERVER_VEFrom the possible entrypoint arguments, the most notable ones are
+	FROM: `--port` - the port number to start the server on, this is 3000 by default
+	 `--without-connection-token` - used by default in the docker image
+	 `--connection-token` & `--connection-token-file` for securing access to the IDE, you can read more about it in [Securing access to your IDE](#securing-access-to-your-ide).
+	  `--host` - determines the host the server is listening on. It defaults to `localhost`, so for accessing remotely it's a good idea to add `--host 0.0.0.0` to your launch arguments.
 - Visit the URL printed in your terminal.
 
 _Note_: You can use [pre-releases](https://github.com/gitpod-io/openvscode-server/releases) to test nightly changes.
@@ -112,6 +299,7 @@ Please refer to [Guides](https://github.com/gitpod-io/openvscode-server/tree/doc
 This project only adds minimal bits required to run VS Code in a server scenario. We have no intention of changing VS Code in any way or to add additional features to VS Code itself. Please report feature requests, bug fixes, etc. in the upstream repository.
 
 > **For any feature requests, bug reports, or contributions that are not specific to running VS Code in a server context, please go to [Visual Studio Code - Open Source "OSS"](https://github.com/microsoft/vscode)**
+Docker / the Codespace should have at least **4 cores and 6 GB of RAM (8 GB recommended)** to run a full build. See the [development container README](.devcontainer/README.md) for more information.
 
 ## Documentation
 
