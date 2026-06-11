@@ -71,6 +71,7 @@ export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat' | 'age
 			content.push(localize('workbench.action.chat.newChat', 'To create a new chat session, invoke the New Chat command{0}.', '<keybinding:workbench.action.chat.newChat>'));
 			content.push(localize('workbench.action.chat.history', 'To view all chat sessions, invoke the Show Chats command{0}.', '<keybinding:workbench.action.chat.history>'));
 			content.push(localize('workbench.action.chat.focusAgentSessionsViewer', 'You can focus the agent sessions list by invoking the Focus Agent Sessions command{0}.', `<keybinding:${FocusAgentSessionsAction.id}>`));
+			content.push(localize('workbench.action.openAgentsWindow', 'To open the Agents Window, invoke the Open Agents Window command{0}. In screen reader mode, this keybinding includes Alt to avoid conflicts with screen reader shortcuts.', '<keybinding:workbench.action.openAgentsWindow>'));
 		}
 		content.push(localize('chat.requestHistory', 'In the input box, use up and down arrows to navigate your request history. Edit input and use enter or the submit button to run a new request.'));
 		content.push(localize('chat.attachments.removal', 'To remove attached contexts, focus an attachment and press Delete or Backspace.'));
@@ -89,6 +90,8 @@ export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat' | 'age
 		content.push(localize('chat.focusMostRecentTerminal', 'To focus the last chat terminal that ran a tool, invoke the Focus Most Recent Chat Terminal command{0}.', `<keybinding:${TerminalContribCommandId.FocusMostRecentChatTerminal}>`));
 		content.push(localize('chat.focusMostRecentTerminalOutput', 'To focus the output from the last chat terminal tool, invoke the Focus Most Recent Chat Terminal Output command{0}.', `<keybinding:${TerminalContribCommandId.FocusMostRecentChatTerminalOutput}>`));
 		content.push(localize('chat.focusQuestionCarousel', 'When a chat question appears, toggle focus between the question and the chat input{0}.', '<keybinding:workbench.action.chat.focusQuestionCarousel>'));
+		content.push(localize('chat.previousQuestionCarouselQuestion', 'When a chat question is focused, move to the previous question{0}.', '<keybinding:workbench.action.chat.previousQuestion>'));
+		content.push(localize('chat.nextQuestionCarouselQuestion', 'When a chat question is focused, move to the next question{0}.', '<keybinding:workbench.action.chat.nextQuestion>'));
 		content.push(localize('chat.focusTip', 'When a tip appears, toggle focus between the tip and the chat input{0}.', '<keybinding:workbench.action.chat.focusTip>'));
 	}
 	if (type === 'editsView' || type === 'agentView') {
